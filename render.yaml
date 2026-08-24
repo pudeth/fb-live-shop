@@ -39,4 +39,4 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: PUBLIC_URL
-        sync: false
+        value: https://fb-live-shop.onrender.com

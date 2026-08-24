@@ -15,7 +15,7 @@ require('dotenv').config();
 
 async function getConnection(withDb = true) {
     const isProduction = process.env.NODE_ENV === 'production';
-    const ssl = isProduction ? { rejectUnauthorized: true } : undefined;
+    const ssl = isProduction ? { rejectUnauthorized: false } : undefined;
 
     // Support DATABASE_URL (PlanetScale / Render MySQL format)
     if (process.env.DATABASE_URL) {

@@ -20,7 +20,9 @@ const poolConfig = {
 
 // Enable SSL for cloud databases (PlanetScale, Render MySQL, etc.)
 if (isProduction) {
-    poolConfig.ssl = { rejectUnauthorized: true };
+    // Aiven uses a self-signed CA — disable strict verification
+    // (connection is still encrypted, just not CA-verified)
+    poolConfig.ssl = { rejectUnauthorized: false };
 }
 
 // PlanetScale uses a DATABASE_URL connection string — support that too
@@ -31,7 +33,7 @@ if (process.env.DATABASE_URL) {
     poolConfig.password = url.password;
     poolConfig.database = url.pathname.replace('/', '');
     poolConfig.port     = parseInt(url.port || '3306');
-    if (isProduction) poolConfig.ssl = { rejectUnauthorized: true };
+    if (isProduction) poolConfig.ssl = { rejectUnauthorized: false };
 }
 
 const pool = mysql.createPool(poolConfig);

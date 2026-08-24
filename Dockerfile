@@ -12,8 +12,8 @@ RUN apk add --no-cache dumb-init
 WORKDIR /app
 
 # ── Install production dependencies only (cached layer) ──
-COPY backend/package*.json ./backend/
-RUN cd backend && npm ci --omit=dev && npm cache clean --force
+COPY backend/package.json backend/package-lock.json* ./backend/
+RUN cd backend && npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # ── Copy backend source ───────────────────────────────────
 COPY backend/ ./backend/

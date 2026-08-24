@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json is needed for Docker builds — do not ignore it
 
 # Environment variables
 .env

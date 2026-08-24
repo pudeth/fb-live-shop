@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — FB Live Product System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/variables.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-wrapper {
+      width: 100%;
+      max-width: 440px;
+    }
+    .login-brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-brand .brand-icon {
+      width: 64px; height: 64px;
+      background: var(--primary);
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(24,119,242,.4);
+    }
+    .login-brand h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .login-brand p { color: rgba(255,255,255,.55); font-size: 14px; }
+    .login-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 36px 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .login-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+    .login-card .sub { font-size: 14px; color: var(--gray-500); margin-bottom: 28px; }
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 7px;
+    }
+    .input-wrap { position: relative; }
+    .input-wrap .input-icon {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px; color: var(--gray-400);
+    }
+    .input-wrap .form-control {
+      width: 100%;
+      padding: 11px 14px 11px 42px;
+      border: 2px solid var(--gray-200);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--gray-800);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      font-family: var(--font);
+    }
+    .input-wrap .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(24,119,242,.12);
+    }
+    .input-wrap .toggle-pw {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      font-size: 16px; color: var(--gray-400);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 13px;
+      background: var(--primary);
+      color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      font-family: var(--font);
+      margin-top: 8px;
+    }
+    .login-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .login-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 18px;
+      display: none;
+    }
+    .alert.show { display: flex; align-items: center; gap: 8px; }
+    .alert-error { background: var(--danger-bg); color: #991b1b; border: 1px solid #fca5a5; }
+    .role-tabs {
+      display: flex;
+      background: var(--gray-100);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+      gap: 4px;
+    }
+    .role-tab {
+      flex: 1; padding: 9px;
+      text-align: center;
+      border-radius: 7px;
+      font-size: 13px; font-weight: 600;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: all .2s;
+      border: none; background: none;
+      font-family: var(--font);
+    }
+    .role-tab.active { background: #fff; color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      display: none;
+    }
+    .login-btn.loading .spinner { display: block; }
+    .login-btn.loading .btn-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .footer-note { text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 22px; }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-brand">
+      <div class="brand-icon">📺</div>
+      <h1>FB Live Product System</h1>
+      <p>Screenshot-Based Live Commerce Platform</p>
+    </div>
+
+    <div class="login-card">
+      <h2>Welcome back 👋</h2>
+      <p class="sub">Sign in to manage your live stream products</p>
+
+      <div class="role-tabs">
+        <button class="role-tab active" data-role="admin" onclick="setRole('admin')">🛡️ Admin</button>
+        <button class="role-tab" data-role="cashier" onclick="setRole('cashier')">🧾 Cashier</button>
+      </div>
+
+      <div id="error-alert" class="alert alert-error">
+        <span>⚠️</span>
+        <span id="error-msg">Invalid username or password.</span>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input id="username" type="text" class="form-control" placeholder="Enter username" autocomplete="username" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input id="password" type="password" class="form-control" placeholder="Enter password" autocomplete="current-password" required />
+            <button type="button" class="toggle-pw" onclick="togglePw()" id="pw-toggle">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="login-btn" id="login-btn">
+          <span class="spinner"></span>
+          <span class="btn-text">Sign In</span>
+        </button>
+      </form>
+    </div>
+
+    <p class="footer-note">Default: admin / admin123 &nbsp;|&nbsp; cashier / cashier123</p>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    let currentRole = 'admin';
+
+    // Redirect if already logged in
+    if (auth.isLoggedIn()) {
+      const user = auth.getUser();
+      redirectByRole(user?.role);
+    }
+
+    function setRole(role) {
+      currentRole = role;
+      document.querySelectorAll('.role-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.role === role);
+      });
+      // Pre-fill demo credentials
+      const demos = { admin: ['admin', 'admin123'], cashier: ['cashier', 'cashier123'] };
+      document.getElementById('username').value = demos[role][0];
+      document.getElementById('password').value = demos[role][1];
+    }
+
+    function togglePw() {
+      const pw = document.getElementById('password');
+      pw.type = pw.type === 'password' ? 'text' : 'password';
+      document.getElementById('pw-toggle').textContent = pw.type === 'password' ? '👁️' : '🙈';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const errAlert = document.getElementById('error-alert');
+      const errMsg = document.getElementById('error-msg');
+
+      btn.classList.add('loading');
+      btn.disabled = true;
+      errAlert.classList.remove('show');
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await api.login({ username, password });
+        if (res?.success) {
+          auth.setSession(res.token, res.user);
+          redirectByRole(res.user.role);
+        } else {
+          errMsg.textContent = res?.message || 'Invalid credentials';
+          errAlert.classList.add('show');
+        }
+      } catch (err) {
+        errMsg.textContent = 'Connection error. Is the server running?';
+        errAlert.classList.add('show');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function redirectByRole(role) {
+      if (role === 'admin') window.location.href = '/admin/dashboard.html';
+      else if (role === 'cashier') window.location.href = '/cashier/live.html';
+      else window.location.href = '/login.html';
+    }
+
+    // Pre-fill admin by default
+    setRole('admin');
+  </script>
+</body>
+</html>

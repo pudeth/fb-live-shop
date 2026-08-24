@@ -1,0 +1,36 @@
+# ── Node modules (installed fresh inside image) ──
+backend/node_modules
+frontend/node_modules
+
+# ── Local environment secrets ──────────────────
+backend/.env
+.env
+
+# ── Dev / local-only files ──────────────────────
+backend/logs
+backend/ecosystem.config.js
+backend/fix-users.js
+backend/migrate-payments.js
+
+# ── Git & editor ────────────────────────────────
+.git
+.gitignore
+.kiro
+*.md
+
+# ── OS junk ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Fly deployment artifacts ─────────────────────
+fly.toml
+Dockerfile
+.dockerignore
+
+# ── Uploaded images (don't bake into image) ─────
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ── Test / QR files ─────────────────────────────
+test-qr.png

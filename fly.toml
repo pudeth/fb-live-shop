@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────
+#  fly.toml — FB Live Shop
+#  Generated for Fly.io free tier deployment
+# ─────────────────────────────────────────────────────
+
+app = "fb-live-shop"
+primary_region = "sin"        # Singapore — closest to Cambodia
+
+[build]
+  dockerfile = "Dockerfile"
+
+# ── HTTP service ──────────────────────────────────────
+[http_service]
+  internal_port       = 3000
+  force_https         = true
+  auto_stop_machines  = true   # stop when idle to save free credits
+  auto_start_machines = true   # wake up on first request
+  min_machines_running = 0
+
+  # Health check — Fly restarts the machine if this fails
+  [[http_service.checks]]
+    grace_period  = "10s"
+    interval      = "30s"
+    method        = "GET"
+    path          = "/health"
+    timeout       = "5s"
+
+# ── Machine size (free tier) ──────────────────────────
+[[vm]]
+  size   = "shared-cpu-1x"
+  memory = "256mb"
+
+# ── Persistent volume for uploaded product images ─────
+# Created once with: flyctl volumes create fb_live_uploads --size 1
+# Maps the container's /app/backend/uploads to persistent storage
+[mounts]
+  source      = "fb_live_uploads"
+  destination = "/app/backend/uploads"
+
+# ── Environment variables (non-secret) ───────────────
+# Secrets (DB password, JWT secret) are set via:
+#   flyctl secrets set KEY=value
+[env]
+  NODE_ENV    = "production"
+  PORT        = "3000"
+  QR_MODE     = "public"

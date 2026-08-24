@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OBS Overlay</title>
+  <!-- QR code styling library (MIT licensed, runs 100% locally) -->
+  <script src="/public/qr-code-styling.js"></script>
+  <style>
+    /* ── Base: transparent 1920×1080 canvas ── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* ════════════════════════════════════════
+       PRODUCT CARD  (bottom-left)
+       ════════════════════════════════════════ */
+    #product-card {
+      position: absolute;
+      bottom: 60px;
+      left: 60px;
+      width: 420px;
+      background: rgba(8, 10, 20, 0.93);
+      border: 1.5px solid rgba(255,255,255,.13);
+      border-radius: 22px;
+      padding: 22px 20px 20px;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1);
+      pointer-events: none;
+    }
+    #product-card.visible { opacity: 1; transform: translateY(0); }
+
+    /* product image */
+    .card-img {
+      width: 106px; height: 106px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(255,255,255,.07);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      flex-shrink: 0;
+    }
+    .card-img img { width:100%; height:100%; object-fit:cover; }
+
+    /* text block */
+    .card-info { flex:1; min-width:0; }
+
+    .on-air-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #e53935;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 9px;
+      text-transform: uppercase;
+    }
+    .on-air-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #fff;
+      animation: blink 1s ease infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+    .prod-code     { font-size:11px; font-family:monospace; color:#60a5fa; font-weight:700; letter-spacing:.08em; margin-bottom:5px; }
+    .prod-name     { font-size:19px; font-weight:900; color:#fff; line-height:1.2; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .prod-category { font-size:11px; color:rgba(255,255,255,.4); margin-bottom:9px; }
+    .prod-price    { font-size:28px; font-weight:900; color:#4ade80; letter-spacing:-.5px; line-height:1; }
+    .prod-stock    { font-size:11px; color:rgba(255,255,255,.38); margin-top:4px; }
+
+    .prod-options  { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+    .opt-chip {
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.72);
+      font-size: 10px; font-weight:600;
+      padding: 2px 8px; border-radius: 20px;
+    }
+
+    /* ════════════════════════════════════════
+       QR CODE WIDGET  (bottom-left, right of product card)
+       ════════════════════════════════════════ */
+    #qr-widget {
+      position: absolute;
+      bottom: 60px;
+      left: 508px;          /* 60 + 420 + 28 gap */
+      width: 200px;
+      background: rgba(8, 10, 20, 0.93);
+      border: 1.5px solid rgba(255,255,255,.13);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.7);
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .45s cubic-bezier(.22,1,.36,1) .08s, transform .45s cubic-bezier(.22,1,.36,1) .08s;
+      pointer-events: none;
+    }
+    #qr-widget.visible { opacity:1; transform:translateY(0); }
+
+    .qr-label-top {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      color: rgba(255,255,255,.5);
+      text-transform: uppercase;
+    }
+
+    /* white QR background so scanner can read it */
+    #qr-canvas-wrap {
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px;
+      width: 150px; height: 150px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    #qr-canvas-wrap canvas,
+    #qr-canvas-wrap img { width:134px !important; height:134px !important; }
+
+    .qr-label-bottom {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,.55);
+      text-align: center;
+      line-height: 1.4;
+    }
+    .qr-scan-hint {
+      font-size: 13px;
+      font-weight: 800;
+      color: #4ade80;
+      text-align: center;
+      letter-spacing: .03em;
+    }
+
+    /* small product code pill under QR */
+    .qr-code-pill {
+      background: rgba(96,165,250,.15);
+      border: 1px solid rgba(96,165,250,.35);
+      color: #60a5fa;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: monospace;
+      letter-spacing: .1em;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* ════════════════════════════════════════
+       CAPTION BAR  (bottom strip)
+       ════════════════════════════════════════ */
+    #caption-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 14px 60px;
+      display: flex; align-items: center; gap: 14px;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .35s ease, transform .35s ease;
+      pointer-events: none;
+    }
+    #caption-bar.visible { opacity:1; transform:translateY(0); }
+    #caption-bar.style-default { background: linear-gradient(90deg, rgba(8,10,20,.96), rgba(8,10,20,.84) 80%, transparent); }
+    #caption-bar.style-alert   { background: linear-gradient(90deg, rgba(197,42,42,.96), rgba(197,42,42,.84) 80%, transparent); }
+    #caption-bar.style-promo   { background: linear-gradient(90deg, rgba(146,64,14,.96), rgba(146,64,14,.84) 80%, transparent); }
+    #caption-bar.style-info    { background: linear-gradient(90deg, rgba(29,78,216,.96), rgba(29,78,216,.84) 80%, transparent); }
+    .caption-icon { font-size:20px; flex-shrink:0; }
+    .caption-text { font-size:19px; font-weight:700; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6); flex:1; }
+
+    /* ════════════════════════════════════════
+       ORDER NOTIFICATION  (top-right)
+       ════════════════════════════════════════ */
+    #order-notif {
+      position: absolute;
+      top: 60px; right: 60px;
+      width: 330px;
+      background: rgba(8,10,20,.93);
+      border: 1.5px solid rgba(74,222,128,.3);
+      border-left: 4px solid #4ade80;
+      border-radius: 18px;
+      padding: 16px 20px;
+      display: flex; gap: 12px; align-items: flex-start;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.55);
+      opacity: 0; transform: translateX(24px);
+      transition: opacity .35s ease, transform .35s ease;
+      pointer-events: none;
+    }
+    #order-notif.visible { opacity:1; transform:translateX(0); }
+    .notif-icon  { font-size:30px; }
+    .notif-label { font-size:10px; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:.08em; margin-bottom:3px; }
+    .notif-customer { font-size:16px; font-weight:800; color:#fff; }
+    .notif-product  { font-size:13px; color:rgba(255,255,255,.55); margin-top:2px; }
+
+    /* ════════════════════════════════════════
+       LIVE BADGE  (top-left)
+       ════════════════════════════════════════ */
+    #live-badge {
+      position: absolute;
+      top: 40px; left: 60px;
+      background: #e53935;
+      color: #fff;
+      font-size: 13px; font-weight: 800;
+      padding: 6px 18px;
+      border-radius: 20px;
+      letter-spacing: .09em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 18px rgba(229,57,53,.45);
+      opacity: 0; transition: opacity .35s;
+      pointer-events: none;
+    }
+    #live-badge.visible { opacity:1; }
+    #live-badge.paused  { background: #e65100; }
+    .badge-dot {
+      width:8px; height:8px; border-radius:50%; background:#fff;
+      animation: blink 1s ease infinite;
+    }
+
+    /* subtle watermark */
+    #preview-label {
+      position:absolute; top:40px; right:60px;
+      font-size:11px; color:rgba(255,255,255,.15);
+      font-weight:600; letter-spacing:.06em;
+      pointer-events:none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Live badge -->
+  <div id="live-badge">
+    <span class="badge-dot"></span>
+    <span id="live-badge-text">LIVE</span>
+  </div>
+
+  <div id="preview-label">FB LIVE OVERLAY</div>
+
+  <!-- ── Product card (bottom-left) ── -->
+  <div id="product-card">
+    <div class="card-img">
+      <img id="prod-img" src="" alt="" style="display:none" />
+      <span id="prod-img-placeholder">📦</span>
+    </div>
+    <div class="card-info">
+      <div class="on-air-pill"><span class="on-air-dot"></span> ON AIR</div>
+      <div class="prod-code"     id="prod-code"></div>
+      <div class="prod-name"     id="prod-name"></div>
+      <div class="prod-category" id="prod-category"></div>
+      <div class="prod-price"    id="prod-price"></div>
+      <div class="prod-stock"    id="prod-stock"></div>
+      <div class="prod-options"  id="prod-options"></div>
+    </div>
+  </div>
+
+  <!-- ── QR widget (bottom, right of product card) ── -->
+  <div id="qr-widget">
+    <div class="qr-label-top">📸 Screenshot &amp; Order</div>
+    <div id="qr-canvas-wrap"></div>
+    <div class="qr-code-pill" id="qr-code-pill">P01</div>
+    <div class="qr-scan-hint">📱 Scan to Buy</div>
+    <div class="qr-label-bottom">Screenshot this QR code<br/>to view &amp; order instantly</div>
+  </div>
+
+  <!-- ── Caption bar (bottom) ── -->
+  <div id="caption-bar" class="style-default">
+    <span class="caption-icon" id="caption-icon">📢</span>
+    <span class="caption-text" id="caption-text"></span>
+  </div>
+
+  <!-- ── Order notification (top-right) ── -->
+  <div id="order-notif">
+    <div class="notif-icon">🎉</div>
+    <div class="notif-info">
+      <div class="notif-label">New Order!</div>
+      <div class="notif-customer" id="notif-customer"></div>
+      <div class="notif-product"  id="notif-product"></div>
+    </div>
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const productCard = document.getElementById('product-card');
+    const qrWidget    = document.getElementById('qr-widget');
+    const captionBar  = document.getElementById('caption-bar');
+    const liveBadge   = document.getElementById('live-badge');
+    const orderNotif  = document.getElementById('order-notif');
+    let orderNotifTimer = null;
+
+    // ── Helpers ──
+    function showEl(el) { el.classList.add('visible'); }
+    function hideEl(el) { el.classList.remove('visible'); }
+    function fmtPrice(v) { return '$' + Number(v||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' / ៛' + Math.round(Number(v||0) * 4100).toLocaleString('en-US'); }
+
+    // ── QR generation ──
+    // Uses qr-code-styling (MIT license, runs locally, no external calls)
+    function generateQR(url, productCode) {
+      const wrap = document.getElementById('qr-canvas-wrap');
+      wrap.innerHTML = '';
+      document.getElementById('qr-code-pill').textContent = productCode;
+
+      const qrCode = new QRCodeStyling({
+        width:  134,
+        height: 134,
+        type:   'canvas',
+        data:   url,
+        dotsOptions: {
+          color: '#0a0a0a',
+          type:  'rounded',
+        },
+        cornersSquareOptions: {
+          type:  'extra-rounded',
+          color: '#0a0a0a',
+        },
+        cornersDotOptions: {
+          type:  'dot',
+          color: '#0a0a0a',
+        },
+        backgroundOptions: {
+          color: '#ffffff',
+        },
+        qrOptions: {
+          errorCorrectionLevel: 'M',
+        },
+      });
+      qrCode.append(wrap);
+    }
+
+    // ── Socket ──
+    const socket = io(window.location.origin, { transports: ['websocket','polling'] });
+
+    // ── Active QR base URL ──
+    // Fetched from /api/server-info so the QR encodes the correct URL
+    // (LAN IP for same-WiFi customers, or a public URL like ngrok for everyone else).
+    // Re-fetched before every product render so cashier changes take effect instantly.
+    let qrBaseUrl = window.location.origin; // safe fallback
+
+    async function refreshQrBaseUrl() {
+      try {
+        const d = await fetch('/api/server-info').then(r => r.json());
+        if (d.baseUrl) qrBaseUrl = d.baseUrl;
+      } catch { /* keep last known value */ }
+    }
+
+    // Initial fetch
+    refreshQrBaseUrl();
+
+    socket.on('connect', () => {
+      socket.emit('join-live');
+      loadInitialState();
+    });
+
+    socket.on('product-shown', async ({ product }) => {
+      await refreshQrBaseUrl();   // pick up any LAN→Public switch the cashier made
+      renderProduct(product);
+      showEl(productCard);
+      showEl(qrWidget);
+      showEl(liveBadge);
+    });
+
+    socket.on('product-hidden', () => {
+      hideEl(productCard);
+      hideEl(qrWidget);
+    });
+
+    // Cashier changed QR mode (LAN ↔ Public) — re-render current product with new URL
+    socket.on('qr-config-updated', async ({ baseUrl }) => {
+      if (baseUrl) qrBaseUrl = baseUrl;
+      // re-render QR if a product is currently on air
+      if (productCard.dataset.hasProduct === 'true') {
+        const code = document.getElementById('prod-code').textContent;
+        if (code) {
+          const url = `${qrBaseUrl}/customer/product.html?code=${encodeURIComponent(code)}`;
+          generateQR(url, code);
+        }
+      }
+    });
+
+    socket.on('caption-shown', ({ text, style }) => {
+      document.getElementById('caption-text').textContent = text;
+      const icons = { default:'📢', alert:'🚨', promo:'🏷️', info:'ℹ️' };
+      document.getElementById('caption-icon').textContent = icons[style] || '📢';
+      captionBar.className = `style-${style || 'default'}`;
+      showEl(captionBar);
+    });
+    socket.on('caption-hidden', () => hideEl(captionBar));
+
+    socket.on('overlay-show', () => {
+      if (productCard.dataset.hasProduct === 'true') {
+        showEl(productCard);
+        showEl(qrWidget);
+      }
+      showEl(liveBadge);
+    });
+    socket.on('overlay-hide', () => {
+      hideEl(productCard);
+      hideEl(qrWidget);
+      hideEl(captionBar);
+    });
+
+    socket.on('live-status-updated', ({ status }) => {
+      const txt = document.getElementById('live-badge-text');
+      if (status === 'active') {
+        txt.textContent = 'LIVE';
+        liveBadge.classList.remove('paused');
+        showEl(liveBadge);
+      } else if (status === 'paused') {
+        txt.textContent = 'PAUSED';
+        liveBadge.classList.add('paused');
+        showEl(liveBadge);
+      } else {
+        hideEl(liveBadge);
+        hideEl(productCard);
+        hideEl(qrWidget);
+        hideEl(captionBar);
+      }
+    });
+
+    socket.on('order-notification', (data) => {
+      document.getElementById('notif-customer').textContent = data.customer_name || 'A customer';
+      document.getElementById('notif-product').textContent  = data.product_name ? `ordered: ${data.product_name}` : 'placed an order';
+      showEl(orderNotif);
+      clearTimeout(orderNotifTimer);
+      orderNotifTimer = setTimeout(() => hideEl(orderNotif), 6000);
+    });
+
+    // ── Render product + QR ──
+    function renderProduct(p) {
+      productCard.dataset.hasProduct = 'true';
+
+      document.getElementById('prod-code').textContent     = p.product_code    || '';
+      document.getElementById('prod-name').textContent     = p.name            || '';
+      document.getElementById('prod-category').textContent = p.category_name   || '';
+      document.getElementById('prod-price').textContent    = fmtPrice(p.price);
+      document.getElementById('prod-stock').textContent    = p.stock != null ? `Stock: ${p.stock}` : '';
+
+      // Image
+      const img = document.getElementById('prod-img');
+      const ph  = document.getElementById('prod-img-placeholder');
+      if (p.image) {
+        img.src   = p.image.startsWith('http') ? p.image : window.location.origin + p.image;
+        img.style.display = 'block';
+        ph.style.display  = 'none';
+        img.onerror = () => { img.style.display='none'; ph.style.display='block'; };
+      } else {
+        img.style.display = 'none';
+        ph.style.display  = 'block';
+      }
+
+      // Options chips
+      const optEl = document.getElementById('prod-options');
+      optEl.innerHTML = '';
+      if (p.options && typeof p.options === 'object') {
+        Object.entries(p.options).forEach(([, vals]) => {
+          const values = Array.isArray(vals) ? vals : [vals];
+          values.slice(0, 5).forEach(v => {
+            const chip = document.createElement('span');
+            chip.className   = 'opt-chip';
+            chip.textContent = v;
+            optEl.appendChild(chip);
+          });
+        });
+      }
+
+      // Use the real LAN IP fetched from /api/server-info so phone cameras can open the URL
+      const customerUrl = `${qrBaseUrl}/customer/product.html?code=${encodeURIComponent(p.product_code)}`;
+      generateQR(customerUrl, p.product_code);
+    }
+
+    // ── Load state on connect (session already running) ──
+    async function loadInitialState() {
+      try {
+        // Always refresh the QR base URL first so renderProduct uses the correct
+        // LAN/public address, not the stale window.location.origin fallback.
+        await refreshQrBaseUrl();
+
+        const liveRes  = await fetch('/api/live/active');
+        const liveData = await liveRes.json();
+        if (!liveData?.data) return;
+        showEl(liveBadge);
+        const prodRes  = await fetch('/api/live/current-product');
+        const prodData = await prodRes.json();
+        if (prodData?.data) {
+          renderProduct(prodData.data);
+          showEl(productCard);
+          showEl(qrWidget);
+        }
+      } catch { /* silent — still works via socket events */ }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin OBS Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: #080b14;
+      color: #e2e8f0;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Layout ── */
+    .obs-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 18px 20px;
+      gap: 14px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ── Top bar ── */
+    .obs-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .obs-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .obs-logo-icon {
+      width: 36px; height: 36px;
+      background: #1877f2;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+    .obs-logo-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .obs-logo-text span { color: #60a5fa; font-weight: 500; font-size: 11px; display: block; }
+
+    /* live indicator */
+    .live-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(239,68,68,.15);
+      border: 1.5px solid rgba(239,68,68,.35);
+      color: #ef4444;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      transition: all .3s;
+    }
+    .live-pill.active {
+      background: rgba(239,68,68,.22);
+      border-color: rgba(239,68,68,.6);
+      box-shadow: 0 0 16px rgba(239,68,68,.25);
+    }
+    .live-pill.paused {
+      background: rgba(245,158,11,.15);
+      border-color: rgba(245,158,11,.4);
+      color: #f59e0b;
+    }
+    .live-pill.offline {
+      background: rgba(100,116,139,.12);
+      border-color: rgba(100,116,139,.25);
+      color: #64748b;
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse-dot 1.3s ease infinite;
+    }
+    .live-pill.offline .live-dot { animation: none; }
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+      50% { box-shadow: 0 0 0 5px transparent; opacity: .7; }
+    }
+
+    .obs-clock {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .stat-tile {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .stat-tile-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .ic-blue   { background: rgba(24,119,242,.18); }
+    .ic-green  { background: rgba(34,197,94,.15);  }
+    .ic-orange { background: rgba(249,115,22,.15); }
+    .ic-purple { background: rgba(139,92,246,.15); }
+    .ic-red    { background: rgba(239,68,68,.15);  }
+    .stat-tile-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-tile-lbl {
+      font-size: 11px;
+      color: #475569;
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      flex: 1;
+    }
+    @media (max-width: 800px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* ── Panel cards ── */
+    .panel {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      gap: 10px;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .panel-sub {
+      font-size: 11px;
+      color: #475569;
+      margin-top: 1px;
+    }
+    .panel-body { padding: 16px 18px; flex: 1; }
+
+    /* ── Current product on-air ── */
+    .product-on-air {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .product-thumb {
+      width: 88px; height: 88px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px;
+      flex-shrink: 0;
+    }
+    .product-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .on-air-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #e53935;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .on-air-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%; background: #fff;
+      animation: blink 1s ease infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.1} }
+
+    .prod-code-label {
+      font-size: 10px;
+      font-family: monospace;
+      color: #60a5fa;
+      font-weight: 700;
+      letter-spacing: .08em;
+      margin-bottom: 4px;
+    }
+    .prod-name-label {
+      font-size: 16px;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.25;
+      margin-bottom: 3px;
+    }
+    .prod-cat-label { font-size: 11px; color: #475569; margin-bottom: 7px; }
+    .prod-price-label {
+      font-size: 22px;
+      font-weight: 900;
+      color: #4ade80;
+      line-height: 1;
+    }
+    .prod-stock-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .no-product {
+      text-align: center;
+      padding: 24px 0;
+      color: #475569;
+    }
+    .no-product .empty-icon { font-size: 36px; margin-bottom: 8px; }
+    .no-product p { font-size: 13px; }
+
+    /* ── Recent orders table ── */
+    .obs-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .obs-table thead tr { border-bottom: 1px solid rgba(255,255,255,.08); }
+    .obs-table th {
+      padding: 7px 12px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .obs-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      color: #94a3b8;
+      vertical-align: middle;
+    }
+    .obs-table tbody tr:last-child td { border-bottom: none; }
+    .obs-table tbody tr:hover td { background: rgba(255,255,255,.03); color: #cbd5e1; }
+    .tbl-code { font-family: monospace; color: #60a5fa; font-size: 11px; font-weight: 700; }
+    .tbl-amount { font-weight: 700; color: #f1f5f9; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .sb-pending  { background: rgba(245,158,11,.15); color: #f59e0b; }
+    .sb-paid,
+    .sb-completed{ background: rgba(34,197,94,.15);  color: #4ade80; }
+    .sb-cancelled{ background: rgba(239,68,68,.15);  color: #f87171; }
+    .sb-default  { background: rgba(100,116,139,.12); color: #64748b; }
+
+    /* ── Live session panel ── */
+    .session-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .session-field-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 4px;
+    }
+    .session-field-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .session-code-val {
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: 800;
+      color: #60a5fa;
+      letter-spacing: .06em;
+    }
+    .no-session {
+      text-align: center;
+      padding: 24px 0;
+      color: #475569;
+    }
+    .no-session .empty-icon { font-size: 36px; margin-bottom: 8px; }
+    .no-session p { font-size: 13px; }
+
+    /* ── Low-stock panel ── */
+    .stock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      gap: 10px;
+      font-size: 12px;
+    }
+    .stock-row:last-child { border-bottom: none; }
+    .stock-name { color: #cbd5e1; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stock-code { font-family: monospace; color: #60a5fa; font-size: 11px; }
+    .stock-badge {
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .stock-zero    { background: rgba(239,68,68,.18); color: #f87171; }
+    .stock-low     { background: rgba(245,158,11,.15); color: #f59e0b; }
+
+    /* ── Bottom footer ── */
+    .obs-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 2px;
+      font-size: 11px;
+      color: #334155;
+    }
+    .obs-footer a { color: #1d4ed8; }
+    .obs-footer a:hover { color: #60a5fa; }
+
+    /* ── Order notification toast ── */
+    #order-notif-toast {
+      position: fixed;
+      top: 20px; right: 20px;
+      background: rgba(8,10,20,.95);
+      border: 1.5px solid rgba(74,222,128,.35);
+      border-left: 4px solid #4ade80;
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex; gap: 12px; align-items: flex-start;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.55);
+      width: 300px;
+      opacity: 0; transform: translateX(20px);
+      transition: opacity .3s ease, transform .3s ease;
+      pointer-events: none;
+      z-index: 999;
+    }
+    #order-notif-toast.show { opacity: 1; transform: translateX(0); }
+    .notif-ico { font-size: 26px; }
+    .notif-new-lbl { font-size: 9px; font-weight: 800; color: #4ade80; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+    .notif-cust { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+    .notif-prod { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+    /* ── Scroll ── */
+    .panel-scroll { overflow-y: auto; max-height: 260px; }
+    .panel-scroll::-webkit-scrollbar { width: 4px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="obs-shell">
+
+  <!-- ── Top bar ── -->
+  <div class="obs-topbar">
+    <div class="obs-logo">
+      <div class="obs-logo-icon">📺</div>
+      <div class="obs-logo-text">
+        Admin OBS Panel
+        <span>FB Live Product System</span>
+      </div>
+    </div>
+
+    <div id="live-pill" class="live-pill offline">
+      <span class="live-dot"></span>
+      <span id="live-pill-text">OFFLINE</span>
+    </div>
+
+    <span class="obs-clock" id="obs-clock">—</span>
+  </div>
+
+  <!-- ── Stats row ── -->
+  <div class="stats-row">
+    <div class="stat-tile">
+      <div class="stat-tile-icon ic-blue">📦</div>
+      <div>
+        <div class="stat-tile-val" id="st-products">—</div>
+        <div class="stat-tile-lbl">Products</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-icon ic-orange">🛒</div>
+      <div>
+        <div class="stat-tile-val" id="st-orders">—</div>
+        <div class="stat-tile-lbl">Total Orders</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-icon ic-green">💰</div>
+      <div>
+        <div class="stat-tile-val" id="st-revenue">—</div>
+        <div class="stat-tile-lbl">Revenue</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-icon ic-purple">⏳</div>
+      <div>
+        <div class="stat-tile-val" id="st-pending">—</div>
+        <div class="stat-tile-lbl">Pending</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-icon ic-red">⚠️</div>
+      <div>
+        <div class="stat-tile-val" id="st-lowstock">—</div>
+        <div class="stat-tile-lbl">Low Stock</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main grid ── -->
+  <div class="main-grid">
+
+    <!-- Current product on-air -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">🔴 Current Product On-Air</div>
+          <div class="panel-sub" id="on-air-sub">Waiting for product...</div>
+        </div>
+      </div>
+      <div class="panel-body" id="on-air-body">
+        <div class="no-product">
+          <div class="empty-icon">📦</div>
+          <p>No product currently on air</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live session info -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">📡 Live Session</div>
+          <div class="panel-sub" id="session-sub">Checking...</div>
+        </div>
+        <a href="/cashier/live.html" style="font-size:11px;font-weight:700;color:#60a5fa;">Control →</a>
+      </div>
+      <div class="panel-body" id="session-body">
+        <div class="no-session">
+          <div class="empty-icon">📺</div>
+          <p>No active live session</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent orders -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">🛒 Recent Orders</div>
+          <div class="panel-sub">Last 8 orders</div>
+        </div>
+        <a href="/admin/orders.html" style="font-size:11px;font-weight:700;color:#60a5fa;">All Orders →</a>
+      </div>
+      <div class="panel-scroll">
+        <table class="obs-table">
+          <thead><tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody id="recent-orders-body">
+            <tr><td colspan="4" style="text-align:center;padding:24px;color:#334155">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Low stock alert -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">⚠️ Low Stock Alert</div>
+          <div class="panel-sub">Stock ≤ 5</div>
+        </div>
+        <a href="/admin/products.html" style="font-size:11px;font-weight:700;color:#60a5fa;">Manage →</a>
+      </div>
+      <div class="panel-scroll panel-body" id="low-stock-body">
+        <div style="text-align:center;padding:24px;color:#334155">Loading...</div>
+      </div>
+    </div>
+
+  </div><!-- end main-grid -->
+
+  <!-- Footer -->
+  <div class="obs-footer">
+    <span>Admin OBS Panel · FB Live Product System</span>
+    <span>
+      <a href="/admin/dashboard.html">← Full Dashboard</a>
+      &nbsp;|&nbsp;
+      <a href="/overlay/index.html" target="_blank">OBS Overlay ↗</a>
+    </span>
+  </div>
+
+</div><!-- end obs-shell -->
+
+<!-- Order notification toast -->
+<div id="order-notif-toast">
+  <div class="notif-ico">🎉</div>
+  <div>
+    <div class="notif-new-lbl">New Order!</div>
+    <div class="notif-cust" id="toast-cust"></div>
+    <div class="notif-prod" id="toast-prod"></div>
+  </div>
+</div>
+
+<!-- Socket.IO for real-time updates -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="/assets/js/api.js"></script>
+<script>
+  /* ── Auth guard ── */
+  if (!auth.requireAuth(['admin'])) { /* redirected */ }
+
+  /* ── Clock ── */
+  function tick() {
+    document.getElementById('obs-clock').textContent =
+      new Date().toLocaleTimeString('en-PH');
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ── Currency formatter ── */
+  function fmtMoney(v) {
+    const n = parseFloat(v) || 0;
+    return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  /* ── Status badge helper ── */
+  function statusBadge(s) {
+    const map = {
+      pending:   'sb-pending',
+      paid:      'sb-paid',
+      completed: 'sb-completed',
+      cancelled: 'sb-cancelled',
+    };
+    return `<span class="status-badge ${map[s] || 'sb-default'}">${s || '—'}</span>`;
+  }
+
+  /* ── Live pill ── */
+  function setLivePill(status) {
+    const pill = document.getElementById('live-pill');
+    const txt  = document.getElementById('live-pill-text');
+    pill.className = 'live-pill';
+    if (status === 'active') {
+      pill.classList.add('active');
+      txt.textContent = 'LIVE';
+    } else if (status === 'paused') {
+      pill.classList.add('paused');
+      txt.textContent = 'PAUSED';
+    } else {
+      pill.classList.add('offline');
+      txt.textContent = 'OFFLINE';
+    }
+  }
+
+  /* ── Render current product on-air ── */
+  function renderOnAir(p) {
+    if (!p) {
+      document.getElementById('on-air-sub').textContent = 'No product currently on air';
+      document.getElementById('on-air-body').innerHTML = `
+        <div class="no-product">
+          <div class="empty-icon">📦</div>
+          <p>No product currently on air</p>
+        </div>`;
+      return;
+    }
+    document.getElementById('on-air-sub').textContent = p.product_code || '';
+    const imgHtml = p.image
+      ? `<img src="${p.image.startsWith('http') ? p.image : window.location.origin + p.image}"
+              alt="" style="display:block"
+              onerror="this.style.display='none';this.nextSibling.style.display='flex'" />
+         <span style="display:none">📦</span>`
+      : `<span>📦</span>`;
+
+    let optionsHtml = '';
+    if (p.options && typeof p.options === 'object') {
+      const chips = Object.entries(p.options).flatMap(([, vals]) =>
+        (Array.isArray(vals) ? vals : [vals]).slice(0, 4)
+          .map(v => `<span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-size:9px;font-weight:600;padding:2px 7px;border-radius:999px">${v}</span>`)
+      ).join('');
+      if (chips) optionsHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">${chips}</div>`;
+    }
+
+    document.getElementById('on-air-body').innerHTML = `
+      <div class="product-on-air">
+        <div class="product-thumb">${imgHtml}</div>
+        <div style="flex:1;min-width:0">
+          <div class="on-air-badge"><span class="on-air-dot"></span>ON AIR</div>
+          <div class="prod-code-label">${p.product_code || ''}</div>
+          <div class="prod-name-label">${p.name || ''}</div>
+          <div class="prod-cat-label">${p.category_name || ''}</div>
+          <div class="prod-price-label">${fmtMoney(p.price)}</div>
+          <div class="prod-stock-label">Stock: ${p.stock ?? '—'}</div>
+          ${optionsHtml}
+        </div>
+      </div>`;
+  }
+
+  /* ── Render session info ── */
+  function renderSession(live) {
+    if (!live) {
+      setLivePill('offline');
+      document.getElementById('session-sub').textContent = 'No active session';
+      document.getElementById('session-body').innerHTML = `
+        <div class="no-session">
+          <div class="empty-icon">📺</div>
+          <p>No active live session</p>
+        </div>`;
+      return;
+    }
+    setLivePill(live.status);
+    document.getElementById('session-sub').textContent = `Session: ${live.session_code}`;
+    const startedAt = live.started_at
+      ? new Date(live.started_at).toLocaleString('en-PH', { dateStyle: 'short', timeStyle: 'short' })
+      : '—';
+    document.getElementById('session-body').innerHTML = `
+      <div class="session-info-grid">
+        <div>
+          <div class="session-field-lbl">Title</div>
+          <div class="session-field-val">${live.title || '—'}</div>
+        </div>
+        <div>
+          <div class="session-field-lbl">Status</div>
+          <div class="session-field-val">${statusBadge(live.status)}</div>
+        </div>
+        <div>
+          <div class="session-field-lbl">Started</div>
+          <div class="session-field-val">${startedAt}</div>
+        </div>
+        <div>
+          <div class="session-field-lbl">Session Code</div>
+          <div class="session-code-val">${live.session_code}</div>
+        </div>
+      </div>`;
+  }
+
+  /* ── Render recent orders ── */
+  function renderOrders(orders) {
+    const tbody = document.getElementById('recent-orders-body');
+    const recent = (orders || []).slice(0, 8);
+    if (!recent.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:#334155">No orders yet</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = recent.map(o => `
+      <tr>
+        <td><span class="tbl-code">${o.order_number}</span></td>
+        <td>${o.customer_name}</td>
+        <td class="tbl-amount">${fmtMoney(o.total_amount)}</td>
+        <td>${statusBadge(o.status)}</td>
+      </tr>`).join('');
+  }
+
+  /* ── Render low-stock list ── */
+  function renderLowStock(products) {
+    const el   = document.getElementById('low-stock-body');
+    const list = (products || []).filter(p => p.stock <= 5);
+    if (!list.length) {
+      el.innerHTML = `<div style="text-align:center;padding:24px;color:#334155">✅ All products have good stock</div>`;
+      return;
+    }
+    el.innerHTML = list.map(p => `
+      <div class="stock-row">
+        <span class="stock-name">${p.name}</span>
+        <span class="stock-code">${p.product_code}</span>
+        <span class="stock-badge ${p.stock === 0 ? 'stock-zero' : 'stock-low'}">${p.stock}</span>
+      </div>`).join('');
+  }
+
+  /* ── Load dashboard data ── */
+  async function loadData() {
+    try {
+      const [productsRes, ordersRes, liveRes] = await Promise.all([
+        api.getProducts('?status=active'),
+        api.getOrders(),
+        api.getActiveLive(),
+      ]);
+
+      const products = productsRes?.data || [];
+      const orders   = ordersRes?.data  || [];
+      const pending  = orders.filter(o => o.status === 'pending');
+      const revenue  = orders.filter(o => o.payment_status === 'paid')
+                             .reduce((s, o) => s + parseFloat(o.total_amount || 0), 0);
+
+      document.getElementById('st-products').textContent = products.length;
+      document.getElementById('st-orders').textContent   = orders.length;
+      document.getElementById('st-revenue').textContent  = fmtMoney(revenue);
+      document.getElementById('st-pending').textContent  = pending.length;
+      document.getElementById('st-lowstock').textContent = products.filter(p => p.stock <= 5).length;
+
+      renderOrders(orders);
+      renderLowStock(products);
+      renderSession(liveRes?.data || null);
+
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+    }
+  }
+
+  /* ── Order toast notification ── */
+  let toastTimer = null;
+  function showOrderToast(data) {
+    document.getElementById('toast-cust').textContent = data.customer_name || 'A customer';
+    document.getElementById('toast-prod').textContent = data.product_name
+      ? `ordered: ${data.product_name}` : 'placed an order';
+    const toast = document.getElementById('order-notif-toast');
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 6500);
+  }
+
+  /* ── Socket.IO: real-time events ── */
+  const socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
+
+  socket.on('connect', () => {
+    socket.emit('join-live');
+    loadInitialProduct();
+  });
+
+  socket.on('live-status-updated', ({ status }) => {
+    setLivePill(status);
+    // Refresh full session data so title/code are up-to-date
+    api.getActiveLive().then(r => renderSession(r?.data || null)).catch(() => {});
+  });
+
+  socket.on('product-shown', ({ product }) => {
+    renderOnAir(product);
+  });
+
+  socket.on('product-hidden', () => {
+    renderOnAir(null);
+  });
+
+  socket.on('order-notification', (data) => {
+    showOrderToast(data);
+    // Refresh orders list
+    api.getOrders().then(r => renderOrders(r?.data || [])).catch(() => {});
+    // Refresh pending count
+    api.getOrders().then(r => {
+      const pending = (r?.data || []).filter(o => o.status === 'pending');
+      document.getElementById('st-pending').textContent = pending.length;
+      document.getElementById('st-orders').textContent  = (r?.data || []).length;
+    }).catch(() => {});
+  });
+
+  /* ── Load current product on connect ── */
+  async function loadInitialProduct() {
+    try {
+      const res = await fetch('/api/live/current-product');
+      const data = await res.json();
+      renderOnAir(data?.data || null);
+    } catch { renderOnAir(null); }
+  }
+
+  /* ── Initial load + poll every 30s ── */
+  loadData();
+  setInterval(loadData, 30000);
+</script>
+</body>
+</html>

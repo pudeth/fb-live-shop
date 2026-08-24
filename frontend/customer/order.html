@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Place Order</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:          #0a0f1e;
+      --card:        #111827;
+      --card2:       #1a2235;
+      --border:      rgba(255,255,255,.08);
+      --border2:     rgba(255,255,255,.13);
+      --primary:     #3b82f6;
+      --primary-d:   #2563eb;
+      --primary-glow:rgba(59,130,246,.3);
+      --green:       #4ade80;
+      --green-bg:    rgba(74,222,128,.12);
+      --green-border:rgba(74,222,128,.25);
+      --red:         #f87171;
+      --red-bg:      rgba(248,113,113,.12);
+      --red-border:  rgba(248,113,113,.3);
+      --yellow:      #fbbf24;
+      --yellow-bg:   rgba(251,191,36,.12);
+      --text:        #f1f5f9;
+      --text-muted:  #94a3b8;
+      --text-dim:    #4b5563;
+      --font:        'Inter', system-ui, -apple-system, sans-serif;
+      --radius:      16px;
+      --radius-sm:   12px;
+      --radius-xs:   8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100svh;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: contain;
+    }
+
+    /* ─────────── TOP BAR ─────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: rgba(10,15,30,.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .back-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .15s;
+      color: var(--text);
+    }
+    .back-btn:hover { background: rgba(255,255,255,.12); }
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      flex: 1;
+    }
+    .currency-toggle-btn {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--primary);
+      background: rgba(59,130,246,.1);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 800;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .currency-toggle-btn.khr {
+      background: rgba(251,191,36,.12);
+      border-color: var(--yellow);
+      color: var(--yellow);
+    }
+
+    /* ─────────── STATES ─────────── */
+    .state-box {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 70svh; gap: 14px;
+      text-align: center; padding: 32px;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid rgba(255,255,255,.08);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-box p { font-size: 14px; color: var(--text-muted); }
+
+    /* ─────────── LAYOUT ─────────── */
+    .page-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px 16px calc(110px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* ─────────── SECTION LABEL ─────────── */
+    .section-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin: 22px 0 10px;
+    }
+
+    /* ─────────── PRODUCT SUMMARY ─────────── */
+    .product-summary {
+      background: var(--card2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .ps-img {
+      width: 68px; height: 68px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: rgba(255,255,255,.05);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .ps-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .ps-info { flex: 1; min-width: 0; }
+    .ps-code  { font-size: 10px; color: var(--primary); font-weight: 800; font-family: monospace; letter-spacing: .07em; margin-bottom: 3px; }
+    .ps-name  { font-size: 15px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .ps-price { font-size: 19px; font-weight: 900; color: var(--green); }
+    .ps-price-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Selected options tags inside product summary */
+    .ps-opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+    }
+    .opt-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: rgba(59,130,246,.12);
+      border: 1px solid rgba(59,130,246,.25);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .opt-tag .opt-key { color: var(--text-muted); font-weight: 600; }
+
+    /* ─────────── FORM CARD ─────────── */
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      margin-bottom: 10px;
+    }
+    .form-card-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-label .req { color: var(--red); }
+    .form-label .hint { font-weight: 500; color: var(--text-dim); font-size: 10px; margin-left: 4px; }
+    .form-control {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      color: var(--text);
+      font-family: var(--font);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      background: rgba(255,255,255,.04);
+      -webkit-appearance: none;
+      caret-color: var(--primary);
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+      background: rgba(59,130,246,.04);
+    }
+    .form-control::placeholder { color: var(--text-dim); }
+    .form-control.error { border-color: var(--red); }
+    .form-control.error:focus { box-shadow: 0 0 0 3px rgba(248,113,113,.2); }
+
+    /* ─────────── QUANTITY ─────────── */
+    .qty-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      width: fit-content;
+      background: rgba(255,255,255,.04);
+    }
+    .qty-btn {
+      width: 48px; height: 50px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: background .12s, color .12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .qty-btn:hover  { background: rgba(255,255,255,.06); color: var(--text); }
+    .qty-btn:active { background: rgba(255,255,255,.12); }
+    .qty-display {
+      min-width: 56px; height: 50px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px; font-weight: 800;
+      color: var(--text);
+      border-left: 1.5px solid var(--border2);
+      border-right: 1.5px solid var(--border2);
+    }
+
+    /* ─────────── PAYMENT METHOD ─────────── */
+    .pay-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .pay-option {
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 13px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+      background: rgba(255,255,255,.03);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pay-option .pay-icon  { font-size: 24px; margin-bottom: 5px; }
+    .pay-option .pay-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+    .pay-option.active {
+      border-color: var(--primary);
+      background: rgba(59,130,246,.12);
+    }
+    .pay-option.active .pay-label { color: var(--primary); }
+
+    /* ─────────── ORDER SUMMARY ─────────── */
+    .order-summary {
+      background: linear-gradient(135deg, #0f1f3d 0%, #0a1628 100%);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      margin-bottom: 10px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      padding: 5px 0;
+    }
+    .summary-row .label { color: var(--text-muted); }
+    .summary-row .val   { font-weight: 700; color: var(--text); }
+    .summary-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,.08);
+      margin: 10px 0;
+    }
+    .summary-row.total {
+      font-size: 20px;
+      font-weight: 900;
+      padding-top: 4px;
+    }
+    .summary-row.total .label { color: var(--text-muted); font-size: 13px; }
+    .summary-row.total .val   { color: var(--green); }
+
+    /* ─────────── CHANGE CALCULATOR ─────────── */
+    .change-box {
+      border-radius: var(--radius-xs);
+      padding: 11px 14px;
+      font-size: 14px;
+      font-weight: 800;
+      margin-top: 10px;
+      display: none;
+    }
+    .change-box.show { display: block; }
+    .change-box.ok   { background: var(--green-bg);  border: 1px solid var(--green-border); color: var(--green); }
+    .change-box.short{ background: var(--red-bg);    border: 1px solid var(--red-border);   color: var(--red); }
+
+    /* ─────────── ALERT ─────────── */
+    .alert-error {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-radius: var(--radius-xs);
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 14px;
+      display: none;
+    }
+    .alert-error.show { display: block; }
+
+    /* ─────────── FIXED SUBMIT BAR ─────────── */
+    .submit-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      z-index: 50;
+      background: rgba(10,15,30,.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+    }
+    .submit-bar-inner {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 17px;
+      font-weight: 900;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      box-shadow: 0 6px 24px var(--primary-glow);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-submit:hover    { background: linear-gradient(135deg, #2563eb, #1e40af); }
+    .btn-submit:active   { transform: scale(.98); }
+    .btn-submit:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-spinner {
+      width: 22px; height: 22px;
+      border: 3px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: none;
+    }
+    .btn-submit.loading .btn-spinner { display: block; }
+    .btn-submit.loading .btn-text    { display: none; }
+
+    /* ─────────── SUCCESS SCREEN ─────────── */
+    .success-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 40px 24px 60px;
+      gap: 0;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .success-anim {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      background: var(--green-bg);
+      border: 2px solid var(--green-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 50px;
+      margin-bottom: 20px;
+      animation: popIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    @keyframes popIn {
+      from { transform: scale(.5); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+    .success-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .success-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 22px;
+    }
+    /* Order number pill — tappable to copy */
+    .order-number-wrap {
+      margin-bottom: 24px;
+    }
+    .order-number-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 7px;
+    }
+    .order-number-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card2);
+      border: 1px solid var(--border2);
+      border-radius: 30px;
+      padding: 10px 20px;
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: .07em;
+      cursor: pointer;
+      transition: background .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .order-number-pill:hover { background: rgba(59,130,246,.1); }
+    .copy-icon { font-size: 15px; opacity: .6; }
+
+    /* Receipt card */
+    .receipt-card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .receipt-header {
+      padding: 13px 16px;
+      background: rgba(255,255,255,.04);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .receipt-row:last-child { border-bottom: none; }
+    .receipt-row strong { color: var(--text); font-weight: 700; }
+    .receipt-row.total  { font-size: 16px; font-weight: 800; color: var(--text); }
+    .receipt-row.total strong { color: var(--green); font-size: 17px; }
+
+    /* Action buttons on success */
+    .success-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .success-btn {
+      padding: 15px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 800;
+      font-family: var(--font);
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .success-btn.primary {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 4px 18px var(--primary-glow);
+    }
+    .success-btn.secondary {
+      background: rgba(255,255,255,.06);
+      border: 1.5px solid var(--border2);
+      color: var(--text-muted);
+    }
+
+    /* ─────────── TOAST ─────────── */
+    #toast {
+      position: fixed;
+      bottom: calc(90px + env(safe-area-inset-bottom, 0));
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(17,24,39,.97);
+      border: 1px solid var(--border2);
+      color: #fff;
+      padding: 11px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      opacity: 0;
+      transition: all .25s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none;
+      z-index: 999;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      max-width: 90vw;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <div class="topbar-title">Place Order</div>
+    <button class="currency-toggle-btn" id="order-currency-btn" onclick="toggleOrderCurrency()">USD $</button>
+  </div>
+
+  <div id="main-content">
+    <div class="state-box">
+      <div class="spinner"></div>
+      <p>Loading product…</p>
+    </div>
+  </div>
+
+  <div class="submit-bar" id="submit-bar" style="display:none">
+    <div class="submit-bar-inner">
+      <button class="btn-submit" id="submit-btn" onclick="submitOrder()">
+        <span class="btn-spinner"></span>
+        <span class="btn-text">✅ Confirm Order</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    /* ─── URL params ─── */
+    const params      = new URLSearchParams(window.location.search);
+    const productCode = params.get('code') || '';
+    let selectedOptions = {};
+    try {
+      const raw = params.get('opts');
+      if (raw) selectedOptions = JSON.parse(decodeURIComponent(raw));
+    } catch {}
+
+    const API = window.location.origin + '/api';
+    let product     = null;
+    let quantity    = 1;
+    let payMethod   = 'cod';
+    let liveSession = null;
+
+    /* ─── Toast ─── */
+    let toastTimer;
+    function toast(msg, dur = 2800) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+    }
+
+    /* ─── Currency helpers ─── */
+    function fmtPrice(v) {
+      return currencyMode.isKHR()
+        ? '៛' + Math.round(Number(v || 0) * KHR_RATE).toLocaleString('en-US')
+        : '$' + Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtPriceSub(v) {
+      return currencyMode.isKHR()
+        ? '≈ $' + Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD'
+        : '≈ ៛' + Math.round(Number(v || 0) * KHR_RATE).toLocaleString('en-US') + ' KHR';
+    }
+    function toggleOrderCurrency() {
+      currencyMode.toggle();
+      updateCurrencyDisplay();
+    }
+    function updateCurrencyDisplay() {
+      if (!product) return;
+      const isKHR = currencyMode.isKHR();
+      const btn = document.getElementById('order-currency-btn');
+      if (btn) {
+        btn.textContent = isKHR ? 'KHR ៛' : 'USD $';
+        btn.classList.toggle('khr', isKHR);
+      }
+      // Product summary price
+      const psMain = document.getElementById('ps-price-main');
+      const psSub  = document.getElementById('ps-price-sub');
+      if (psMain) psMain.textContent = fmtPrice(product.price);
+      if (psSub)  psSub.textContent  = fmtPriceSub(product.price);
+      // Order summary
+      const unitEl  = document.getElementById('summary-unit');
+      const totalEl = document.getElementById('summary-total');
+      if (unitEl)  unitEl.textContent  = fmtPrice(product.price);
+      if (totalEl) totalEl.textContent = fmtPrice(product.price * quantity);
+      // Cash tendered placeholder
+      const tendered = document.getElementById('f-tendered');
+      if (tendered) tendered.placeholder = isKHR
+        ? 'Amount in KHR (e.g. ' + Math.round(product.price * KHR_RATE * 1.1).toLocaleString('en-US') + ')'
+        : 'Amount in USD (e.g. ' + (product.price * 1.1).toFixed(2) + ')';
+      calcChange();
+    }
+
+    /* ─── Quantity ─── */
+    function changeQty(delta) {
+      const max = product?.stock || 99;
+      quantity = Math.max(1, Math.min(max, quantity + delta));
+      document.getElementById('qty-display').textContent = quantity;
+      const totalEl = document.getElementById('summary-total');
+      if (totalEl) totalEl.textContent = fmtPrice(product.price * quantity);
+      calcChange();
+    }
+
+    /* ─── Payment method ─── */
+    function selectPayMethod(method) {
+      payMethod = method;
+      document.querySelectorAll('.pay-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.method === method);
+      });
+      const cashRow = document.getElementById('cash-tendered-row');
+      if (cashRow) cashRow.style.display = method === 'cash' ? 'block' : 'none';
+      calcChange();
+    }
+
+    /* ─── Change calculator ─── */
+    function calcChange() {
+      const box = document.getElementById('change-box');
+      if (!box || payMethod !== 'cash') { if (box) box.classList.remove('show'); return; }
+      const tendered  = parseFloat(document.getElementById('f-tendered')?.value) || 0;
+      const total     = product ? product.price * quantity : 0;
+      const totalDisp = currencyMode.isKHR() ? total * KHR_RATE : total;
+      if (!tendered) { box.classList.remove('show'); return; }
+      const change = tendered - totalDisp;
+      box.classList.add('show');
+      if (change >= 0) {
+        box.className = 'change-box show ok';
+        box.textContent = '✅ Change: ' + (currencyMode.isKHR()
+          ? '៛' + Math.round(change).toLocaleString('en-US')
+          : '$' + change.toFixed(2));
+      } else {
+        box.className = 'change-box show short';
+        box.textContent = '⚠️ Short by: ' + (currencyMode.isKHR()
+          ? '៛' + Math.round(Math.abs(change)).toLocaleString('en-US')
+          : '$' + Math.abs(change).toFixed(2));
+      }
+    }
+
+    /* ─── Options summary tags ─── */
+    function renderOptTags(opts) {
+      const entries = Object.entries(opts || {});
+      if (!entries.length) return '';
+      return '<div class="ps-opts">' +
+        entries.map(([k, v]) =>
+          `<span class="opt-tag"><span class="opt-key">${escHtml(k)}:</span> ${escHtml(v)}</span>`
+        ).join('') +
+        '</div>';
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ─── Render form ─── */
+    function renderForm() {
+      const imgHtml = product.image
+        ? `<img src="${fmt.imgUrl(product.image)}" alt="${escHtml(product.name)}" />`
+        : `<span>📦</span>`;
+
+      document.getElementById('main-content').innerHTML = `
+        <div class="page-wrap">
+
+          <!-- Product summary -->
+          <div class="section-title">🛒 Product</div>
+          <div class="product-summary">
+            <div class="ps-img">${imgHtml}</div>
+            <div class="ps-info">
+              <div class="ps-code">${escHtml(product.product_code)}</div>
+              <div class="ps-name">${escHtml(product.name)}</div>
+              <div class="ps-price" id="ps-price-main">${fmtPrice(product.price)}</div>
+              <div class="ps-price-sub" id="ps-price-sub">${fmtPriceSub(product.price)}</div>
+              ${renderOptTags(selectedOptions)}
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="section-title">📦 Quantity</div>
+          <div class="form-card" style="display:flex;align-items:center;gap:16px">
+            <div class="qty-row">
+              <button class="qty-btn" onclick="changeQty(-1)">−</button>
+              <div class="qty-display" id="qty-display">1</div>
+              <button class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+            <div style="font-size:13px;color:var(--text-muted)">
+              <span style="color:var(--text-dim);font-size:11px">Available:</span>
+              <strong style="color:var(--text)">${product.stock}</strong> units
+            </div>
+          </div>
+
+          <!-- Customer details -->
+          <div class="section-title">👤 Your Details</div>
+          <div class="form-card">
+            <div class="form-group">
+              <label class="form-label">Full Name <span class="req">*</span></label>
+              <input class="form-control" type="text" id="f-name"
+                placeholder="e.g. Sophea Chan"
+                autocomplete="name" inputmode="text" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number <span class="req">*</span></label>
+              <input class="form-control" type="tel" id="f-phone"
+                placeholder="e.g. 012 345 678"
+                autocomplete="tel" inputmode="tel" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Delivery Address <span class="req">*</span></label>
+              <textarea class="form-control" id="f-address"
+                rows="2"
+                placeholder="Street, city, or area"
+                autocomplete="street-address"
+                style="resize:none;font-family:var(--font)"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email <span class="hint">(optional)</span></label>
+              <input class="form-control" type="email" id="f-email"
+                placeholder="you@example.com"
+                autocomplete="email" inputmode="email" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Notes <span class="hint">(optional)</span></label>
+              <input class="form-control" type="text" id="f-notes"
+                placeholder="e.g. leave at the gate" />
+            </div>
+          </div>
+
+          <!-- Payment method -->
+          <div class="section-title">💳 Payment Method</div>
+          <div class="form-card">
+            <div class="pay-grid">
+              <div class="pay-option active" data-method="cod" onclick="selectPayMethod('cod')">
+                <div class="pay-icon">🛵</div>
+                <div class="pay-label">COD</div>
+              </div>
+              <div class="pay-option" data-method="cash" onclick="selectPayMethod('cash')">
+                <div class="pay-icon">💵</div>
+                <div class="pay-label">Cash</div>
+              </div>
+              <div class="pay-option" data-method="bank_transfer" onclick="selectPayMethod('bank_transfer')">
+                <div class="pay-icon">🏦</div>
+                <div class="pay-label">Bank</div>
+              </div>
+              <div class="pay-option" data-method="gcash" onclick="selectPayMethod('gcash')">
+                <div class="pay-icon">📱</div>
+                <div class="pay-label">GCash</div>
+              </div>
+              <div class="pay-option" data-method="credit_card" onclick="selectPayMethod('credit_card')">
+                <div class="pay-icon">💳</div>
+                <div class="pay-label">Card</div>
+              </div>
+            </div>
+
+            <div id="cash-tendered-row" style="display:none;margin-top:14px">
+              <label class="form-label">Amount Tendered</label>
+              <input class="form-control" type="number" id="f-tendered"
+                placeholder="Amount in USD (e.g. ${(product.price * 1.1).toFixed(2)})"
+                inputmode="decimal"
+                oninput="calcChange()" />
+              <div class="change-box" id="change-box"></div>
+            </div>
+          </div>
+
+          <!-- Order summary -->
+          <div class="section-title">🧾 Order Summary</div>
+          <div class="order-summary">
+            <div class="summary-row">
+              <span class="label">Unit price</span>
+              <span class="val" id="summary-unit">${fmtPrice(product.price)}</span>
+            </div>
+            <div class="summary-row">
+              <span class="label">Quantity</span>
+              <span class="val" id="summary-qty-disp">× 1</span>
+            </div>
+            ${Object.entries(selectedOptions).length ? `
+            <div class="summary-row">
+              <span class="label">Options</span>
+              <span class="val" style="color:var(--primary);font-size:12px">
+                ${Object.entries(selectedOptions).map(([k,v]) => `${k}: ${v}`).join(' · ')}
+              </span>
+            </div>` : ''}
+            <hr class="summary-divider" />
+            <div class="summary-row total">
+              <span class="label">Total</span>
+              <span class="val" id="summary-total">${fmtPrice(product.price)}</span>
+            </div>
+          </div>
+
+          <div class="alert-error" id="form-error"></div>
+        </div>
+      `;
+
+      // Sync qty display and summary updates
+      document.getElementById('qty-display').textContent = quantity;
+      // Watch qty changes to also update the "× N" label
+      const origChangeQty = window.changeQty;
+      window.changeQty = function(delta) {
+        origChangeQty(delta);
+        const ql = document.getElementById('summary-qty-disp');
+        if (ql) ql.textContent = '× ' + quantity;
+      };
+
+      document.getElementById('submit-bar').style.display = 'block';
+      updateCurrencyDisplay();
+    }
+
+    /* ─── Show error ─── */
+    function showError(msg) {
+      document.getElementById('main-content').innerHTML = `
+        <div class="state-box">
+          <div style="font-size:52px">😕</div>
+          <div style="font-size:20px;font-weight:800">${msg}</div>
+          <button onclick="history.back()"
+            style="margin-top:8px;padding:12px 28px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:30px;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
+            ← Go Back
+          </button>
+        </div>`;
+    }
+
+    /* ─── Validation ─── */
+    function validate() {
+      const name    = document.getElementById('f-name')?.value.trim();
+      const phone   = document.getElementById('f-phone')?.value.trim();
+      const address = document.getElementById('f-address')?.value.trim();
+      const errEl   = document.getElementById('form-error');
+
+      const setErr = (msg) => {
+        errEl.textContent = msg;
+        errEl.classList.add('show');
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      };
+
+      if (!name)    return setErr('⚠️ Please enter your full name.');
+      if (!phone)   return setErr('⚠️ Please enter your phone number.');
+      if (!address) return setErr('⚠️ Please enter your delivery address.');
+      errEl.classList.remove('show');
+      return true;
+    }
+
+    /* ─── Submit ─── */
+    async function submitOrder() {
+      if (!validate()) return;
+
+      const btn  = document.getElementById('submit-btn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      const name    = document.getElementById('f-name').value.trim();
+      const phone   = document.getElementById('f-phone').value.trim();
+      const address = document.getElementById('f-address').value.trim();
+      const email   = document.getElementById('f-email')?.value.trim() || '';
+      const notes   = document.getElementById('f-notes')?.value.trim() || '';
+      const tendered= parseFloat(document.getElementById('f-tendered')?.value) || null;
+
+      const payload = {
+        customer_name:    name,
+        customer_phone:   phone,
+        customer_address: address,
+        customer_email:   email || null,
+        notes:            notes || null,
+        live_session_id:  liveSession?.id || null,
+        payment_method:   payMethod,
+        payment_status:   payMethod === 'cash' ? 'paid' : 'unpaid',
+        amount_tendered:  (payMethod === 'cash' && tendered) ? tendered : null,
+        items: [{
+          product_id:       product.id,
+          quantity:         quantity,
+          selected_options: Object.keys(selectedOptions).length ? selectedOptions : null,
+        }],
+      };
+
+      try {
+        const res = await fetch(`${API}/orders`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        }).then(r => r.json());
+
+        if (res.success) {
+          renderSuccess(res.data);
+        } else {
+          const errEl = document.getElementById('form-error');
+          errEl.textContent = '❌ ' + (res.message || 'Failed to place order. Please try again.');
+          errEl.classList.add('show');
+          errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } catch {
+        const errEl = document.getElementById('form-error');
+        errEl.textContent = '❌ Network error. Please check your connection and try again.';
+        errEl.classList.add('show');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    /* ─── Success screen ─── */
+    function renderSuccess(data) {
+      document.getElementById('submit-bar').style.display = 'none';
+
+      const optsHtml = Object.entries(selectedOptions).length
+        ? `<div class="receipt-row">
+             <span>Options</span>
+             <strong>${Object.entries(selectedOptions).map(([k,v]) => `${k}: ${v}`).join(', ')}</strong>
+           </div>`
+        : '';
+
+      const payLabels = {
+        cod: '🛵 Cash on Delivery', cash: '💵 Cash',
+        bank_transfer: '🏦 Bank Transfer', gcash: '📱 GCash', credit_card: '💳 Credit Card',
+      };
+
+      document.getElementById('main-content').innerHTML = `
+        <div class="success-wrap">
+
+          <div class="success-anim">✅</div>
+
+          <div class="success-title">Order Placed!</div>
+          <div class="success-sub">
+            Your order has been received and is being processed.<br/>
+            We'll contact you on <strong style="color:var(--text)">${escHtml(document.getElementById('f-phone')?.value || '')}</strong> shortly.
+          </div>
+
+          <!-- Order number — tap to copy -->
+          <div class="order-number-wrap">
+            <div class="order-number-label">Your Order Number</div>
+            <div class="order-number-pill" onclick="copyOrderNumber('${escHtml(data.order_number)}')">
+              ${escHtml(data.order_number)}
+              <span class="copy-icon">📋</span>
+            </div>
+          </div>
+
+          <!-- Receipt -->
+          <div class="receipt-card">
+            <div class="receipt-header">📋 Order Receipt</div>
+            <div class="receipt-row">
+              <span>Product</span>
+              <strong>${escHtml(product.name)}</strong>
+            </div>
+            ${optsHtml}
+            <div class="receipt-row">
+              <span>Quantity</span>
+              <strong>× ${quantity}</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Unit Price</span>
+              <strong>${fmtPrice(product.price)}</strong>
+            </div>
+            <div class="receipt-row total">
+              <span>Total</span>
+              <strong>${fmtPrice(data.total_amount)}</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Payment</span>
+              <strong>${payLabels[payMethod] || payMethod}</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Status</span>
+              <strong style="color:var(--yellow)">⏳ Pending</strong>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="success-actions">
+            <button class="success-btn primary" onclick="window.location.href='/customer/product.html?code=${encodeURIComponent(productCode)}'">
+              ← Back to Product
+            </button>
+            <button class="success-btn secondary" onclick="shareOrder('${escHtml(data.order_number)}')">
+              ↑ Share Order
+            </button>
+          </div>
+
+        </div>`;
+    }
+
+    async function copyOrderNumber(num) {
+      try {
+        await navigator.clipboard.writeText(num);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = num; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      toast('📋 Order number copied!');
+    }
+
+    async function shareOrder(orderNum) {
+      const text = `My order #${orderNum} for "${product?.name}" has been placed! Total: ${fmtPrice(product?.price * quantity)}`;
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Order Confirmation', text }); } catch {}
+      } else {
+        await navigator.clipboard.writeText(text).catch(() => {});
+        toast('📋 Order details copied!');
+      }
+    }
+
+    /* ─── Init ─── */
+    async function init() {
+      if (!productCode) { showError('No product code provided.'); return; }
+      try {
+        const [pRes, lRes] = await Promise.all([
+          fetch(`${API}/products/${encodeURIComponent(productCode)}`).then(r => r.json()),
+          fetch(`${API}/live/active`).then(r => r.json()).catch(() => null),
+        ]);
+        if (!pRes.success || !pRes.data) { showError('Product not found.'); return; }
+        product     = pRes.data;
+        liveSession = lRes?.data || null;
+        if (typeof product.options === 'string') {
+          try { product.options = JSON.parse(product.options); } catch { product.options = null; }
+        }
+        renderForm();
+        // Sync currency button label on load
+        const isKHR = currencyMode.isKHR();
+        const btn = document.getElementById('order-currency-btn');
+        if (btn) { btn.textContent = isKHR ? 'KHR ៛' : 'USD $'; btn.classList.toggle('khr', isKHR); }
+      } catch { showError('Connection error. Please try again.'); }
+    }
+
+    init();
+  </script>
+</body>
+</html>

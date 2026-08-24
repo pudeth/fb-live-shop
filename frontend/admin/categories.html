@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Categories — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/variables.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📺</div>
+      <div class="logo-text">FB Live<br /><span>Product System</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Main</div>
+      <a class="nav-item" href="/admin/dashboard.html"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
+      <a class="nav-item" href="/admin/products.html"><span class="nav-icon">📦</span><span class="nav-label">Products</span></a>
+      <a class="nav-item active" href="/admin/categories.html"><span class="nav-icon">🏷️</span><span class="nav-label">Categories</span></a>
+      <a class="nav-item" href="/admin/orders.html"><span class="nav-icon">🛒</span><span class="nav-label">Orders</span></a>
+      <div class="nav-section-title" style="margin-top:8px">Management</div>
+      <a class="nav-item" href="/admin/users.html"><span class="nav-icon">👥</span><span class="nav-label">Users</span></a>
+      <div class="nav-section-title" style="margin-top:8px">Live</div>
+      <a class="nav-item" href="/cashier/live.html"><span class="nav-icon">🔴</span><span class="nav-label">Live Control</span></a>
+      <a class="nav-item" href="/overlay/index.html" target="_blank"><span class="nav-icon">🖥️</span><span class="nav-label">OBS Overlay</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Admin</div>
+          <div class="user-role">admin</div>
+        </div>
+        <button class="user-logout-btn" onclick="logout()">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">Categories</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">＋ Add Category</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="filter-bar" style="flex:1;margin-bottom:0">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input class="form-control" type="text" id="search-input" placeholder="Search categories…" oninput="filterCategories()" />
+            </div>
+            <select class="form-control" id="filter-status" onchange="filterCategories()" style="width:140px">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <span id="cat-count" style="font-size:13px;color:var(--gray-500);white-space:nowrap;margin-left:12px"></span>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead><tr>
+              <th>#</th><th>Name</th><th>Description</th><th>Status</th><th>Created</th><th style="width:110px">Actions</th>
+            </tr></thead>
+            <tbody id="categories-body">
+              <tr><td colspan="6" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-backdrop" id="cat-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Category</div>
+      <button class="modal-close" onclick="closeModal('cat-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cat-error" style="display:none;padding:10px 14px;border-radius:8px;background:var(--danger-bg);color:#991b1b;margin-bottom:14px;font-size:13px"></div>
+      <div class="form-group">
+        <label class="form-label">Category Name <span class="req">*</span></label>
+        <input class="form-control" type="text" id="f-name" placeholder="e.g. Clothing" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="f-desc" rows="3" placeholder="Optional description"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-control" id="f-status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('cat-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveCategory()">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Delete Category</div>
+      <button class="modal-close" onclick="closeModal('delete-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:30px">
+      <div style="font-size:48px;margin-bottom:12px">🗑️</div>
+      <p>Delete <strong id="delete-name"></strong>?</p>
+      <p style="font-size:13px;color:var(--gray-500);margin-top:6px">Products in this category will not be deleted, only the association is removed.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/assets/js/api.js"></script>
+<script>
+  if (!auth.requireAuth(['admin'])) {}
+  const user = auth.getUser();
+  if (user) {
+    document.getElementById('user-name').textContent = user.full_name || user.username;
+    document.getElementById('user-avatar').textContent = (user.full_name || user.username)[0].toUpperCase();
+  }
+  function logout() { auth.clear(); window.location.href = '/login.html'; }
+
+  let allCategories = [];
+  let editingId = null;
+  let deleteId  = null;
+
+  async function loadCategories() {
+    const res = await api.getCategories('');
+    allCategories = res?.data || [];
+    filterCategories();
+  }
+
+  function filterCategories() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const status = document.getElementById('filter-status').value;
+    const filtered = allCategories.filter(c =>
+      (!search || c.name.toLowerCase().includes(search) || (c.description || '').toLowerCase().includes(search)) &&
+      (!status || c.status === status)
+    );
+    document.getElementById('cat-count').textContent = `${filtered.length} categor${filtered.length !== 1 ? 'ies' : 'y'}`;
+    const body = document.getElementById('categories-body');
+    if (filtered.length === 0) {
+      body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🏷️</div><h3>No categories found</h3></div></td></tr>`;
+      return;
+    }
+    body.innerHTML = filtered.map((c, i) => `<tr>
+      <td style="color:var(--gray-400);font-size:13px">${i + 1}</td>
+      <td><strong>${c.name}</strong></td>
+      <td style="color:var(--gray-500);font-size:13px">${c.description || '—'}</td>
+      <td>${fmt.statusBadge(c.status)}</td>
+      <td style="font-size:13px;color:var(--gray-500)">${fmt.date(c.created_at)}</td>
+      <td><div class="table-actions">
+        <button class="btn btn-ghost btn-icon-sm" onclick="openEditModal(${c.id})">✏️</button>
+        <button class="btn btn-ghost btn-icon-sm" onclick="openDeleteModal(${c.id}, '${c.name.replace(/'/g,"\\'")}')">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-status').value = 'active';
+    document.getElementById('cat-error').style.display = 'none';
+    document.getElementById('modal-title').textContent = 'Add Category';
+    document.getElementById('save-btn').textContent = 'Add Category';
+    openModal('cat-modal');
+  }
+
+  function openEditModal(id) {
+    editingId = id;
+    const c = allCategories.find(c => c.id === id);
+    if (!c) return;
+    document.getElementById('f-name').value   = c.name;
+    document.getElementById('f-desc').value   = c.description || '';
+    document.getElementById('f-status').value = c.status;
+    document.getElementById('cat-error').style.display = 'none';
+    document.getElementById('modal-title').textContent = 'Edit Category';
+    document.getElementById('save-btn').textContent = 'Save Changes';
+    openModal('cat-modal');
+  }
+
+  function openDeleteModal(id, name) {
+    deleteId = id;
+    document.getElementById('delete-name').textContent = name;
+    openModal('delete-modal');
+  }
+
+  async function saveCategory() {
+    const errDiv = document.getElementById('cat-error');
+    errDiv.style.display = 'none';
+    const name   = document.getElementById('f-name').value.trim();
+    const desc   = document.getElementById('f-desc').value.trim();
+    const status = document.getElementById('f-status').value;
+    if (!name) { errDiv.textContent = 'Category name is required.'; errDiv.style.display = 'block'; return; }
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const res = editingId
+      ? await api.updateCategory(editingId, { name, description: desc, status })
+      : await api.createCategory({ name, description: desc, status });
+    btn.disabled = false; btn.textContent = editingId ? 'Save Changes' : 'Add Category';
+    if (res?.success) {
+      showToast(editingId ? 'Category updated' : 'Category added', 'success');
+      closeModal('cat-modal');
+      loadCategories();
+    } else {
+      errDiv.textContent = res?.message || 'Failed to save category';
+      errDiv.style.display = 'block';
+    }
+  }
+
+  async function confirmDelete() {
+    const res = await api.deleteCategory(deleteId);
+    if (res?.success) {
+      showToast('Category deleted', 'success');
+      closeModal('delete-modal');
+      loadCategories();
+    } else {
+      showToast(res?.message || 'Delete failed', 'error');
+    }
+  }
+
+  initCurrencyToggle(loadCategories);
+  loadCategories();
+</script>
+</body>
+</html>

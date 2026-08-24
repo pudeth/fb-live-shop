@@ -1,0 +1,30 @@
+# Dependencies
+backend/node_modules/
+frontend/node_modules/
+
+# Environment secrets — never commit these
+backend/.env
+.env
+
+# Logs
+backend/logs/
+*.log
+
+# Uploaded product images (too large for git)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
+# Kiro IDE
+.kiro/
+
+# Test files
+test-qr.png

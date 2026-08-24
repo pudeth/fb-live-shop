@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FB Live Product System</title>
+  <script>
+    // Smart redirect based on stored role
+    const token = localStorage.getItem('token');
+    const user  = (() => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } })();
+    if (token && user) {
+      if (user.role === 'admin')    window.location.replace('/admin/dashboard.html');
+      else if (user.role === 'cashier') window.location.replace('/cashier/live.html');
+      else window.location.replace('/login.html');
+    } else {
+      window.location.replace('/login.html');
+    }
+  </script>
+</head>
+<body></body>
+</html>

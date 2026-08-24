@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Product Details</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="/public/qr-code-styling.js"></script>
+  <style>
+    :root {
+      --bg:          #0a0f1e;
+      --card:        #111827;
+      --card2:       #1a2235;
+      --border:      rgba(255,255,255,.08);
+      --border2:     rgba(255,255,255,.12);
+      --primary:     #3b82f6;
+      --primary-d:   #2563eb;
+      --primary-glow:rgba(59,130,246,.3);
+      --green:       #4ade80;
+      --green-bg:    rgba(74,222,128,.12);
+      --green-border:rgba(74,222,128,.25);
+      --red:         #f87171;
+      --red-bg:      rgba(248,113,113,.12);
+      --yellow:      #fbbf24;
+      --yellow-bg:   rgba(251,191,36,.12);
+      --text:        #f1f5f9;
+      --text-muted:  #94a3b8;
+      --text-dim:    #4b5563;
+      --font:        'Inter', system-ui, -apple-system, sans-serif;
+      --radius:      20px;
+      --radius-sm:   12px;
+      --radius-xs:   8px;
+      --shadow-card: 0 32px 80px rgba(0,0,0,.6);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: contain;
+    }
+
+    /* ─────────────── LOADING ─────────────── */
+    .loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100svh;
+      gap: 16px;
+      padding: 32px;
+    }
+    .loader-ring {
+      width: 52px; height: 52px;
+      border: 4px solid rgba(255,255,255,.08);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { font-size: 14px; color: var(--text-muted); letter-spacing: .02em; }
+
+    /* ─────────────── HERO ─────────────── */
+    .hero {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 380px;
+      background: #0d1220;
+      overflow: hidden;
+    }
+    .hero img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hero-empty {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 96px;
+      opacity: .3;
+    }
+    /* Gradient overlay — makes text readable */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,.25) 0%,
+        rgba(0,0,0,0)   40%,
+        rgba(10,15,30,.85) 100%);
+      pointer-events: none;
+    }
+
+    /* LIVE ribbon */
+    .live-ribbon {
+      position: absolute;
+      top: 14px; left: 14px;
+      z-index: 2;
+      background: #ef4444;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 20px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 12px rgba(239,68,68,.5);
+    }
+    .live-ribbon.show { display: flex; }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      animation: blink 1s ease infinite;
+      flex-shrink: 0;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+    /* Stock badge */
+    .stock-badge {
+      position: absolute;
+      top: 14px; right: 14px;
+      z-index: 2;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .stock-in  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+    .stock-low { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,.3); }
+    .stock-out { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(248,113,113,.3); }
+
+    /* ─────────────── MAIN CARD ─────────────── */
+    .page-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: 32px;
+    }
+
+    .content-body {
+      padding: 20px 18px 0;
+    }
+
+    .category-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 7px;
+    }
+
+    .prod-name {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1.15;
+      letter-spacing: -.3px;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+
+    .prod-code-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .code-pill {
+      background: rgba(59,130,246,.15);
+      border: 1px solid rgba(59,130,246,.3);
+      color: var(--primary);
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: .08em;
+    }
+    .category-chip {
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Price block ── */
+    .price-block {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .price-main-wrap { flex: 1; }
+    .price-main {
+      font-size: 38px;
+      font-weight: 900;
+      color: var(--green);
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+    .price-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .currency-pill {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 7px 13px;
+      border-radius: 20px;
+      border: 1.5px solid var(--primary);
+      background: rgba(59,130,246,.1);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 800;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .currency-pill:hover,
+    .currency-pill:active { background: rgba(59,130,246,.2); }
+
+    /* ── Description ── */
+    .description-block {
+      margin-bottom: 20px;
+    }
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 8px;
+    }
+    .description-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ── Options selector ── */
+    .options-block {
+      margin-bottom: 20px;
+    }
+    .opt-group {
+      margin-bottom: 14px;
+    }
+    .opt-group:last-child { margin-bottom: 0; }
+    .opt-group-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .opt-group-label .opt-selected {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: none;
+      letter-spacing: 0;
+      background: rgba(59,130,246,.12);
+      padding: 1px 8px;
+      border-radius: 10px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip {
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255,255,255,.05);
+      border: 1.5px solid var(--border2);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .15s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chip:hover  { border-color: rgba(255,255,255,.25); color: var(--text); }
+    .chip.active {
+      background: rgba(59,130,246,.18);
+      border-color: var(--primary);
+      color: var(--primary);
+      font-weight: 700;
+    }
+    /* Color swatches */
+    .color-chip {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2.5px solid var(--border2);
+      cursor: pointer;
+      transition: all .15s;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .color-chip::after {
+      content: '✓';
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff;
+      opacity: 0;
+      text-shadow: 0 1px 3px rgba(0,0,0,.8);
+      transition: opacity .15s;
+    }
+    .color-chip.active {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+    .color-chip.active::after { opacity: 1; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── Share / QR section ── */
+    .qr-section {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .qr-box {
+      background: #fff;
+      border-radius: var(--radius-xs);
+      padding: 7px;
+      width: 104px; height: 104px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .qr-box canvas,
+    .qr-box img { width: 90px !important; height: 90px !important; border-radius: 3px; }
+    .qr-info { flex: 1; min-width: 0; }
+    .qr-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .qr-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 10px;
+    }
+    .qr-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 13px;
+      border-radius: 20px;
+      background: rgba(59,130,246,.15);
+      border: 1px solid rgba(59,130,246,.3);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .qr-share-btn:hover { background: rgba(59,130,246,.25); }
+
+    /* ── Action grid ── */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 14px 8px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border2);
+      background: rgba(255,255,255,.03);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all .18s;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .action-btn .ab-icon { font-size: 22px; line-height: 1; }
+    .action-btn:hover,
+    .action-btn:active { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.2); color: #fff; }
+    .action-btn.saved { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+
+    /* ── Buy button ── */
+    .buy-wrap {
+      padding: 0 0 4px;
+    }
+    .buy-btn {
+      width: 100%;
+      padding: 18px 20px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 17px;
+      font-weight: 900;
+      font-family: var(--font);
+      cursor: pointer;
+      box-shadow: 0 8px 28px rgba(59,130,246,.4);
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: .01em;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .buy-btn:hover  { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(59,130,246,.5); }
+    .buy-btn:active { transform: translateY(0); box-shadow: 0 4px 16px rgba(59,130,246,.3); }
+    .buy-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── How to order ── */
+    .how-section {
+      margin-top: 28px;
+      padding: 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .how-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+    }
+    .how-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .how-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(59,130,246,.15);
+      border: 1.5px solid rgba(59,130,246,.3);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-text { flex: 1; }
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .step-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Brand footer ── */
+    .brand-footer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: .03em;
+      padding: 0 18px;
+    }
+    .brand-footer span { color: var(--primary); font-weight: 700; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: rgba(17,24,39,.97);
+      border: 1px solid var(--border2);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      opacity: 0;
+      transition: all .25s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none;
+      z-index: 999;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      max-width: 90vw;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Error ── */
+    .error-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 80svh; gap: 14px;
+      text-align: center; padding: 32px;
+    }
+    .error-wrap .e-icon { font-size: 60px; }
+    .error-wrap h2 { font-size: 22px; font-weight: 900; }
+    .error-wrap p  { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Share modal ── */
+    .share-modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 900;
+      display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+      backdrop-filter: blur(6px);
+    }
+    .share-modal-bg.open { opacity: 1; pointer-events: all; }
+    .share-modal {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px 32px;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.34,1.1,.64,1);
+    }
+    .share-modal-bg.open .share-modal { transform: translateY(0); }
+    .share-modal-handle {
+      width: 40px; height: 4px;
+      background: var(--border2);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .share-modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    /* Big QR in modal */
+    .share-qr-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .share-qr-box {
+      background: #fff;
+      border-radius: 16px;
+      padding: 14px;
+      width: 196px; height: 196px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .share-qr-box canvas,
+    .share-qr-box img { width: 168px !important; height: 168px !important; }
+    .share-url-box {
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-xs);
+      padding: 10px 14px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-muted);
+      word-break: break-all;
+      text-align: center;
+    }
+    .share-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .share-action-btn {
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border2);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .share-action-btn:hover,
+    .share-action-btn:active { background: rgba(255,255,255,.09); }
+    .share-action-btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px var(--primary-glow);
+    }
+    .share-action-btn.primary:hover { background: var(--primary-d); }
+
+    /* Safe area bottom padding for notched phones */
+    .page-wrap { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0)); }
+  </style>
+</head>
+<body>
+
+  <div id="root">
+    <div class="loader">
+      <div class="loader-ring"></div>
+      <p class="loader-text">Loading product…</p>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Share / QR modal -->
+  <div class="share-modal-bg" id="share-modal" onclick="handleShareModalClick(event)">
+    <div class="share-modal">
+      <div class="share-modal-handle"></div>
+      <div class="share-modal-title">📱 Share This Product</div>
+      <div class="share-qr-wrap">
+        <div class="share-qr-box" id="share-qr-wrap"></div>
+        <div class="share-url-box" id="share-url-text">—</div>
+      </div>
+      <div class="share-actions">
+        <button class="share-action-btn" onclick="copyLink()">📋 Copy Link</button>
+        <button class="share-action-btn primary" onclick="nativeShare()">↑ Share</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    /* ─── State ─── */
+    const params      = new URLSearchParams(window.location.search);
+    const productCode = (params.get('code') || params.get('id') || '').trim();
+    const API         = window.location.origin + '/api';
+    let product       = null;
+    let saved         = false;
+    let selectedOpts  = {};    // { Color: 'Blue', Size: 'M' }
+    let customerUrl   = '';
+    let shareQrBuilt  = false;
+
+    /* ─── Toast ─── */
+    let toastTimer;
+    function toast(msg, dur = 2500) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+    }
+
+    /* ─── Currency helpers ─── */
+    function priceMain(v) {
+      return currencyMode.isKHR()
+        ? '៛' + Math.round(Number(v) * KHR_RATE).toLocaleString('en-US')
+        : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function priceSub(v) {
+      return currencyMode.isKHR()
+        ? '≈ $' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD'
+        : '≈ ៛' + Math.round(Number(v) * KHR_RATE).toLocaleString('en-US') + ' KHR';
+    }
+    function toggleCurrency() {
+      currencyMode.toggle();
+      refreshPriceDisplay();
+    }
+    function refreshPriceDisplay() {
+      const pMain = document.getElementById('price-main');
+      const pSub  = document.getElementById('price-sub');
+      const btn   = document.getElementById('currency-pill');
+      if (!pMain || !pSub || !product) return;
+      pMain.textContent = priceMain(product.price);
+      pSub.textContent  = priceSub(product.price);
+      if (btn) {
+        const isKHR = currencyMode.isKHR();
+        btn.innerHTML = isKHR
+          ? '<span style="opacity:.6">$</span> USD'
+          : '<span style="opacity:.6">៛</span> KHR';
+        btn.style.borderColor = isKHR ? '#fbbf24' : '#3b82f6';
+        btn.style.color       = isKHR ? '#fbbf24' : '#3b82f6';
+        btn.style.background  = isKHR ? 'rgba(251,191,36,.1)' : 'rgba(59,130,246,.1)';
+      }
+    }
+
+    /* ─── QR builder ─── */
+    function buildQR(containerId, url, size = 90) {
+      const wrap = document.getElementById(containerId);
+      if (!wrap || typeof QRCodeStyling === 'undefined') return;
+      wrap.innerHTML = '';
+      new QRCodeStyling({
+        width:  size, height: size,
+        type:   'canvas',
+        data:   url,
+        dotsOptions:          { color: '#0a0a0a', type: 'rounded' },
+        cornersSquareOptions: { type: 'extra-rounded', color: '#0a0a0a' },
+        cornersDotOptions:    { type: 'dot', color: '#0a0a0a' },
+        backgroundOptions:    { color: '#ffffff' },
+        qrOptions:            { errorCorrectionLevel: 'M' },
+      }).append(wrap);
+    }
+
+    /* ─── Option selection ─── */
+    function selectOption(groupKey, value, el) {
+      selectedOpts[groupKey] = value;
+      // Update active chip in this group
+      el.closest('.chips').querySelectorAll('.chip, .color-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      // Update label
+      const label = el.closest('.opt-group').querySelector('.opt-selected');
+      if (label) label.textContent = value;
+      // Rebuild customer URL with new opts
+      refreshCustomerUrl();
+    }
+
+    function refreshCustomerUrl() {
+      const base = `${window.location.origin}/customer/order.html?code=${encodeURIComponent(product.product_code)}`;
+      const opts  = Object.keys(selectedOpts).length
+        ? '&opts=' + encodeURIComponent(JSON.stringify(selectedOpts))
+        : '';
+      customerUrl = base + opts;
+      // Re-render inline QR
+      requestAnimationFrame(() => buildQR('qr-wrap', customerUrl, 90));
+      // Update share modal URL text if visible
+      const urlText = document.getElementById('share-url-text');
+      if (urlText) urlText.textContent = customerUrl;
+    }
+
+    /* ─── Color name → CSS color ─── */
+    const COLOR_MAP = {
+      red:'#ef4444', blue:'#3b82f6', green:'#22c55e', yellow:'#eab308',
+      orange:'#f97316', purple:'#a855f7', pink:'#ec4899', black:'#1a1a1a',
+      white:'#f5f5f5', gray:'#6b7280', grey:'#6b7280', brown:'#92400e',
+      navy:'#1e3a8a', teal:'#0d9488', gold:'#d97706', silver:'#94a3b8',
+      beige:'#d4b896', cream:'#fef9c3', maroon:'#7f1d1d', cyan:'#06b6d4',
+      lime:'#84cc16', indigo:'#6366f1', violet:'#7c3aed',
+    };
+    function nameToColor(name) {
+      return COLOR_MAP[name.toLowerCase()] || null;
+    }
+
+    /* ─── Options render ─── */
+    function renderOptions(opts) {
+      if (!opts || typeof opts !== 'object') return '';
+      const entries = Object.entries(opts);
+      if (!entries.length) return '';
+
+      return entries.map(([key, values]) => {
+        if (!Array.isArray(values) || !values.length) return '';
+        const firstVal = values[0];
+        selectedOpts[key] = firstVal; // default first option
+
+        // Check if this looks like a colour group
+        const isColor = key.toLowerCase().includes('color') || key.toLowerCase().includes('colour');
+        const chipsHtml = isColor
+          ? values.map((v, i) => {
+              const css = nameToColor(v);
+              if (css) {
+                return `<div
+                  class="color-chip ${i === 0 ? 'active' : ''}"
+                  style="background:${css}"
+                  title="${v}"
+                  onclick="selectOption('${key}','${v}',this)"
+                ></div>`;
+              }
+              return `<button class="chip ${i === 0 ? 'active' : ''}" onclick="selectOption('${key}','${v}',this)">${v}</button>`;
+            }).join('')
+          : values.map((v, i) =>
+              `<button class="chip ${i === 0 ? 'active' : ''}" onclick="selectOption('${key}','${v}',this)">${v}</button>`
+            ).join('');
+
+        return `<div class="opt-group">
+          <div class="opt-group-label">
+            ${key}
+            <span class="opt-selected">${firstVal}</span>
+          </div>
+          <div class="chips">${chipsHtml}</div>
+        </div>`;
+      }).join('');
+    }
+
+    /* ─── Stock badge ─── */
+    function stockBadge(stock) {
+      if (stock <= 0)  return { cls: 'stock-out', text: 'Out of Stock' };
+      if (stock <= 10) return { cls: 'stock-low', text: `Low Stock · ${stock} left` };
+      return { cls: 'stock-in', text: `In Stock · ${stock}` };
+    }
+
+    /* ─── Save (wishlist) ─── */
+    function toggleSave() {
+      saved = !saved;
+      const btn = document.getElementById('btn-save');
+      if (!btn) return;
+      if (saved) {
+        btn.classList.add('saved');
+        btn.querySelector('.ab-icon').textContent = '❤️';
+        toast('❤️ Saved to wishlist');
+      } else {
+        btn.classList.remove('saved');
+        btn.querySelector('.ab-icon').textContent = '🤍';
+        toast('Removed from wishlist');
+      }
+    }
+
+    /* ─── Share modal ─── */
+    function openShareModal() {
+      const modal = document.getElementById('share-modal');
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      // Build large QR only once
+      if (!shareQrBuilt && customerUrl) {
+        requestAnimationFrame(() => {
+          buildQR('share-qr-wrap', customerUrl, 168);
+          document.getElementById('share-url-text').textContent = customerUrl;
+          shareQrBuilt = true;
+        });
+      }
+    }
+    function closeShareModal() {
+      document.getElementById('share-modal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function handleShareModalClick(e) {
+      if (e.target === document.getElementById('share-modal')) closeShareModal();
+    }
+
+    async function copyLink() {
+      try {
+        await navigator.clipboard.writeText(customerUrl);
+        toast('📋 Link copied!');
+      } catch {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = customerUrl; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+        toast('📋 Link copied!');
+      }
+    }
+
+    async function nativeShare() {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: product?.name || 'Check out this product',
+            text:  `${product?.name} — ${priceMain(product?.price || 0)}`,
+            url:   customerUrl,
+          });
+        } catch (e) {
+          if (e.name !== 'AbortError') copyLink();
+        }
+      } else {
+        copyLink();
+      }
+    }
+
+    /* ─── Buy ─── */
+    function buyNow() {
+      window.location.href = customerUrl;
+    }
+
+    /* ─── Render ─── */
+    function render(p, isLive) {
+      const sb    = stockBadge(p.stock);
+      const imgEl = p.image
+        ? `<img src="${fmt.imgUrl(p.image)}" alt="${p.name}" loading="lazy" />`
+        : `<div class="hero-empty">📦</div>`;
+
+      const optsHtml   = renderOptions(p.options);
+      const optSection = optsHtml
+        ? `<div class="options-block">
+             <div class="section-label">Choose Options</div>
+             ${optsHtml}
+           </div><hr class="divider" />`
+        : '';
+
+      const descHtml = p.description
+        ? `<div class="description-block">
+             <div class="section-label">About This Product</div>
+             <div class="description-text">${escHtml(p.description)}</div>
+           </div><hr class="divider" />`
+        : '';
+
+      document.getElementById('root').innerHTML = `
+        <div class="page-wrap">
+
+          <!-- Hero image -->
+          <div class="hero">
+            ${imgEl}
+            <div class="live-ribbon ${isLive ? 'show' : ''}" id="live-ribbon">
+              <span class="live-dot"></span> LIVE NOW
+            </div>
+            <span class="stock-badge ${sb.cls}">${sb.text}</span>
+          </div>
+
+          <!-- Content body -->
+          <div class="content-body">
+
+            <!-- Category + name + code -->
+            <div style="margin-top:18px">
+              ${p.category_name ? `<div class="category-label">${escHtml(p.category_name)}</div>` : ''}
+              <div class="prod-name">${escHtml(p.name)}</div>
+              <div class="prod-code-row">
+                <span class="code-pill">${escHtml(p.product_code)}</span>
+                ${p.category_name ? `<span class="category-chip">${escHtml(p.category_name)}</span>` : ''}
+              </div>
+            </div>
+
+            <!-- Price -->
+            <div class="price-block">
+              <div class="price-main-wrap">
+                <div class="price-main" id="price-main">${priceMain(p.price)}</div>
+                <div class="price-sub"  id="price-sub">${priceSub(p.price)}</div>
+              </div>
+              <button class="currency-pill" id="currency-pill" onclick="toggleCurrency()">
+                <span style="opacity:.6">៛</span> KHR
+              </button>
+            </div>
+
+            <!-- Description -->
+            ${descHtml}
+
+            <!-- Options -->
+            ${optSection}
+
+            <!-- Action buttons -->
+            <div class="action-grid">
+              <button class="action-btn" id="btn-save" onclick="toggleSave()">
+                <span class="ab-icon">🤍</span>Save
+              </button>
+              <button class="action-btn" onclick="copyLink()">
+                <span class="ab-icon">🔗</span>Copy Link
+              </button>
+              <button class="action-btn" onclick="nativeShare()">
+                <span class="ab-icon">↑</span>Share
+              </button>
+            </div>
+
+            <!-- Buy button -->
+            <div class="buy-wrap">
+              <button class="buy-btn" id="buy-btn"
+                ${p.stock <= 0 ? 'disabled' : ''}
+                onclick="buyNow()">
+                ${p.stock <= 0 ? '🚫 Out of Stock' : '🛒 Order Now'}
+              </button>
+            </div>
+
+            <div class="brand-footer">
+              Powered by <span>FB Live Shop</span> &nbsp;·&nbsp; Scan. Shop. Done.
+            </div>
+
+          </div><!-- /content-body -->
+        </div><!-- /page-wrap -->
+      `;
+
+      // Sync currency pill on load
+      refreshPriceDisplay();
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ─── Init ─── */
+    async function init() {
+      if (!productCode) {
+        showError('No product code provided.', 'Point your camera at a product QR code on the live stream screen.');
+        return;
+      }
+      try {
+        const [pRes, lRes] = await Promise.all([
+          fetch(`${API}/products/${encodeURIComponent(productCode)}`).then(r => r.json()),
+          fetch(`${API}/live/active`).then(r => r.json()).catch(() => null),
+        ]);
+
+        if (!pRes.success || !pRes.data) {
+          showError('Product not found.', `Code "${productCode}" didn't match any product. Try scanning the QR again.`);
+          return;
+        }
+
+        product = pRes.data;
+        // Parse options if string
+        if (typeof product.options === 'string') {
+          try { product.options = JSON.parse(product.options); } catch { product.options = null; }
+        }
+
+        const isLive = lRes?.data?.current_product_id != null;
+
+        // Build base URL with defaults before render (renderOptions sets selectedOpts)
+        // We call render first (which also calls renderOptions), then build URL after
+        render(product, isLive);
+
+        // Build initial customer URL (selectedOpts is populated by renderOptions inside render)
+        refreshCustomerUrl();
+
+      } catch (err) {
+        showError('Connection error.', 'Could not reach the server. Make sure you are connected to the same network.');
+      }
+    }
+
+    function showError(title, msg = '') {
+      document.getElementById('root').innerHTML = `
+        <div class="error-wrap">
+          <div class="e-icon">😕</div>
+          <h2>${escHtml(title)}</h2>
+          <p>${escHtml(msg)}</p>
+          <button onclick="history.back()"
+            style="margin-top:8px;padding:12px 28px;border-radius:30px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
+            ← Go Back
+          </button>
+        </div>`;
+    }
+
+    init();
+  </script>
+</body>
+</html>

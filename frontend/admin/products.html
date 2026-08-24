@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/variables.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📺</div>
+      <div class="logo-text">FB Live<br /><span>Product System</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Main</div>
+      <a class="nav-item" href="/admin/dashboard.html"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></a>
+      <a class="nav-item active" href="/admin/products.html"><span class="nav-icon">📦</span><span class="nav-label">Products</span></a>
+      <a class="nav-item" href="/admin/categories.html"><span class="nav-icon">🏷️</span><span class="nav-label">Categories</span></a>
+      <a class="nav-item" href="/admin/orders.html"><span class="nav-icon">🛒</span><span class="nav-label">Orders</span></a>
+      <div class="nav-section-title" style="margin-top:8px">Management</div>
+      <a class="nav-item" href="/admin/users.html"><span class="nav-icon">👥</span><span class="nav-label">Users</span></a>
+      <div class="nav-section-title" style="margin-top:8px">Live</div>
+      <a class="nav-item" href="/cashier/live.html"><span class="nav-icon">🔴</span><span class="nav-label">Live Control</span></a>
+      <a class="nav-item" href="/overlay/index.html" target="_blank"><span class="nav-icon">🖥️</span><span class="nav-label">OBS Overlay</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Admin</div>
+          <div class="user-role" id="user-role">admin</div>
+        </div>
+        <button class="user-logout-btn" onclick="logout()" title="Logout">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">Products</div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">＋ Add Product</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="filter-bar" style="flex:1;margin-bottom:0">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input class="form-control" type="text" id="search-input" placeholder="Search by name or code…" oninput="debounceSearch()" />
+            </div>
+            <select class="form-control" id="filter-category" onchange="loadProducts()" style="width:170px">
+              <option value="">All Categories</option>
+            </select>
+            <select class="form-control" id="filter-status" onchange="loadProducts()" style="width:140px">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
+          </div>
+          <span id="product-count" style="font-size:13px;color:var(--gray-500);white-space:nowrap;margin-left:12px"></span>
+        </div>
+        <div class="table-wrapper" style="position:relative">
+          <div id="products-loading" class="loading-overlay" style="display:none"><div class="spinner"></div></div>
+          <table class="table">
+            <thead><tr>
+              <th style="width:52px"></th>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th style="width:110px">Actions</th>
+            </tr></thead>
+            <tbody id="products-body">
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--gray-400)"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-backdrop" id="product-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Product</div>
+      <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="product-form-error" class="alert alert-error" style="display:none;padding:10px 14px;border-radius:8px;background:var(--danger-bg);color:#991b1b;margin-bottom:14px;font-size:13px"></div>
+
+      <!-- Image upload -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div id="image-preview-wrap" style="display:inline-block;position:relative;cursor:pointer" onclick="document.getElementById('img-file').click()">
+          <div id="image-preview" style="width:110px;height:110px;border-radius:14px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:36px;border:2px dashed var(--gray-300);overflow:hidden;transition:border-color .2s">
+            <span id="img-placeholder">📦</span>
+            <img id="img-preview-el" style="width:100%;height:100%;object-fit:cover;display:none" alt="" />
+          </div>
+          <div style="margin-top:6px;font-size:12px;color:var(--gray-500)">Click to upload image</div>
+        </div>
+        <input type="file" id="img-file" accept="image/*" style="display:none" onchange="handleImageUpload()" />
+        <input type="hidden" id="f-image" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Product Code <span class="req">*</span></span>
+            <button type="button" onclick="genProductCode()" title="Auto-generate" style="font-size:11px;color:var(--primary);font-weight:600;display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:6px;border:1px solid var(--primary);background:var(--primary-light)">🔄 Generate</button>
+          </label>
+          <input class="form-control" type="text" id="f-code" placeholder="e.g. P001" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Barcode</span>
+            <button type="button" onclick="genBarcode()" title="Auto-generate" style="font-size:11px;color:var(--primary);font-weight:600;display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:6px;border:1px solid var(--primary);background:var(--primary-light)">🔄 Generate</button>
+          </label>
+          <input class="form-control" type="text" id="f-barcode" placeholder="Optional barcode" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Product Name <span class="req">*</span></label>
+        <input class="form-control" type="text" id="f-name" placeholder="Enter product name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="f-desc" placeholder="Optional product description" rows="2"></textarea>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Price (USD) <span class="req">*</span></label>
+          <input class="form-control" type="number" id="f-price" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock <span class="req">*</span></label>
+          <input class="form-control" type="number" id="f-stock" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="f-status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="out_of_stock">Out of Stock</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-control" id="f-category">
+          <option value="">No Category</option>
+        </select>
+      </div>
+
+      <!-- Options (colors/sizes) -->
+      <div class="form-group">
+        <label class="form-label" style="display:flex;justify-content:space-between">
+          <span>Colors / Sizes Options</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="addOptionRow()">＋ Add Option</button>
+        </label>
+        <div id="options-container" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="form-hint">Add option groups like "colors" → ["Red","Blue"] or "sizes" → ["S","M","L"]</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-product-btn" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Delete Product</div>
+      <button class="modal-close" onclick="closeModal('delete-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:30px">
+      <div style="font-size:48px;margin-bottom:12px">🗑️</div>
+      <p style="font-size:15px;color:var(--gray-700)">Are you sure you want to delete <strong id="delete-product-name"></strong>?</p>
+      <p style="font-size:13px;color:var(--gray-500);margin-top:6px">This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/assets/js/api.js"></script>
+<script>
+  if (!auth.requireAuth(['admin'])) {}
+  const user = auth.getUser();
+  if (user) {
+    document.getElementById('user-name').textContent = user.full_name || user.username;
+    document.getElementById('user-avatar').textContent = (user.full_name || user.username)[0].toUpperCase();
+  }
+  function logout() { auth.clear(); window.location.href = '/login.html'; }
+
+  let allCategories = [];
+  let editingId = null;
+  let deleteId   = null;
+  let searchTimer = null;
+
+  async function init() {
+    const catRes = await api.getCategories('?status=active');
+    allCategories = catRes?.data || [];
+    // fill sidebar & modal selects
+    const catFilter = document.getElementById('filter-category');
+    const catModal  = document.getElementById('f-category');
+    allCategories.forEach(c => {
+      catFilter.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`);
+      catModal.insertAdjacentHTML('beforeend', `<option value="${c.id}">${c.name}</option>`);
+    });
+    loadProducts();
+  }
+
+  async function loadProducts() {
+    const loading = document.getElementById('products-loading');
+    loading.style.display = 'flex';
+    const search   = document.getElementById('search-input').value.trim();
+    const catId    = document.getElementById('filter-category').value;
+    const status   = document.getElementById('filter-status').value;
+    let params = '?';
+    if (search)  params += `search=${encodeURIComponent(search)}&`;
+    if (catId)   params += `category_id=${catId}&`;
+    if (status)  params += `status=${status}&`;
+    else         params += 'status=';
+
+    const res = await api.getProducts(params);
+    loading.style.display = 'none';
+    const products = res?.data || [];
+    document.getElementById('product-count').textContent = `${products.length} product${products.length !== 1 ? 's' : ''}`;
+
+    const body = document.getElementById('products-body');
+    if (products.length === 0) {
+      body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📦</div><h3>No products found</h3><p>Add your first product to get started</p></div></td></tr>`;
+      return;
+    }
+    body.innerHTML = products.map(p => {
+      const imgEl = p.image
+        ? `<img src="${fmt.imgUrl(p.image)}" class="product-img" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="product-thumb" style="display:none">📦</div>`
+        : `<div class="product-thumb" style="display:flex;align-items:center;justify-content:center">📦</div>`;
+      return `<tr>
+        <td>${imgEl}</td>
+        <td><span class="code">${p.product_code}</span></td>
+        <td><div style="font-weight:600">${p.name}</div>${p.description ? `<div style="font-size:12px;color:var(--gray-400)">${p.description.substring(0,50)}${p.description.length>50?'…':''}</div>` : ''}</td>
+        <td>${p.category_name || '<span style="color:var(--gray-400)">—</span>'}</td>
+        <td style="font-weight:700">${fmt.currency(p.price)}</td>
+        <td><span class="badge ${p.stock <= 0 ? 'badge-danger' : p.stock <= 5 ? 'badge-warning' : 'badge-success'}">${p.stock}</span></td>
+        <td>${fmt.statusBadge(p.status)}</td>
+        <td><div class="table-actions">
+          <button class="btn btn-ghost btn-icon-sm" title="Edit" onclick="openEditModal(${p.id})">✏️</button>
+          <button class="btn btn-ghost btn-icon-sm" title="Delete" onclick="openDeleteModal(${p.id}, '${p.name.replace(/'/g, "\\'")}')">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadProducts, 400);
+  }
+
+  // ── Auto-generate helpers ──
+
+  // Product Code: P + zero-padded next number, derived from the live product table
+  function genProductCode() {
+    let max = 0;
+    // Read codes already rendered in the table
+    document.querySelectorAll('#products-body .code').forEach(el => {
+      const m = (el.textContent || '').trim().match(/^P(\d+)$/i);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    const next = String(max + 1).padStart(3, '0');
+    document.getElementById('f-code').value = 'P' + next;
+  }
+
+  // Barcode: valid EAN-13 (12 random digits + checksum)
+  function genBarcode() {
+    const digits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10));
+    const sum    = digits.reduce((s, d, i) => s + d * (i % 2 === 0 ? 1 : 3), 0);
+    const check  = (10 - (sum % 10)) % 10;
+    document.getElementById('f-barcode').value = [...digits, check].join('');
+  }
+
+  function openAddModal() {
+    editingId = null;
+    clearForm();
+    // Auto-fill code and barcode for new products
+    genProductCode();
+    genBarcode();
+    document.getElementById('modal-title').textContent = 'Add Product';
+    document.getElementById('save-product-btn').textContent = 'Add Product';
+    openModal('product-modal');
+  }
+
+  async function openEditModal(id) {
+    editingId = id;
+    clearForm();
+    document.getElementById('modal-title').textContent = 'Edit Product';
+    document.getElementById('save-product-btn').textContent = 'Save Changes';
+    const res = await api.getProduct(id);
+    const p   = res?.data;
+    if (!p) { showToast('Failed to load product', 'error'); return; }
+    document.getElementById('f-code').value    = p.product_code || '';
+    document.getElementById('f-barcode').value = p.barcode || '';
+    document.getElementById('f-name').value    = p.name || '';
+    document.getElementById('f-desc').value    = p.description || '';
+    document.getElementById('f-price').value   = p.price || '';
+    document.getElementById('f-stock').value   = p.stock ?? '';
+    document.getElementById('f-status').value  = p.status || 'active';
+    document.getElementById('f-category').value= p.category_id || '';
+    document.getElementById('f-image').value   = p.image || '';
+    if (p.image) {
+      document.getElementById('img-preview-el').src = fmt.imgUrl(p.image);
+      document.getElementById('img-preview-el').style.display = 'block';
+      document.getElementById('img-placeholder').style.display = 'none';
+    }
+    if (p.options && typeof p.options === 'object') {
+      Object.entries(p.options).forEach(([key, vals]) => addOptionRow(key, Array.isArray(vals) ? vals.join(', ') : vals));
+    }
+    openModal('product-modal');
+  }
+
+  function openDeleteModal(id, name) {
+    deleteId = id;
+    document.getElementById('delete-product-name').textContent = name;
+    openModal('delete-modal');
+  }
+
+  function clearForm() {
+    ['f-code','f-barcode','f-name','f-desc','f-price','f-stock','f-image'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-status').value = 'active';
+    document.getElementById('f-category').value = '';
+    document.getElementById('options-container').innerHTML = '';
+    document.getElementById('img-preview-el').style.display = 'none';
+    document.getElementById('img-placeholder').style.display = 'block';
+    document.getElementById('product-form-error').style.display = 'none';
+  }
+
+  function addOptionRow(key = '', vals = '') {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center';
+    row.innerHTML = `
+      <input class="form-control form-control-sm opt-key" placeholder="e.g. colors" value="${key}" style="width:130px;flex-shrink:0" />
+      <input class="form-control form-control-sm opt-vals" placeholder="e.g. Red, Blue, Green" value="${vals}" style="flex:1" />
+      <button type="button" class="btn btn-ghost btn-icon-sm" onclick="this.parentElement.remove()" style="flex-shrink:0">✕</button>`;
+    document.getElementById('options-container').appendChild(row);
+  }
+
+  async function handleImageUpload() {
+    const file = document.getElementById('img-file').files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    showToast('Uploading image...', 'info', 2000);
+    const res = await api.uploadImage(formData);
+    if (res?.success) {
+      document.getElementById('f-image').value = res.imageUrl;
+      document.getElementById('img-preview-el').src = fmt.imgUrl(res.imageUrl);
+      document.getElementById('img-preview-el').style.display = 'block';
+      document.getElementById('img-placeholder').style.display = 'none';
+      showToast('Image uploaded', 'success');
+    } else {
+      showToast(res?.message || 'Upload failed', 'error');
+    }
+  }
+
+  function buildOptions() {
+    const rows = document.querySelectorAll('#options-container > div');
+    const opts = {};
+    rows.forEach(row => {
+      const key  = row.querySelector('.opt-key').value.trim();
+      const vals = row.querySelector('.opt-vals').value.trim();
+      if (key && vals) opts[key] = vals.split(',').map(v => v.trim()).filter(Boolean);
+    });
+    return Object.keys(opts).length ? opts : null;
+  }
+
+  async function saveProduct() {
+    const errDiv = document.getElementById('product-form-error');
+    errDiv.style.display = 'none';
+    const payload = {
+      product_code: document.getElementById('f-code').value.trim(),
+      barcode:      document.getElementById('f-barcode').value.trim() || undefined,
+      name:         document.getElementById('f-name').value.trim(),
+      description:  document.getElementById('f-desc').value.trim() || undefined,
+      price:        parseFloat(document.getElementById('f-price').value),
+      stock:        parseInt(document.getElementById('f-stock').value),
+      status:       document.getElementById('f-status').value,
+      category_id:  document.getElementById('f-category').value || undefined,
+      image:        document.getElementById('f-image').value || undefined,
+      options:      buildOptions(),
+    };
+    if (!payload.product_code || !payload.name || isNaN(payload.price) || isNaN(payload.stock)) {
+      errDiv.textContent = 'Please fill in all required fields (code, name, price, stock).';
+      errDiv.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('save-product-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const res = editingId ? await api.updateProduct(editingId, payload) : await api.createProduct(payload);
+    btn.disabled = false; btn.textContent = editingId ? 'Save Changes' : 'Add Product';
+    if (res?.success) {
+      showToast(editingId ? 'Product updated' : 'Product added', 'success');
+      closeModal('product-modal');
+      loadProducts();
+    } else {
+      errDiv.textContent = res?.message || (res?.errors?.[0]?.msg) || 'Failed to save product';
+      errDiv.style.display = 'block';
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    const res = await api.deleteProduct(deleteId);
+    if (res?.success) {
+      showToast('Product deleted', 'success');
+      closeModal('delete-modal');
+      loadProducts();
+    } else {
+      showToast(res?.message || 'Delete failed', 'error');
+    }
+  }
+
+  initCurrencyToggle(loadProducts);
+  init();
+</script>
+</body>
+</html>

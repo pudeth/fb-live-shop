@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Control — Cashier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/variables.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
+  <script src="/public/qr-code-styling.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════
+       CASHIER LIVE — Full-Viewport No-Scroll Layout
+       ═══════════════════════════════════════════════ */
+
+    html, body {
+      height: 100%;
+      overflow: hidden;          /* kill page scroll entirely */
+    }
+
+    /* ── Shell: sidebar + main side by side ── */
+    .cashier-shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Slim sidebar (flex item, NOT fixed position) ── */
+    .c-sidebar,
+    .c-sidebar.sidebar {
+      position: relative !important; /* override components.css `position:fixed` */
+      top: auto !important;
+      left: auto !important;
+      bottom: auto !important;
+      width: 180px !important;
+      min-width: 180px !important;
+      max-width: 180px !important;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+      height: 100vh;
+      z-index: 1;
+    }
+    .c-sidebar .sidebar-logo {
+      padding: 14px 14px 12px;
+      min-height: unset;
+    }
+    .c-sidebar .sidebar-logo .logo-icon { width: 34px; height: 34px; font-size: 15px; }
+    .c-sidebar .sidebar-logo .logo-text { font-size: 12px; }
+    .c-sidebar .nav-item { padding: 9px 14px; font-size: 13px; }
+    .c-sidebar .nav-item .nav-icon { font-size: 15px; }
+    .c-sidebar .sidebar-footer { padding: 10px 12px; }
+    .c-sidebar .user-card { padding: 8px; }
+    .c-sidebar .user-avatar { width: 30px; height: 30px; font-size: 12px; }
+    .c-sidebar .user-info .user-name { font-size: 11px; }
+    .c-sidebar .user-info .user-role { font-size: 10px; }
+
+    /* ── Main area: fills remaining width ── */
+    .c-main {
+      flex: 1;
+      min-width: 0;
+      margin-left: 0 !important; /* neutralize any components.css margin-left */
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Top bar: fixed height ── */
+    .c-topbar {
+      height: 48px;
+      min-height: 48px;
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .c-topbar-title { font-size: 14px; font-weight: 800; flex: 1; }
+
+    /* ── Live session banner: fixed height ── */
+    .live-banner {
+      height: 38px;
+      min-height: 38px;
+      background: linear-gradient(90deg, #c62828, #e53935);
+      color: #fff;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .live-banner.idle { background: var(--gray-700); }
+
+    /* ── Control area: fills all remaining height ── */
+    .control-area {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 260px 1fr 280px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* ─────────────────────────────────────────────
+       LEFT PANEL  —  Scanner + On-Air card
+       ───────────────────────────────────────────── */
+    .panel-left {
+      background: #fff;
+      border-right: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 10px;
+      gap: 8px;
+    }
+
+    /* ── Scanner box ── */
+    .scanner-box {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 12px;
+      flex-shrink: 0;
+    }
+    .scanner-box-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .scanner-box-title .sb-icon {
+      width: 28px; height: 28px;
+      background: var(--primary);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .scanner-box-title h4 {
+      font-size: 11px;
+      font-weight: 800;
+      color: #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin: 0;
+    }
+    .scanner-box-title .sb-status {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: #1e3a5f;
+      color: #7dd3fc;
+      letter-spacing: .05em;
+    }
+
+    /* The actual input row */
+    .scanner-field {
+      display: flex;
+      gap: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid #334155;
+      background: #1e293b;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .scanner-field:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(24,119,242,.25);
+    }
+    .scanner-field-prefix {
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      background: #334155;
+      color: #94a3b8;
+      font-size: 14px;
+      flex-shrink: 0;
+      border-right: 2px solid #1e293b;
+    }
+    #scanner-input {
+      flex: 1;
+      min-width: 0;             /* critical — prevents collapse */
+      width: 100%;
+      padding: 10px 10px;
+      font-size: 14px !important;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      letter-spacing: .06em;
+      background: transparent !important;
+      color: #f1f5f9 !important;
+      -webkit-text-fill-color: #f1f5f9 !important;
+      border: none;
+      outline: none;
+    }
+    #scanner-input::placeholder {
+      color: #475569;
+      font-weight: 400;
+      letter-spacing: .02em;
+    }
+    .scanner-field-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 14px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+      flex-shrink: 0;
+      letter-spacing: .03em;
+    }
+    .scanner-field-btn:hover { background: var(--primary-dark); }
+    .scanner-field-btn:active { transform: scale(.97); }
+
+    /* Feedback banner */
+    #scanner-feedback {
+      border-radius: 8px;
+      padding: 8px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* Tips row */
+    .scanner-tips {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .scanner-tip {
+      font-size: 10px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .scanner-tip span { color: #7dd3fc; }
+    .scanner-shortcut {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 9px;
+      font-family: monospace;
+      color: #94a3b8;
+    }
+
+    /* Recent scans */
+    #scanner-recent { flex-shrink: 0; }
+    #scanner-recent .sr-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #scanner-recent .sr-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gray-200);
+    }
+    #scanner-recent-list { display: flex; flex-direction: column; gap: 4px; }
+    .recent-scan-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1.5px solid var(--gray-200);
+      background: #fff;
+      transition: all .15s;
+    }
+    .recent-scan-row:hover { border-color: var(--primary); background: var(--primary-light); }
+    .recent-scan-row.on-air { border-color: var(--danger); background: var(--danger-bg); }
+    .recent-scan-row .rs-img { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+    .recent-scan-row .rs-info { flex: 1; min-width: 0; }
+    .recent-scan-row .rs-name {
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recent-scan-row .rs-code { font-size: 9px; font-family: monospace; color: var(--primary); font-weight: 700; }
+    .recent-scan-row .rs-price { font-size: 11px; font-weight: 800; color: var(--gray-700); white-space: nowrap; flex-shrink: 0; }
+    .recent-scan-row .rs-action { font-size: 10px; color: var(--gray-400); flex-shrink: 0; }
+
+    /* On-Air card */
+    .on-air-section { flex-shrink: 0; }
+    .on-air-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      letter-spacing: .06em;
+      margin-bottom: 6px;
+    }
+    .on-air-card {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: 12px;
+      padding: 12px;
+      color: #fff;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .on-air-card .oa-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.1);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      overflow: hidden;
+    }
+    .on-air-card .oa-img img { width: 100%; height: 100%; object-fit: cover; }
+    .on-air-card .oa-info { flex: 1; min-width: 0; }
+    .on-air-card .oa-tag { font-size: 9px; font-weight: 800; color: #ff6b6b; letter-spacing: .08em; text-transform: uppercase; }
+    .on-air-card .oa-name { font-size: 13px; font-weight: 800; margin: 2px 0 1px; line-height: 1.3; }
+    .on-air-card .oa-code { font-size: 10px; color: rgba(255,255,255,.45); font-family: monospace; }
+    .on-air-card .oa-price { font-size: 17px; font-weight: 900; color: #4ade80; margin-top: 4px; }
+    .on-air-card .oa-qr {
+      flex-shrink: 0;
+      background: #fff;
+      border-radius: 6px;
+      padding: 3px;
+      width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .on-air-card .oa-qr img,
+    .on-air-card .oa-qr canvas { width: 52px !important; height: 52px !important; border-radius: 3px; }
+    .oa-empty {
+      background: var(--gray-100);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      color: var(--gray-400);
+    }
+    .oa-empty .oa-empty-icon { font-size: 28px; margin-bottom: 5px; }
+    .oa-empty p { font-size: 11px; }
+
+    .hide-product-btn {
+      width: 100%;
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px;
+      cursor: pointer;
+      margin-top: 7px;
+      transition: background .15s;
+    }
+    .hide-product-btn:hover { background: #dc2626; }
+
+    /* ─────────────────────────────────────────────
+       CENTER PANEL  —  Product Grid
+       ───────────────────────────────────────────── */
+    .panel-center {
+      background: var(--gray-50);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Smart Search toolbar ── */
+    .product-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      flex-shrink: 0;
+    }
+    .pt-top-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px 7px;
+    }
+    .pt-title { font-size: 12px; font-weight: 800; color: var(--gray-700); white-space: nowrap; }
+
+    /* Search input wrapper */
+    .ss-input-wrap {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .ss-input-wrap .ss-icon {
+      position: absolute;
+      left: 9px;
+      font-size: 13px;
+      pointer-events: none;
+      color: var(--gray-400);
+    }
+    .ss-input-wrap input {
+      width: 100%;
+      height: 32px;
+      padding: 0 30px 0 30px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      outline: none;
+      background: #fff;
+      color: var(--gray-800);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .ss-input-wrap input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(24,119,242,.12);
+    }
+    .ss-input-wrap input::placeholder { color: var(--gray-400); }
+    .ss-clear-btn {
+      position: absolute;
+      right: 7px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--gray-300);
+      color: var(--gray-600);
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: background .12s;
+      line-height: 1;
+    }
+    .ss-clear-btn:hover { background: var(--gray-400); color: #fff; }
+
+    /* Result count + keyboard hint */
+    .ss-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px 5px;
+      font-size: 10px;
+    }
+    #search-count { color: var(--gray-400); font-weight: 600; }
+    .ss-kbd-hint { color: var(--gray-300); margin-left: auto; }
+    .ss-kbd {
+      display: inline-block;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 3px;
+      padding: 0 4px;
+      font-size: 9px;
+      font-family: monospace;
+      color: var(--gray-500);
+      line-height: 16px;
+    }
+
+    /* Category chip strip */
+    .ss-chips {
+      display: flex;
+      gap: 4px;
+      padding: 0 10px 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .ss-chips::-webkit-scrollbar { display: none; }
+    .ss-chip {
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1.5px solid var(--gray-200);
+      background: #fff;
+      color: var(--gray-600);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .12s;
+      flex-shrink: 0;
+    }
+    .ss-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .ss-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* Scrollable grid — only this area scrolls */
+    .product-grid-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .product-grid-wrap::-webkit-scrollbar { width: 5px; }
+    .product-grid-wrap::-webkit-scrollbar-track { background: transparent; }
+    .product-grid-wrap::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    .product-tile {
+      background: #fff;
+      border: 2px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 9px;
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .product-tile:hover {
+      border-color: var(--primary);
+      box-shadow: 0 3px 12px rgba(24,119,242,.15);
+      transform: translateY(-1px);
+    }
+    .product-tile.active {
+      border-color: var(--danger);
+      background: #fff5f5;
+      box-shadow: 0 3px 12px rgba(239,68,68,.2);
+    }
+    /* Keyboard focus ring from smart search */
+    .product-tile.ss-focused {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(24,119,242,.2);
+      outline: none;
+    }
+    .product-tile .p-img {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 7px;
+      background: var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      overflow: hidden;
+    }
+    .product-tile .p-img img { width: 100%; height: 100%; object-fit: cover; }
+    .product-tile .p-code { font-size: 9px; font-weight: 700; color: var(--primary); font-family: monospace; }
+    .product-tile .p-name { font-size: 11px; font-weight: 700; line-height: 1.3; }
+    .product-tile .p-name mark { background: #fef08a; color: #713f12; border-radius: 2px; padding: 0 1px; }
+    .product-tile .p-price { font-size: 12px; font-weight: 800; color: var(--gray-800); }
+    .product-tile .p-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+    }
+    .product-tile .on-air-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 20px;
+      letter-spacing: .06em;
+      animation: pulse-badge 1.2s ease infinite;
+    }
+    @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    /* ─────────────────────────────────────────────
+       RIGHT PANEL  —  Tabbed Controls
+       ───────────────────────────────────────────── */
+    .panel-right {
+      background: #fff;
+      border-left: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Tab bar */
+    .r-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--gray-200);
+      flex-shrink: 0;
+      background: var(--gray-50);
+    }
+    .r-tab {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--gray-500);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      transition: all .15s;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .r-tab:hover { color: var(--gray-700); background: var(--gray-100); }
+    .r-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: #fff; }
+
+    /* Tab panes — only active shown, scrollable */
+    .r-pane-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .r-pane {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+    }
+    .r-pane::-webkit-scrollbar { width: 4px; }
+    .r-pane::-webkit-scrollbar-track { background: transparent; }
+    .r-pane::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+    .r-pane.active { display: flex; }
+
+    /* Right-panel section boxes */
+    .r-box {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 10px;
+      flex-shrink: 0;
+    }
+    .r-box h5 {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Overlay control buttons */
+    .overlay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .overlay-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 10px 6px;
+      border: 2px solid var(--gray-200);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all .15s;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-700);
+    }
+    .overlay-btn .ob-icon { font-size: 18px; }
+    .overlay-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .overlay-btn.active-state  { border-color: var(--success); background: var(--success-bg); color: #166534; }
+    .overlay-btn.danger-state  { border-color: var(--danger);  background: var(--danger-bg);  color: #991b1b; }
+
+    /* Caption presets */
+    .caption-presets { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+    .preset-btn {
+      padding: 4px 9px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 14px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all .12s;
+      background: #fff;
+    }
+    .preset-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* OBS URL dark box */
+    .obs-box {
+      background: var(--gray-900);
+      border: 1px solid var(--gray-700);
+      border-radius: 10px;
+      padding: 10px;
+      flex-shrink: 0;
+    }
+    .obs-box h5 {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 7px;
+    }
+    .obs-url-display {
+      font-family: monospace;
+      font-size: 11px;
+      background: var(--gray-800);
+      padding: 6px 8px;
+      border-radius: 6px;
+      color: #7dd3fc;
+      word-break: break-all;
+      margin-bottom: 7px;
+    }
+
+    /* QR mode section */
+    .qr-mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+    .qr-mode-btn {
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: center;
+      border: 2px solid var(--gray-600);
+      background: transparent;
+      color: var(--gray-400);
+    }
+
+    /* Inline form inputs compact */
+    .r-input {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      outline: none;
+      color: var(--gray-800);
+      background: #fff;
+      transition: border-color .15s;
+    }
+    .r-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(24,119,242,.1); }
+    .r-input::placeholder { color: var(--gray-400); }
+    .r-textarea {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      outline: none;
+      color: var(--gray-800);
+      background: #fff;
+      resize: none;
+      height: 58px;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    .r-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(24,119,242,.1); }
+    .r-select {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      outline: none;
+      color: var(--gray-800);
+      background: #fff;
+      cursor: pointer;
+    }
+    .r-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 6px; }
+    .r-btn {
+      padding: 7px 6px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+    }
+    .r-btn.primary { background: var(--primary); color: #fff; }
+    .r-btn.primary:hover { background: var(--primary-dark); }
+    .r-btn.outline { background: #fff; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+    .r-btn.outline:hover { border-color: var(--primary); color: var(--primary); }
+    .r-btn.danger { background: var(--danger); color: #fff; }
+    .r-btn.danger:hover { background: #dc2626; }
+    .r-btn.accent { background: var(--accent); color: #fff; }
+    .r-btn.accent:hover { background: var(--accent-dark); }
+    .r-btn.full { width: 100%; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<div class="cashier-shell">
+
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <aside class="c-sidebar sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📺</div>
+      <div class="logo-text">FB Live<br /><span>Cashier</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="/cashier/live.html">
+        <span class="nav-icon">🔴</span><span class="nav-label">Live Control</span>
+      </a>
+      <a class="nav-item" href="/cashier/orders.html">
+        <span class="nav-icon">🛒</span><span class="nav-label">Orders</span>
+      </a>
+      <a class="nav-item" href="/overlay/index.html" target="_blank">
+        <span class="nav-icon">🖥️</span><span class="nav-label">OBS Overlay</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">C</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Cashier</div>
+          <div class="user-role">Cashier</div>
+        </div>
+        <button class="user-logout-btn" onclick="logout()">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <div class="c-main">
+
+    <!-- Top Bar -->
+    <div class="c-topbar">
+      <div class="c-topbar-title">🔴 Live Control</div>
+      <div id="currency-toggle-wrap"></div>
+      <span id="conn-badge" style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--gray-100);color:var(--gray-500)">⚡ Connecting…</span>
+      <span style="font-size:11px;color:var(--gray-400);font-weight:600;font-family:monospace" id="clock"></span>
+    </div>
+
+    <!-- Live Banner -->
+    <div class="live-banner idle" id="live-banner">
+      <span id="live-banner-dot" style="display:none" class="live-dot"></span>
+      <span id="live-banner-text">No active session — Start a session below</span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button id="start-session-btn"
+          style="background:#fff;color:#c62828;font-weight:700;border-radius:7px;border:none;padding:4px 12px;font-size:11px;cursor:pointer"
+          onclick="openStartSession()">▶ Start Session</button>
+        <button id="end-session-btn"
+          style="background:rgba(0,0,0,.3);color:#fff;font-weight:700;border-radius:7px;border:none;padding:4px 12px;font-size:11px;cursor:pointer;display:none"
+          onclick="endSession()">⏹ End Session</button>
+      </div>
+    </div>
+
+    <!-- ══ 3-Column Control Area ══ -->
+    <div class="control-area">
+
+      <!-- ─── LEFT: Scanner + On-Air ─── -->
+      <div class="panel-left">
+
+        <!-- Scanner -->
+        <div class="scanner-box">
+          <div class="scanner-box-title">
+            <div class="sb-icon">📷</div>
+            <h4>Barcode / Code Scanner</h4>
+            <span class="sb-status" id="scanner-status-badge">READY</span>
+          </div>
+
+          <!-- Input field -->
+          <div class="scanner-field">
+            <div class="scanner-field-prefix">⌨️</div>
+            <input
+              type="text"
+              id="scanner-input"
+              placeholder="Scan barcode or type product code…"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              autofocus
+              onkeydown="handleScannerKey(event)"
+              oninput="onScannerInput()"
+            />
+            <button class="scanner-field-btn" onclick="triggerScan()">▶ Show</button>
+          </div>
+
+          <!-- Feedback -->
+          <div id="scanner-feedback" style="display:none"></div>
+
+          <!-- Tips -->
+          <div class="scanner-tips">
+            <div class="scanner-tip">
+              <span>💡</span> USB scanner sends Enter automatically
+            </div>
+            <div>
+              <span class="scanner-shortcut">Enter</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Scans -->
+        <div id="scanner-recent" style="display:none">
+          <div class="sr-label">Recent Scans</div>
+          <div id="scanner-recent-list"></div>
+        </div>
+
+        <!-- Spacer so on-air card hugs the bottom area -->
+        <div style="flex:1"></div>
+
+        <!-- On-Air Display -->
+        <div class="on-air-section">
+          <div class="on-air-label">Currently On Air</div>
+          <div id="on-air-display">
+            <div class="oa-empty">
+              <div class="oa-empty-icon">📺</div>
+              <p>No product on air.<br/>Select a product to show on overlay.</p>
+            </div>
+          </div>
+          <div id="hide-product-wrap" style="display:none">
+            <button class="hide-product-btn" onclick="hideProduct()">⏹ Hide from Overlay</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── CENTER: Product Grid ─── -->
+      <div class="panel-center">
+        <div class="product-toolbar">
+          <!-- Top row: title + search input -->
+          <div class="pt-top-row">
+            <span class="pt-title">📦 Products</span>
+            <div class="ss-input-wrap">
+              <span class="ss-icon">🔍</span>
+              <input
+                type="text"
+                id="product-search"
+                placeholder="Name, code, or category…"
+                autocomplete="off"
+              />
+              <button class="ss-clear-btn" id="search-clear-btn" title="Clear search">✕</button>
+            </div>
+            <span id="search-count" style="font-size:10px;font-weight:600;color:var(--gray-400);white-space:nowrap"></span>
+          </div>
+          <!-- Keyboard hint row -->
+          <div class="ss-meta">
+            <span class="ss-kbd-hint">
+              <span class="ss-kbd">↑↓</span> navigate &nbsp;
+              <span class="ss-kbd">Enter</span> select &nbsp;
+              <span class="ss-kbd">Esc</span> close
+            </span>
+          </div>
+          <!-- Category chip strip -->
+          <div class="ss-chips" id="cat-chips"></div>
+        </div>
+        <div class="product-grid-wrap">
+          <div class="product-grid" id="product-grid">
+            <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray-400)">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── RIGHT: Tabbed Controls ─── -->
+      <div class="panel-right">
+
+        <!-- Tab bar -->
+        <div class="r-tabs">
+          <div class="r-tab active" onclick="switchTab('overlay')">🖥️ Overlay</div>
+          <div class="r-tab" onclick="switchTab('caption')">💬 Caption</div>
+          <div class="r-tab" onclick="switchTab('notif')">🔔 Notify</div>
+          <div class="r-tab" onclick="switchTab('obs')">📡 OBS</div>
+        </div>
+
+        <div class="r-pane-wrap">
+
+          <!-- ── Tab: Overlay ── -->
+          <div class="r-pane active" id="tab-overlay">
+
+            <div class="r-box">
+              <h5>🖥️ Overlay Visibility</h5>
+              <div class="overlay-grid">
+                <button class="overlay-btn active-state" id="btn-show-overlay" onclick="sendShowOverlay()">
+                  <span class="ob-icon">👁️</span>Show
+                </button>
+                <button class="overlay-btn danger-state" id="btn-hide-overlay" onclick="sendHideOverlay()">
+                  <span class="ob-icon">🙈</span>Hide
+                </button>
+              </div>
+            </div>
+
+            <div class="r-box">
+              <h5>⚡ Stream Status</h5>
+              <div class="overlay-grid">
+                <button class="overlay-btn active-state" onclick="updateLiveStatus('active')">
+                  <span class="ob-icon">▶️</span>Active
+                </button>
+                <button class="overlay-btn" onclick="updateLiveStatus('paused')">
+                  <span class="ob-icon">⏸️</span>Paused
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ── Tab: Caption ── -->
+          <div class="r-pane" id="tab-caption">
+            <div class="r-box">
+              <h5>💬 Caption / Announcement</h5>
+              <div class="caption-presets">
+                <button class="preset-btn" onclick="setCaption('🔥 HOT ITEM! Limited stocks only!')">🔥 Hot</button>
+                <button class="preset-btn" onclick="setCaption('💰 SALE PRICE TODAY ONLY!')">💰 Sale</button>
+                <button class="preset-btn" onclick="setCaption('📦 FREE SHIPPING on orders $5+')">📦 Free Ship</button>
+                <button class="preset-btn" onclick="setCaption('⚡ LAST STOCKS! Order now!')">⚡ Last Stock</button>
+                <button class="preset-btn" onclick="setCaption('✅ AVAILABLE NOW — Comment to Order!')">✅ Available</button>
+                <button class="preset-btn" onclick="setCaption('🎁 BUNDLE DEAL: Buy 2 Get 1 Free!')">🎁 Bundle</button>
+              </div>
+              <textarea class="r-textarea" id="caption-text" placeholder="Type caption to show on overlay…"></textarea>
+              <div style="margin-top:6px">
+                <select class="r-select" id="caption-style" style="margin-bottom:6px">
+                  <option value="default">Default Style</option>
+                  <option value="alert">🔴 Alert</option>
+                  <option value="promo">🟡 Promo</option>
+                  <option value="info">🔵 Info</option>
+                </select>
+                <div class="r-btn-row">
+                  <button class="r-btn primary" onclick="sendCaption()">Send</button>
+                  <button class="r-btn outline" onclick="clearCaption()">Clear</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Tab: Notifications ── -->
+          <div class="r-pane" id="tab-notif">
+            <div class="r-box">
+              <h5>🔔 New Order Alert</h5>
+              <p style="font-size:11px;color:var(--gray-500);margin-bottom:8px">Push an order notification to the overlay</p>
+              <input class="r-input" id="notif-name" placeholder="Customer name" style="margin-bottom:6px" />
+              <input class="r-input" id="notif-product" placeholder="Product name" />
+              <button class="r-btn accent full" onclick="sendOrderNotif()">📣 Send Notification</button>
+            </div>
+          </div>
+
+          <!-- ── Tab: OBS / QR ── -->
+          <div class="r-pane" id="tab-obs">
+
+            <div class="obs-box">
+              <h5>🖥️ OBS Browser Source</h5>
+              <div class="obs-url-display" id="obs-url">Loading…</div>
+              <div class="r-btn-row">
+                <button class="r-btn outline" style="border-color:var(--gray-600);color:var(--gray-400);background:var(--gray-800)" onclick="copyObsUrl()">📋 Copy OBS</button>
+                <button class="r-btn outline" style="border-color:var(--gray-600);color:var(--gray-400);background:var(--gray-800)" onclick="copyPhoneUrl()">📱 Copy Phone</button>
+              </div>
+            </div>
+
+            <div class="obs-box">
+              <h5 style="display:flex;align-items:center;justify-content:space-between">
+                📱 QR Network Mode
+                <span id="qr-mode-badge" style="font-size:10px;padding:2px 7px;border-radius:20px;background:#1e3a5f;color:#7dd3fc;font-weight:800">LAN</span>
+              </h5>
+
+              <div class="qr-mode-row">
+                <button id="btn-mode-lan" class="qr-mode-btn" onclick="setQrMode('lan')"
+                  style="border-color:#3b82f6;background:#1e3a5f;color:#7dd3fc">📶 LAN WiFi</button>
+                <button id="btn-mode-public" class="qr-mode-btn" onclick="setQrMode('public')">🌐 Public</button>
+              </div>
+
+              <div id="lan-info-row" style="margin-bottom:8px">
+                <div style="font-size:9px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">LAN URL</div>
+                <div style="font-family:monospace;font-size:10px;background:var(--gray-800);padding:5px 8px;border-radius:6px;color:#86efac;word-break:break-all" id="lan-url-display">Detecting…</div>
+              </div>
+
+              <div id="public-url-row">
+                <div style="font-size:9px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Public URL</div>
+                <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px">
+                  <input id="public-url-input" type="url" placeholder="https://xxxx.ngrok.io"
+                    style="flex:1;background:var(--gray-800);border:1px solid var(--gray-600);border-radius:6px;padding:5px 8px;color:#e2e8f0;font-size:11px;font-family:monospace;outline:none"
+                    onkeydown="if(event.key==='Enter')savePublicUrl()" />
+                  <button onclick="savePublicUrl()"
+                    style="padding:5px 10px;border-radius:6px;background:#3b82f6;color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer">Save</button>
+                  <button onclick="clearPublicUrl()"
+                    style="padding:5px 8px;border-radius:6px;background:var(--gray-700);color:var(--gray-400);border:none;font-size:11px;cursor:pointer">✕</button>
+                </div>
+                <div id="public-url-status" style="display:none;font-size:10px;font-weight:600;padding:4px 8px;border-radius:5px"></div>
+                <div style="font-size:9px;color:var(--gray-600);line-height:1.5">
+                  💡 Run <code style="background:var(--gray-800);padding:1px 4px;border-radius:3px;color:#7dd3fc;font-size:9px">ngrok http 3000</code> then paste the https URL.
+                </div>
+              </div>
+
+              <div style="margin-top:8px;border-top:1px solid var(--gray-700);padding-top:8px">
+                <div style="font-size:9px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Active QR Base</div>
+                <div style="font-family:monospace;font-size:10px;background:var(--gray-800);padding:5px 8px;border-radius:6px;color:#fbbf24;word-break:break-all" id="active-qr-url">—</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- /r-pane-wrap -->
+      </div><!-- /panel-right -->
+
+    </div><!-- /control-area -->
+  </div><!-- /c-main -->
+</div><!-- /cashier-shell -->
+
+<!-- Start Session Modal -->
+<div class="modal-backdrop" id="session-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">Start Live Session</div>
+      <button class="modal-close" onclick="closeModal('session-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Session Title <span class="req">*</span></label>
+        <input class="form-control" type="text" id="session-title" placeholder="e.g. Daily Product Showcase" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="session-desc" rows="2" placeholder="Optional description"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('session-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="startSession()">🔴 Go Live</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/smart-search.js"></script>
+<script>
+  if (!auth.requireAuth(['admin', 'cashier'])) {}
+  const user = auth.getUser();
+  if (user) {
+    document.getElementById('user-name').textContent = user.full_name || user.username;
+    document.getElementById('user-avatar').textContent = (user.full_name || user.username)[0].toUpperCase();
+  }
+  function logout() { auth.clear(); window.location.href = '/login.html'; }
+
+  // Clock
+  setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-PH'); }, 1000);
+
+  // OBS URL
+  document.getElementById('obs-url').textContent = window.location.origin + '/overlay/index.html';
+
+  // ── Tab switching ──
+  function switchTab(name) {
+    document.querySelectorAll('.r-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.r-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // ── State ──
+  let activeSession  = null;
+  let allProducts    = [];
+  let currentOnAirId = null;
+  let socket         = null;
+  let qrBaseUrl      = window.location.origin;
+
+  // ── Server info ──
+  async function loadServerInfo() {
+    try {
+      const d = await fetch('/api/server-info').then(r => r.json());
+      applyServerInfo(d);
+    } catch {
+      document.getElementById('lan-url-display').textContent = '⚠️ Could not reach /api/server-info';
+    }
+  }
+
+  function applyServerInfo(d) {
+    const lanUrl = d.lanUrl || d.baseUrl || null;
+    document.getElementById('lan-url-display').textContent = lanUrl || '⚠️ LAN IP not detected';
+    if (d.publicUrl) document.getElementById('public-url-input').value = d.publicUrl;
+    qrBaseUrl = d.baseUrl || window.location.origin;
+    document.getElementById('active-qr-url').textContent = qrBaseUrl + '/customer/product.html?code=…';
+    applyModeUi(d.qrMode || 'lan');
+
+    // Re-render the on-air card QR if a product is currently showing,
+    // so the small preview QR immediately reflects the new LAN/public URL.
+    if (currentOnAirId) {
+      const p = allProducts.find(p => p.id === currentOnAirId);
+      if (p) renderOnAir(p);
+    }
+  }
+
+  function applyModeUi(mode) {
+    const badge  = document.getElementById('qr-mode-badge');
+    const btnLan = document.getElementById('btn-mode-lan');
+    const btnPub = document.getElementById('btn-mode-public');
+    if (mode === 'public') {
+      badge.textContent = 'PUBLIC'; badge.style.background = '#422006'; badge.style.color = '#fbbf24';
+      btnLan.style.cssText = 'border:2px solid var(--gray-600);background:transparent;color:var(--gray-400)';
+      btnPub.style.cssText = 'border:2px solid #f59e0b;background:#422006;color:#fbbf24';
+    } else {
+      badge.textContent = 'LAN'; badge.style.background = '#1e3a5f'; badge.style.color = '#7dd3fc';
+      btnLan.style.cssText = 'border:2px solid #3b82f6;background:#1e3a5f;color:#7dd3fc';
+      btnPub.style.cssText = 'border:2px solid var(--gray-600);background:transparent;color:var(--gray-400)';
+    }
+  }
+
+  async function setQrMode(mode) {
+    try {
+      const d = await fetch('/api/server-info/qr-config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrMode: mode }),
+      }).then(r => r.json());
+      if (d.success) { applyServerInfo(d); showToast(mode === 'public' ? '🌐 QR → Public URL' : '📶 QR → LAN URL', 'success', 2000); }
+      else showToast(d.message || 'Failed to switch mode', 'error');
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  async function savePublicUrl() {
+    const url = document.getElementById('public-url-input').value.trim();
+    const statusEl = document.getElementById('public-url-status');
+    statusEl.style.display = 'none';
+    if (!url) { showToast('Enter a URL first', 'warning'); return; }
+
+    // Client-side pre-check: warn if this looks like an unrelated website
+    try {
+      const u = new URL(url);
+      const hostname = u.hostname.toLowerCase();
+      const suspiciousDomains = ['qr.gov.kh','facebook.com','google.com','github.com','youtube.com','instagram.com'];
+      if (suspiciousDomains.some(d => hostname === d || hostname.endsWith('.' + d))) {
+        statusEl.style.display = 'block';
+        statusEl.style.cssText = 'display:block;font-size:10px;font-weight:600;padding:4px 8px;border-radius:5px;background:#fee2e2;color:#991b1b';
+        statusEl.textContent = `❌ "${hostname}" is not a tunnel URL for this server. Use an ngrok / Cloudflare tunnel that points to this machine.`;
+        showToast('That URL is not a valid tunnel for this server', 'error');
+        return;
+      }
+    } catch { /* let the server return the proper error */ }
+
+    try {
+      const d = await fetch('/api/server-info/qr-config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicUrl: url }),
+      }).then(r => r.json());
+      if (d.success) {
+        applyServerInfo(d);
+        statusEl.style.display = 'block';
+        statusEl.style.cssText = 'display:block;font-size:10px;font-weight:600;padding:4px 8px;border-radius:5px;background:#dcfce7;color:#166534';
+        statusEl.textContent = '✅ Saved!';
+        showToast('✅ Public URL saved!', 'success', 2000);
+      } else {
+        statusEl.style.display = 'block';
+        statusEl.style.cssText = 'display:block;font-size:10px;font-weight:600;padding:4px 8px;border-radius:5px;background:#fee2e2;color:#991b1b';
+        statusEl.textContent = '❌ ' + (d.message || 'Invalid URL');
+        showToast('❌ ' + (d.message || 'Invalid URL'), 'error');
+      }
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  async function clearPublicUrl() {
+    document.getElementById('public-url-input').value = '';
+    document.getElementById('public-url-status').style.display = 'none';
+    try {
+      const d = await fetch('/api/server-info/qr-config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicUrl: null, qrMode: 'lan' }),
+      }).then(r => r.json());
+      if (d.success) { applyServerInfo(d); showToast('Public URL cleared → LAN', 'info', 2000); }
+    } catch {}
+  }
+
+  // ── Socket.IO ──
+  function initSocket() {
+    socket = io(window.location.origin, { transports: ['websocket', 'polling'] });
+    socket.on('connect', () => {
+      socket.emit('join-live');
+      const b = document.getElementById('conn-badge');
+      b.textContent = '⚡ Connected'; b.style.background = 'var(--success-bg)'; b.style.color = 'var(--success)';
+    });
+    socket.on('disconnect', () => {
+      const b = document.getElementById('conn-badge');
+      b.textContent = '⚡ Disconnected'; b.style.background = 'var(--danger-bg)'; b.style.color = 'var(--danger)';
+    });
+    socket.on('product-shown', ({ product }) => { currentOnAirId = product.id; renderOnAir(product); refreshProductGrid(); });
+    socket.on('product-hidden', () => { currentOnAirId = null; renderOnAirEmpty(); refreshProductGrid(); });
+  }
+
+  // ── Session ──
+  async function loadActiveSession() {
+    const res = await api.getActiveLive();
+    activeSession = res?.data || null;
+    updateBanner();
+    if (activeSession?.current_product_id) {
+      const pRes = await api.getCurrentProduct();
+      if (pRes?.data) { currentOnAirId = pRes.data.id; renderOnAir(pRes.data); }
+    }
+  }
+
+  function updateBanner() {
+    const banner   = document.getElementById('live-banner');
+    const text     = document.getElementById('live-banner-text');
+    const dot      = document.getElementById('live-banner-dot');
+    const startBtn = document.getElementById('start-session-btn');
+    const endBtn   = document.getElementById('end-session-btn');
+    if (activeSession) {
+      banner.classList.remove('idle');
+      dot.style.display = 'inline-block';
+      text.textContent = `LIVE: ${activeSession.title}  •  ${activeSession.session_code}`;
+      startBtn.style.display = 'none'; endBtn.style.display = 'inline-flex';
+    } else {
+      banner.classList.add('idle');
+      dot.style.display = 'none';
+      text.textContent = 'No active session — Start a session below';
+      startBtn.style.display = 'inline-flex'; endBtn.style.display = 'none';
+    }
+  }
+
+  function openStartSession() { openModal('session-modal'); }
+
+  async function startSession() {
+    const title = document.getElementById('session-title').value.trim();
+    const desc  = document.getElementById('session-desc').value.trim();
+    if (!title) { showToast('Session title is required', 'warning'); return; }
+    const res = await api.createLiveSession({ title, description: desc });
+    if (res?.success) { showToast('Live session started! 🔴', 'success'); closeModal('session-modal'); await loadActiveSession(); }
+    else showToast(res?.message || 'Failed to start session', 'error');
+  }
+
+  async function endSession() {
+    if (!activeSession) return;
+    if (!confirm('End this live session?')) return;
+    const res = await api.endLiveSession(activeSession.id);
+    if (res?.success) {
+      socket?.emit('update-live-status', { session_id: activeSession.id, status: 'ended' });
+      activeSession = null; currentOnAirId = null;
+      updateBanner(); renderOnAirEmpty(); refreshProductGrid();
+      showToast('Live session ended', 'info');
+    } else showToast(res?.message || 'Failed to end session', 'error');
+  }
+
+  // ── Products ──
+  async function loadProducts() {
+    const catRes = await api.getCategories('?status=active');
+    const cats   = catRes?.data || [];
+    // Attach category names to products after loading (for chip filtering)
+    const catMap = {};
+    cats.forEach(c => { catMap[c.id] = c.name; });
+
+    const res = await api.getProducts('?status=active');
+    allProducts = res?.data || [];
+    // Attach category_name for SmartSearch chip building
+    allProducts.forEach(p => { p.category_name = catMap[p.category_id] || ''; });
+
+    // Boot SmartSearch on the center panel
+    SmartSearch.init({
+      searchId:    'product-search',
+      gridId:      'product-grid',
+      clearBtnId:  'search-clear-btn',
+      countBadgeId:'search-count',
+      chipStripId: 'cat-chips',
+      getData:     () => allProducts,
+      renderTile:  renderLiveTile,
+      onKeySelect: (p) => showProduct(p.id),
+    });
+  }
+
+  function renderLiveTile(p, query, idx) {
+    const isOnAir = p.id === currentOnAirId;
+    const imgEl = p.image
+      ? `<img src="${fmt.imgUrl(p.image)}" alt="${SmartSearch.escHtml(p.name)}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />`
+      : `📦`;
+    return `<div
+      class="product-tile ${isOnAir ? 'active' : ''}"
+      data-ss-idx="${idx}"
+      onclick="showProduct(${p.id})"
+      tabindex="-1"
+      title="${SmartSearch.escHtml(p.name)} — ${SmartSearch.escHtml(p.product_code)}"
+    >
+      ${isOnAir ? '<span class="on-air-badge">ON AIR</span>' : ''}
+      <div class="p-img">${imgEl}</div>
+      <div class="p-code">${SmartSearch.highlight(p.product_code, query)}</div>
+      <div class="p-name">${SmartSearch.highlight(p.name, query)}</div>
+      <div class="p-price">${fmt.currency(p.price)}</div>
+      <div class="p-foot">${SmartSearch.stockBadge(p.stock)}</div>
+    </div>`;
+  }
+
+  function filterProducts()    { SmartSearch.refresh('product-search'); }
+  function refreshProductGrid() { SmartSearch.refresh('product-search'); }
+
+  // ── Show / Hide product ──
+  function showProduct(productId) {
+    if (!activeSession) { showToast('Start a live session first!', 'warning'); return; }
+    socket?.emit('show-product', { product_id: productId, session_id: activeSession.id });
+    currentOnAirId = productId;
+    refreshProductGrid();
+    const p = allProducts.find(p => p.id === productId);
+    if (p) renderOnAir(p);
+  }
+
+  function hideProduct() {
+    if (!activeSession) return;
+    socket?.emit('hide-product', { session_id: activeSession.id });
+    currentOnAirId = null;
+    renderOnAirEmpty();
+    refreshProductGrid();
+  }
+
+  function renderOnAir(product) {
+    const imgEl = product.image
+      ? `<img src="${fmt.imgUrl(product.image)}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover" />`
+      : `📦`;
+    const customerUrl = `${qrBaseUrl}/customer/product.html?code=${encodeURIComponent(product.product_code)}`;
+    document.getElementById('on-air-display').innerHTML = `
+      <div class="on-air-card">
+        <div class="oa-img">${imgEl}</div>
+        <div class="oa-info">
+          <div class="oa-tag">● ON AIR NOW</div>
+          <div class="oa-name">${product.name}</div>
+          <div class="oa-code">${product.product_code}</div>
+          <div class="oa-price">${fmt.currency(product.price)}</div>
+        </div>
+        <div class="oa-qr" id="oa-qr-wrap"></div>
+      </div>`;
+    // Generate styled QR into the wrapper after DOM is ready
+    requestAnimationFrame(() => {
+      const wrap = document.getElementById('oa-qr-wrap');
+      if (wrap && typeof QRCodeStyling !== 'undefined') {
+        new QRCodeStyling({
+          width:  52,
+          height: 52,
+          type:   'canvas',
+          data:   customerUrl,
+          dotsOptions:         { color: '#0a0a0a', type: 'rounded' },
+          cornersSquareOptions: { type: 'extra-rounded', color: '#0a0a0a' },
+          cornersDotOptions:    { type: 'dot', color: '#0a0a0a' },
+          backgroundOptions:    { color: '#ffffff' },
+          qrOptions:            { errorCorrectionLevel: 'M' },
+        }).append(wrap);
+      }
+    });
+    document.getElementById('hide-product-wrap').style.display = 'block';
+    renderRecentScans();
+    SmartSearch.refresh('product-search');
+  }
+
+  function renderOnAirEmpty() {
+    document.getElementById('on-air-display').innerHTML = `
+      <div class="oa-empty">
+        <div class="oa-empty-icon">📺</div>
+        <p>No product on air.<br/>Select a product to show on overlay.</p>
+      </div>`;
+    document.getElementById('hide-product-wrap').style.display = 'none';
+    SmartSearch.refresh('product-search');
+  }
+
+  // ── Caption ──
+  function setCaption(text)  { document.getElementById('caption-text').value = text; }
+  function sendCaption() {
+    const text  = document.getElementById('caption-text').value.trim();
+    const style = document.getElementById('caption-style').value;
+    if (!text) { showToast('Enter a caption first', 'warning'); return; }
+    socket?.emit('send-caption', { text, style, target: 'product-show' });
+    showToast('Caption sent ✓', 'success', 2000);
+  }
+  function clearCaption() {
+    socket?.emit('clear-caption');
+    document.getElementById('caption-text').value = '';
+    showToast('Caption cleared', 'info', 1500);
+  }
+
+  // ── Overlay ──
+  function sendShowOverlay() { socket?.emit('show-overlay', { target: 'product-show' }); showToast('Overlay shown ✓', 'success', 1500); }
+  function sendHideOverlay() { socket?.emit('hide-overlay', { target: 'product-show' }); showToast('Overlay hidden ✓', 'info', 1500); }
+  function updateLiveStatus(status) {
+    if (!activeSession) { showToast('No active session', 'warning'); return; }
+    socket?.emit('update-live-status', { session_id: activeSession.id, status });
+    showToast(`Status: ${status}`, 'info', 1500);
+  }
+
+  // ── Order notification ──
+  function sendOrderNotif() {
+    const name    = document.getElementById('notif-name').value.trim();
+    const product = document.getElementById('notif-product').value.trim();
+    if (!name) { showToast('Enter customer name', 'warning'); return; }
+    socket?.emit('new-order', { customer_name: name, product_name: product, timestamp: new Date().toISOString() });
+    document.getElementById('notif-name').value = '';
+    document.getElementById('notif-product').value = '';
+    showToast('Order notification sent ✓', 'success', 2000);
+  }
+
+  // ── OBS URL ──
+  function copyObsUrl()   { navigator.clipboard.writeText(window.location.origin + '/overlay/index.html').then(() => showToast('OBS URL copied!', 'success', 1500)); }
+  function copyPhoneUrl() { navigator.clipboard.writeText(qrBaseUrl + '/customer/product.html').then(() => showToast('📱 Phone URL copied!', 'success', 2500)); }
+
+  // ══════════════════════════════════════════
+  //  BARCODE / SCANNER
+  // ══════════════════════════════════════════
+  let scannerDebounce = null;
+  let recentScans     = [];
+  const MAX_RECENT    = 4;
+
+  function handleScannerKey(event) {
+    if (event.key === 'Enter') { event.preventDefault(); triggerScan(); }
+  }
+
+  let scanBuffer = '', scanBufferTimer = null;
+  function onScannerInput() {
+    clearTimeout(scanBufferTimer);
+    const val = document.getElementById('scanner-input').value.trim();
+    scanBuffer = val;
+    scanBufferTimer = setTimeout(() => {
+      if (scanBuffer && scanBuffer === document.getElementById('scanner-input').value.trim()) {
+        if (scanBuffer.length >= 6 && !/\s/.test(scanBuffer)) triggerScan();
+      }
+    }, 120);
+  }
+
+  async function triggerScan() {
+    const raw  = document.getElementById('scanner-input').value.trim();
+    const code = raw.toUpperCase();
+    if (!code) return;
+    showScannerFeedback('loading', `🔍 Looking up: ${code}…`);
+    const res = await api.getProduct(code);
+    if (!res?.success || !res?.data) {
+      const res2 = await api.getProduct(raw);
+      if (!res2?.success || !res2?.data) { showScannerFeedback('error', `❌ "${code}" not found`); return; }
+      handleScannedProduct(res2.data);
+    } else {
+      handleScannedProduct(res.data);
+    }
+  }
+
+  function handleScannedProduct(p) {
+    document.getElementById('scanner-input').value = '';
+    document.getElementById('scanner-input').focus();
+    if (!activeSession) { showScannerFeedback('warn', `⚠️ Start a live session first`); showToast('Start a session first!', 'warning'); return; }
+    showProduct(p.id);
+    showScannerFeedback('success', `✅ <strong>${p.name}</strong> — ${fmt.currency(p.price)} — on overlay!`);
+    recentScans = recentScans.filter(r => r.id !== p.id);
+    recentScans.unshift({ code: p.product_code, name: p.name, id: p.id, price: p.price, image: p.image });
+    if (recentScans.length > MAX_RECENT) recentScans.pop();
+    renderRecentScans();
+  }
+
+  function showScannerFeedback(type, html) {
+    const el = document.getElementById('scanner-feedback');
+    const badge = document.getElementById('scanner-status-badge');
+    el.style.display = 'block';
+    const styles = {
+      success: 'background:#dcfce7;color:#166534;border:1px solid #86efac',
+      error:   'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',
+      warn:    'background:#fef3c7;color:#92400e;border:1px solid #fde68a',
+      loading: 'background:#1e293b;color:#94a3b8;border:1px solid #334155',
+    };
+    const badgeStates = {
+      success: ['FOUND',    '#dcfce7', '#166534'],
+      error:   ['NOT FOUND','#fee2e2', '#991b1b'],
+      warn:    ['WARNING',  '#fef3c7', '#92400e'],
+      loading: ['SCANNING…','#1e3a5f', '#7dd3fc'],
+    };
+    el.style.cssText = 'display:block;border-radius:8px;padding:8px 11px;font-size:11px;font-weight:600;margin-top:8px;' + (styles[type] || styles.loading);
+    el.innerHTML = html;
+    if (badge && badgeStates[type]) {
+      const [text, bg, color] = badgeStates[type];
+      badge.textContent = text;
+      badge.style.background = bg;
+      badge.style.color = color;
+    }
+    clearTimeout(scannerDebounce);
+    if (type !== 'loading') {
+      scannerDebounce = setTimeout(() => {
+        el.style.display = 'none';
+        if (badge) { badge.textContent = 'READY'; badge.style.background = '#1e3a5f'; badge.style.color = '#7dd3fc'; }
+      }, 4000);
+    }
+  }
+
+  function renderRecentScans() {
+    const wrap = document.getElementById('scanner-recent');
+    const list = document.getElementById('scanner-recent-list');
+    if (!wrap || !list || recentScans.length === 0) { if (wrap) wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    list.innerHTML = recentScans.map((r, idx) => {
+      const isOnAir = r.id === currentOnAirId;
+      const imgEl = r.image
+        ? `<img class="rs-img" src="${fmt.imgUrl(r.image)}" onerror="this.style.display='none'" />`
+        : `<span style="font-size:20px;width:30px;text-align:center;flex-shrink:0">📦</span>`;
+      return `<div class="recent-scan-row ${isOnAir ? 'on-air' : ''}" onclick="showProductFromRecent(${idx})">
+        ${imgEl}
+        <div class="rs-info">
+          <div class="rs-name">${r.name}</div>
+          <div class="rs-code">${r.code}</div>
+        </div>
+        <div class="rs-price">${fmt.currency(r.price)}</div>
+        ${isOnAir
+          ? '<span style="font-size:8px;font-weight:800;color:var(--danger);background:var(--danger-bg);padding:2px 6px;border-radius:8px;white-space:nowrap;flex-shrink:0">ON AIR</span>'
+          : '<span class="rs-action">▶</span>'}
+      </div>`;
+    }).join('');
+  }
+
+  function showProductFromRecent(idx) {
+    const r = recentScans[idx];
+    if (r) showProduct(r.id);
+  }
+
+  // Auto-focus scanner on any click outside inputs
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.modal-backdrop') && !e.target.closest('input') && !e.target.closest('textarea') && !e.target.closest('select')) {
+      document.getElementById('scanner-input')?.focus();
+    }
+  });
+
+  // ── Init ──
+  function onLiveCurrencyToggle() {
+    SmartSearch.refresh('product-search');
+    renderRecentScans();
+    if (currentOnAirId) { const p = allProducts.find(p => p.id === currentOnAirId); if (p) renderOnAir(p); }
+  }
+  initCurrencyToggle(onLiveCurrencyToggle, '.c-topbar');
+  initSocket();
+  loadActiveSession();
+  loadProducts();
+  loadServerInfo();
+</script>
+</body>
+</html>

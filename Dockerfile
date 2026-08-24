@@ -1,36 +1,37 @@
-# ─────────────────────────────────────────────
-#  FB Live Shop — Fly.io Production Dockerfile
-#  Single container: Node.js backend + frontend
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────
+#  FB Live Shop — Production Dockerfile
+#  Works on Render.com free tier
+#  Single container: Node.js backend + static frontend
+# ─────────────────────────────────────────────────────
 
-FROM node:20-alpine AS base
+FROM node:20-alpine
 
-# Install dumb-init for proper signal handling inside container
+# dumb-init: proper PID 1 / signal handling in containers
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
-# ── Install dependencies (cached layer) ──────
+# ── Install production dependencies only (cached layer) ──
 COPY backend/package*.json ./backend/
-RUN cd backend && npm ci --omit=dev
+RUN cd backend && npm ci --omit=dev && npm cache clean --force
 
-# ── Copy backend source ──────────────────────
+# ── Copy backend source ───────────────────────────────────
 COPY backend/ ./backend/
 
-# ── Copy frontend (served as static files) ───
+# ── Copy frontend (served as static files by Express) ─────
 COPY frontend/ ./frontend/
 
-# ── Create uploads directory ─────────────────
-# Uploads are ephemeral on Fly.io free tier.
-# For persistence, mount a Fly volume (see fly.toml).
+# ── Copy database schema ──────────────────────────────────
+COPY database/ ./database/
+
+# ── Uploads directory (ephemeral — resets on redeploy) ────
 RUN mkdir -p ./backend/uploads
 
-# ── Runtime config ───────────────────────────
+# ── Runtime ───────────────────────────────────────────────
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
 
-# Use dumb-init to handle signals correctly (graceful shutdown)
 WORKDIR /app/backend
 CMD ["dumb-init", "node", "server.js"]

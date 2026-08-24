@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────
+#  render.yaml — FB Live Shop
+#  Render Blueprint — one-click deploy from GitHub
+# ─────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: fb-live-shop
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: singapore
+    plan: free
+
+    # Health check — Render uses this to confirm startup
+    healthCheckPath: /health
+
+    # Environment variables — secrets set in Render dashboard
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: QR_MODE
+        value: public
+
+      # Database — fill these in Render dashboard after creating PlanetScale DB
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: facebook_live_products
+
+      # Secrets — fill in Render dashboard
+      - key: JWT_SECRET
+        sync: false
+      - key: PUBLIC_URL
+        sync: false

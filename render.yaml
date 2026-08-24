@@ -22,6 +22,8 @@ services:
         value: 3000
       - key: QR_MODE
         value: public
+      - key: PUBLIC_URL
+        value: https://fb-live-shop.onrender.com
 
       # Database — fill these in Render dashboard after creating PlanetScale DB
       - key: DB_HOST

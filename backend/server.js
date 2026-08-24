@@ -89,12 +89,14 @@ app.use('/customer', express.static(path.join(__dirname, '../frontend/customer')
 app.use('/overlay',  express.static(path.join(__dirname, '../frontend/overlay')));
 app.use('/public',   express.static(path.join(__dirname, '../frontend/public')));
 
-// ── QR config — loaded from .env so it survives restarts ─────────────────────
+// ── QR config — loaded from environment variables ────────────────────────────
+// In production (Render), PUBLIC_URL and QR_MODE are set as env vars in the
+// Render dashboard — they survive restarts without needing .env file writes.
 // publicUrl  — optional custom URL set by the cashier (e.g. ngrok / domain)
 // qrMode     — 'lan' | 'public'  (which URL to bake into QR codes)
 const qrConfig = {
     publicUrl: process.env.PUBLIC_URL || null,
-    qrMode:    (process.env.QR_MODE === 'public') ? 'public' : 'lan',
+    qrMode:    (process.env.QR_MODE === 'public' || process.env.PUBLIC_URL) ? 'public' : 'lan',
 };
 // ─────────────────────────────────────────────────────────────────────────────
 

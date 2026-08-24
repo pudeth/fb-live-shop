@@ -282,6 +282,42 @@ app.set('io', io);
 // Start server
 const PORT = process.env.PORT || 3000;
 
+// Auto-migrate on startup in production (creates tables if they don't exist)
+async function autoMigrate() {
+    if (process.env.NODE_ENV !== 'production') return;
+    try {
+        console.log('🔄 Running auto-migration…');
+        const fs   = require('fs');
+        const path = require('path');
+        const schemaPath = path.join(__dirname, '../database/schema.sql');
+        const raw  = fs.readFileSync(schemaPath, 'utf8');
+        const { pool } = require('./config/database');
+
+        const statements = raw
+            .split(/;\s*\n/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .filter(s => !/^(DROP DATABASE|CREATE DATABASE|USE )\b/i.test(s));
+
+        let ok = 0, skipped = 0;
+        for (const stmt of statements) {
+            try {
+                await pool.execute(stmt);
+                ok++;
+            } catch (e) {
+                if (['ER_TABLE_EXISTS_ERROR','ER_DUP_ENTRY','ER_DUP_KEYNAME'].includes(e.code)) {
+                    skipped++;
+                } else {
+                    console.warn('  Migration warning:', e.message.substring(0, 80));
+                }
+            }
+        }
+        console.log(`✅ Auto-migration: ${ok} statements run, ${skipped} skipped.`);
+    } catch (err) {
+        console.error('⚠️  Auto-migration error (non-fatal):', err.message);
+    }
+}
+
 const startServer = async () => {
     try {
         const dbConnected = await testConnection();
@@ -289,6 +325,9 @@ const startServer = async () => {
             console.error('❌ Failed to connect to database. Please check your database configuration.');
             process.exit(1);
         }
+
+        // Run schema migration automatically on first deploy
+        await autoMigrate();
 
         // Bind to 0.0.0.0 so phones on the same WiFi can reach the server
         server.listen(PORT, '0.0.0.0', () => {

@@ -138,13 +138,12 @@ INSERT INTO categories (name, description) VALUES
 ('Sports & Outdoor', 'Sports Equipment, Outdoor Gear');
 
 -- Insert default admin user (password: admin123)
--- Password hash generated with bcrypt for 'admin123'
 INSERT INTO users (username, email, password, full_name, role, status) VALUES
-('admin', 'admin@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', 'active');
+('admin', 'admin@example.com', '$2a$10$IIT2wtG0iDCwEksRQfpUY.fsfwpyk3hrzsxx5dgjM29eclYHvqjcq', 'System Administrator', 'admin', 'active');
 
 -- Insert default cashier user (password: cashier123)
 INSERT INTO users (username, email, password, full_name, role, status) VALUES
-('cashier', 'cashier@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Main Cashier', 'cashier', 'active');
+('cashier', 'cashier@example.com', '$2a$10$Hv/ut6yZVPfoS3XRHBRR9.zend2PB7W7m2XCnG3NJZWAAanqOKR4S', 'Main Cashier', 'cashier', 'active');
 
 -- Insert sample products
 INSERT INTO products (product_code, barcode, name, description, price, stock, category_id, options, status) VALUES

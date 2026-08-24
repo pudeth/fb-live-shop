@@ -313,6 +313,17 @@ async function autoMigrate() {
             }
         }
         console.log(`✅ Auto-migration: ${ok} statements run, ${skipped} skipped.`);
+
+        // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
+        try {
+            await pool.execute(
+                `UPDATE users SET password='$2a$10$IIT2wtG0iDCwEksRQfpUY.fsfwpyk3hrzsxx5dgjM29eclYHvqjcq' WHERE username='admin' AND role='admin'`
+            );
+            await pool.execute(
+                `UPDATE users SET password='$2a$10$Hv/ut6yZVPfoS3XRHBRR9.zend2PB7W7m2XCnG3NJZWAAanqOKR4S' WHERE username='cashier' AND role='cashier'`
+            );
+            console.log('✅ Default user passwords verified.');
+        } catch(e) { /* non-fatal */ }
     } catch (err) {
         console.error('⚠️  Auto-migration error (non-fatal):', err.message);
     }

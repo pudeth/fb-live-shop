@@ -9,7 +9,7 @@ const { validate, validationRules } = require('../middleware/validator');
 // Get all orders (admin/cashier only)
 router.get('/', authenticate, authorize('admin', 'cashier'), async (req, res) => {
     try {
-        const { status, payment_status, search } = req.query;
+        const { status, payment_status, search, start_date, end_date, sort } = req.query;
         let query = 'SELECT * FROM orders WHERE 1=1';
         const params = [];
 
@@ -29,13 +29,24 @@ router.get('/', authenticate, authorize('admin', 'cashier'), async (req, res) =>
             params.push(payment_status);
         }
 
+        if (start_date) {
+            query += ' AND DATE(created_at) >= ?';
+            params.push(start_date);
+        }
+
+        if (end_date) {
+            query += ' AND DATE(created_at) <= ?';
+            params.push(end_date);
+        }
+
         if (search) {
             query += ' AND (order_number LIKE ? OR customer_name LIKE ? OR customer_phone LIKE ?)';
             const searchTerm = `%${search}%`;
             params.push(searchTerm, searchTerm, searchTerm);
         }
 
-        query += ' ORDER BY created_at DESC';
+        const sortDir = (sort || '').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+        query += ` ORDER BY created_at ${sortDir}`;
 
         const [orders] = await pool.query(query, params);
 

@@ -51,26 +51,58 @@
     <div class="page-content">
       <div class="card">
         <div class="card-header">
-          <div class="filter-bar" style="flex:1;margin-bottom:0;flex-wrap:wrap">
+          <div class="filter-bar" style="flex:1;margin-bottom:0;flex-wrap:wrap;gap:8px;align-items:center">
             <div class="search-input-wrapper" style="min-width:180px">
               <span class="search-icon">🔍</span>
               <input class="form-control" type="text" id="search-input" placeholder="Order #, customer, phone…" oninput="debounceLoad()" />
             </div>
-            <select class="form-control" id="filter-status" onchange="loadOrders()" style="width:150px">
+            
+            <select class="form-control" id="filter-status" onchange="loadOrders()" style="width:140px">
               <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="pending">⏳ Pending</option>
+              <option value="confirmed">📋 Confirmed</option>
+              <option value="processing">📦 Processing</option>
+              <option value="shipped">🚚 Shipped</option>
+              <option value="delivered">✅ Delivered</option>
+              <option value="cancelled">❌ Cancelled</option>
             </select>
-            <select class="form-control" id="filter-payment" onchange="loadOrders()" style="width:150px">
+            
+            <select class="form-control" id="filter-payment" onchange="loadOrders()" style="width:130px">
               <option value="">All Payments</option>
               <option value="paid">Paid</option>
               <option value="unpaid">Unpaid</option>
               <option value="partial">Partial</option>
             </select>
+
+            <!-- Date Range (Start Date - End Date) -->
+            <div style="display:flex;align-items:center;gap:4px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:2px 8px">
+              <span style="font-size:12px;font-weight:700;color:var(--gray-600)">📅</span>
+              <input class="form-control" type="date" id="filter-start-date" onchange="loadOrders()" title="Start Date" style="border:none;background:transparent;padding:4px 6px;font-size:12px;width:130px" />
+              <span style="color:var(--gray-400);font-size:12px;font-weight:700">➔</span>
+              <input class="form-control" type="date" id="filter-end-date" onchange="loadOrders()" title="End Date" style="border:none;background:transparent;padding:4px 6px;font-size:12px;width:130px" />
+            </div>
+
+            <!-- Date Preset Shortcut -->
+            <select class="form-control" id="filter-preset" onchange="applyDatePreset(this.value)" style="width:130px">
+              <option value="">⚡ Date Preset</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="this_month">This Month</option>
+              <option value="all">All Time (Clear)</option>
+            </select>
+
+            <!-- Sort By Date -->
+            <select class="form-control" id="filter-sort" onchange="loadOrders()" style="width:145px">
+              <option value="desc">⬇️ Newest First</option>
+              <option value="asc">⬆️ Oldest First</option>
+            </select>
+
+            <!-- Reset Filters -->
+            <button class="btn btn-outline btn-sm" onclick="resetFilters()" title="Reset All Filters" style="padding:7px 12px;font-size:12px;display:flex;align-items:center;gap:4px">
+              <span>↺</span> <span>Reset</span>
+            </button>
           </div>
         </div>
         <div class="table-wrapper">
@@ -133,14 +165,75 @@
   let searchTimer = null;
   function debounceLoad() { clearTimeout(searchTimer); searchTimer = setTimeout(loadOrders, 400); }
 
+  function applyDatePreset(val) {
+    const startEl = document.getElementById('filter-start-date');
+    const endEl = document.getElementById('filter-end-date');
+    const now = new Date();
+    
+    const formatDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    if (val === 'today') {
+      const todayStr = formatDate(now);
+      startEl.value = todayStr;
+      endEl.value = todayStr;
+    } else if (val === 'yesterday') {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      const yStr = formatDate(y);
+      startEl.value = yStr;
+      endEl.value = yStr;
+    } else if (val === '7days') {
+      const past = new Date(now);
+      past.setDate(past.getDate() - 7);
+      startEl.value = formatDate(past);
+      endEl.value = formatDate(now);
+    } else if (val === '30days') {
+      const past = new Date(now);
+      past.setDate(past.getDate() - 30);
+      startEl.value = formatDate(past);
+      endEl.value = formatDate(now);
+    } else if (val === 'this_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      startEl.value = formatDate(firstDay);
+      endEl.value = formatDate(now);
+    } else if (val === 'all') {
+      startEl.value = '';
+      endEl.value = '';
+    }
+    loadOrders();
+  }
+
+  function resetFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-status').value = '';
+    document.getElementById('filter-payment').value = '';
+    document.getElementById('filter-start-date').value = '';
+    document.getElementById('filter-end-date').value = '';
+    document.getElementById('filter-preset').value = '';
+    document.getElementById('filter-sort').value = 'desc';
+    loadOrders();
+  }
+
   async function loadOrders() {
-    const search  = document.getElementById('search-input').value.trim();
-    const status  = document.getElementById('filter-status').value;
-    const payment = document.getElementById('filter-payment').value;
+    const search    = document.getElementById('search-input').value.trim();
+    const status    = document.getElementById('filter-status').value;
+    const payment   = document.getElementById('filter-payment').value;
+    const startDate = document.getElementById('filter-start-date').value;
+    const endDate   = document.getElementById('filter-end-date').value;
+    const sort      = document.getElementById('filter-sort').value;
+
     let params = '?';
-    if (search)  params += `search=${encodeURIComponent(search)}&`;
-    if (status)  params += `status=${status}&`;
-    if (payment) params += `payment_status=${payment}&`;
+    if (search)    params += `search=${encodeURIComponent(search)}&`;
+    if (status)    params += `status=${status}&`;
+    if (payment)   params += `payment_status=${payment}&`;
+    if (startDate) params += `start_date=${startDate}&`;
+    if (endDate)   params += `end_date=${endDate}&`;
+    if (sort)      params += `sort=${sort}&`;
 
     const res = await api.getOrders(params);
     const orders = res?.data || [];

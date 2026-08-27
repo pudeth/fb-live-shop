@@ -656,17 +656,29 @@
 
       <!-- ═══ ORDER LIST TAB ═══ -->
       <div id="tab-list" class="hidden">
-        <div class="list-toolbar">
-          <div class="search-input-wrapper">
+        <div class="list-toolbar" style="flex-wrap:wrap;gap:8px">
+          <div class="search-input-wrapper" style="min-width:160px">
             <span class="search-icon">🔍</span>
             <input class="form-control form-control-sm" id="list-search" placeholder="Search orders…" oninput="debounceList()" />
           </div>
-          <select class="form-control form-control-sm" id="list-status" onchange="loadOrderList()">
+          <select class="form-control form-control-sm" id="list-status" onchange="loadOrderList()" style="width:130px">
             <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="confirmed">📋 Confirmed</option>
+            <option value="processing">📦 Processing</option>
+            <option value="shipped">🚚 Shipped</option>
+            <option value="delivered">✅ Delivered</option>
+            <option value="cancelled">❌ Cancelled</option>
+          </select>
+          <div style="display:flex;align-items:center;gap:4px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:2px 6px">
+            <span style="font-size:12px">📅</span>
+            <input class="form-control form-control-sm" type="date" id="list-start-date" onchange="loadOrderList()" style="border:none;background:transparent;padding:2px 4px;font-size:11px;width:115px" title="Start Date" />
+            <span style="color:var(--gray-400);font-size:11px">➔</span>
+            <input class="form-control form-control-sm" type="date" id="list-end-date" onchange="loadOrderList()" style="border:none;background:transparent;padding:2px 4px;font-size:11px;width:115px" title="End Date" />
+          </div>
+          <select class="form-control form-control-sm" id="list-sort" onchange="loadOrderList()" style="width:130px">
+            <option value="desc">⬇️ Newest First</option>
+            <option value="asc">⬆️ Oldest First</option>
           </select>
           <button class="btn btn-outline btn-sm" onclick="loadOrderList()">🔄 Refresh</button>
         </div>
@@ -954,11 +966,19 @@
   function debounceList() { clearTimeout(listTimer); listTimer = setTimeout(loadOrderList, 400); }
 
   async function loadOrderList() {
-    const search = document.getElementById('list-search').value.trim();
-    const status = document.getElementById('list-status').value;
+    const search    = document.getElementById('list-search').value.trim();
+    const status    = document.getElementById('list-status').value;
+    const startDate = document.getElementById('list-start-date')?.value || '';
+    const endDate   = document.getElementById('list-end-date')?.value || '';
+    const sort      = document.getElementById('list-sort')?.value || 'desc';
+
     let params = '?';
-    if (search) params += `search=${encodeURIComponent(search)}&`;
-    if (status) params += `status=${status}&`;
+    if (search)    params += `search=${encodeURIComponent(search)}&`;
+    if (status)    params += `status=${status}&`;
+    if (startDate) params += `start_date=${startDate}&`;
+    if (endDate)   params += `end_date=${endDate}&`;
+    if (sort)      params += `sort=${sort}&`;
+
     const res    = await api.getOrders(params);
     const orders = res?.data || [];
     const body   = document.getElementById('order-list-body');

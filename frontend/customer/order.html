@@ -555,6 +555,28 @@
       max-width: 90vw;
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .lang-switch-group {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 2px 3px;
+    }
+    .lang-pill {
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      padding: 3px 6px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-pill.active {
+      background: var(--primary);
+      box-shadow: 0 2px 6px var(--primary-glow);
+    }
   </style>
 </head>
 <body>
@@ -562,8 +584,15 @@
   <!-- Top bar -->
   <div class="topbar">
     <button class="back-btn" onclick="history.back()">←</button>
-    <div class="topbar-title">Place Order</div>
-    <button class="currency-toggle-btn" id="order-currency-btn" onclick="toggleOrderCurrency()">USD $</button>
+    <div class="topbar-title" id="topbar-title-text">Place Order</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="lang-switch-group">
+        <button class="lang-pill" id="lp-en" onclick="setOrderLang('en')">🇺🇸</button>
+        <button class="lang-pill" id="lp-km" onclick="setOrderLang('km')">🇰🇭</button>
+        <button class="lang-pill" id="lp-zh" onclick="setOrderLang('zh')">🇨🇳</button>
+      </div>
+      <button class="currency-toggle-btn" id="order-currency-btn" onclick="toggleOrderCurrency()">USD $</button>
+    </div>
   </div>
 
   <div id="main-content">
@@ -711,22 +740,64 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    /* ─── Language Translation Bot ─── */
+    const orderTransCache = {};
+
+    async function setOrderLang(lang) {
+      I18N.setLang(lang);
+      updateLangPills();
+      if (lang !== 'en' && product) {
+        const cacheKey = `${lang}_${product.id}`;
+        if (!orderTransCache[cacheKey]) {
+          toast(lang === 'km' ? '🤖 កំពុងបកប្រែ...' : '🤖 正在翻译...', 1500);
+          try {
+            const res = await api.translateProduct(product.name, product.description || '');
+            if (res?.success && res.data?.[lang]) {
+              orderTransCache[cacheKey] = res.data[lang];
+            }
+          } catch(e) {}
+        }
+      }
+      if (product) renderForm();
+    }
+
+    function updateLangPills() {
+      const cur = I18N.getLang();
+      ['en','km','zh'].forEach(l => {
+        const btn = document.getElementById('lp-' + l);
+        if (btn) btn.classList.toggle('active', l === cur);
+      });
+      const titleEl = document.getElementById('topbar-title-text');
+      if (titleEl) {
+        titleEl.textContent = cur === 'km' ? 'បញ្ជាទិញ' : (cur === 'zh' ? '提交订单' : 'Place Order');
+      }
+      const submitBtnText = document.querySelector('#submit-btn .btn-text');
+      if (submitBtnText) {
+        submitBtnText.textContent = '✅ ' + I18N.t('confirmOrder');
+      }
+    }
+
     /* ─── Render form ─── */
     function renderForm() {
+      updateLangPills();
+      const curLang = I18N.getLang();
+      const translated = (curLang !== 'en' && orderTransCache[`${curLang}_${product.id}`]) || null;
+      const displayName = translated?.name || product.name;
+
       const imgHtml = product.image
-        ? `<img src="${fmt.imgUrl(product.image)}" alt="${escHtml(product.name)}" />`
+        ? `<img src="${fmt.imgUrl(product.image)}" alt="${escHtml(displayName)}" />`
         : `<span>📦</span>`;
 
       document.getElementById('main-content').innerHTML = `
         <div class="page-wrap">
 
           <!-- Product summary -->
-          <div class="section-title">🛒 Product</div>
+          <div class="section-title">🛒 ${curLang === 'km' ? 'ទំនិញ' : (curLang === 'zh' ? '商品' : 'Product')}</div>
           <div class="product-summary">
             <div class="ps-img">${imgHtml}</div>
             <div class="ps-info">
               <div class="ps-code">${escHtml(product.product_code)}</div>
-              <div class="ps-name">${escHtml(product.name)}</div>
+              <div class="ps-name">${escHtml(displayName)}</div>
               <div class="ps-price" id="ps-price-main">${fmtPrice(product.price)}</div>
               <div class="ps-price-sub" id="ps-price-sub">${fmtPriceSub(product.price)}</div>
               ${renderOptTags(selectedOptions)}
@@ -734,76 +805,76 @@
           </div>
 
           <!-- Quantity -->
-          <div class="section-title">📦 Quantity</div>
+          <div class="section-title">📦 ${I18N.t('quantity')}</div>
           <div class="form-card" style="display:flex;align-items:center;gap:16px">
             <div class="qty-row">
               <button class="qty-btn" onclick="changeQty(-1)">−</button>
-              <div class="qty-display" id="qty-display">1</div>
+              <div class="qty-display" id="qty-display">${quantity}</div>
               <button class="qty-btn" onclick="changeQty(1)">+</button>
             </div>
             <div style="font-size:13px;color:var(--text-muted)">
-              <span style="color:var(--text-dim);font-size:11px">Available:</span>
-              <strong style="color:var(--text)">${product.stock}</strong> units
+              <span style="color:var(--text-dim);font-size:11px">${curLang === 'km' ? 'ស្តុកនៅសល់:' : (curLang === 'zh' ? '库存剩余:' : 'Available:')}</span>
+              <strong style="color:var(--text)">${product.stock}</strong> ${curLang === 'km' ? 'គ្រឿង' : (curLang === 'zh' ? '件' : 'units')}
             </div>
           </div>
 
           <!-- Customer details -->
-          <div class="section-title">👤 Your Details</div>
+          <div class="section-title">👤 ${I18N.t('fillDetails')}</div>
           <div class="form-card">
             <div class="form-group">
-              <label class="form-label">Full Name <span class="req">*</span></label>
+              <label class="form-label">${I18N.t('fullName')} <span class="req">*</span></label>
               <input class="form-control" type="text" id="f-name"
-                placeholder="e.g. Sophea Chan"
+                placeholder="${curLang === 'km' ? 'ឧ. សុខា ចាន់' : (curLang === 'zh' ? '例如: 张三' : 'e.g. Sophea Chan')}"
                 autocomplete="name" inputmode="text" />
             </div>
             <div class="form-group">
-              <label class="form-label">Phone Number <span class="req">*</span></label>
+              <label class="form-label">${I18N.t('phoneNumber')} <span class="req">*</span></label>
               <input class="form-control" type="tel" id="f-phone"
-                placeholder="e.g. 012 345 678"
+                placeholder="${curLang === 'km' ? 'ឧ. 012 345 678' : (curLang === 'zh' ? '例如: 13800138000' : 'e.g. 012 345 678')}"
                 autocomplete="tel" inputmode="tel" />
             </div>
             <div class="form-group">
-              <label class="form-label">Delivery Address <span class="req">*</span></label>
+              <label class="form-label">${I18N.t('deliveryAddress')} <span class="req">*</span></label>
               <textarea class="form-control" id="f-address"
                 rows="2"
-                placeholder="Street, city, or area"
+                placeholder="${curLang === 'km' ? 'ផ្ទះលេខ ផ្លូវ សង្កាត់ រាជធានី/ខេត្ត' : (curLang === 'zh' ? '省市区详细街道门牌号' : 'Street, city, or area')}"
                 autocomplete="street-address"
                 style="resize:none;font-family:var(--font)"></textarea>
             </div>
             <div class="form-group">
-              <label class="form-label">Email <span class="hint">(optional)</span></label>
+              <label class="form-label">Email <span class="hint">(${curLang === 'km' ? 'ស្រេចចិត្ត' : (curLang === 'zh' ? '选填' : 'optional')})</span></label>
               <input class="form-control" type="email" id="f-email"
                 placeholder="you@example.com"
                 autocomplete="email" inputmode="email" />
             </div>
             <div class="form-group">
-              <label class="form-label">Notes <span class="hint">(optional)</span></label>
+              <label class="form-label">${I18N.t('notes')} <span class="hint">(${curLang === 'km' ? 'ស្រេចចិត្ត' : (curLang === 'zh' ? '选填' : 'optional')})</span></label>
               <input class="form-control" type="text" id="f-notes"
-                placeholder="e.g. leave at the gate" />
+                placeholder="${curLang === 'km' ? 'ឧ. ដាក់នៅមុខផ្ទះ' : (curLang === 'zh' ? '例如: 放置在门卫处' : 'e.g. leave at the gate')}" />
             </div>
           </div>
 
           <!-- Payment method -->
-          <div class="section-title">💳 Payment Method</div>
+          <div class="section-title">💳 ${I18N.t('paymentMethod')}</div>
           <div class="form-card">
             <div class="pay-grid">
-              <div class="pay-option active" data-method="cod" onclick="selectPayMethod('cod')">
+              <div class="pay-option ${payMethod==='cod'?'active':''}" data-method="cod" onclick="selectPayMethod('cod')">
                 <div class="pay-icon">🛵</div>
                 <div class="pay-label">COD</div>
               </div>
-              <div class="pay-option" data-method="cash" onclick="selectPayMethod('cash')">
+              <div class="pay-option ${payMethod==='cash'?'active':''}" data-method="cash" onclick="selectPayMethod('cash')">
                 <div class="pay-icon">💵</div>
                 <div class="pay-label">Cash</div>
               </div>
-              <div class="pay-option" data-method="bank_transfer" onclick="selectPayMethod('bank_transfer')">
+              <div class="pay-option ${payMethod==='bank_transfer'?'active':''}" data-method="bank_transfer" onclick="selectPayMethod('bank_transfer')">
                 <div class="pay-icon">🏦</div>
                 <div class="pay-label">Bank</div>
               </div>
-              <div class="pay-option" data-method="gcash" onclick="selectPayMethod('gcash')">
+              <div class="pay-option ${payMethod==='gcash'?'active':''}" data-method="gcash" onclick="selectPayMethod('gcash')">
                 <div class="pay-icon">📱</div>
                 <div class="pay-label">GCash</div>
               </div>
-              <div class="pay-option" data-method="credit_card" onclick="selectPayMethod('credit_card')">
+              <div class="pay-option ${payMethod==='credit_card'?'active':''}" data-method="credit_card" onclick="selectPayMethod('credit_card')">
                 <div class="pay-icon">💳</div>
                 <div class="pay-label">Card</div>
               </div>
@@ -812,7 +883,7 @@
             <div id="cash-tendered-row" style="display:none;margin-top:14px">
               <label class="form-label">Amount Tendered</label>
               <input class="form-control" type="number" id="f-tendered"
-                placeholder="Amount in USD (e.g. ${(product.price * 1.1).toFixed(2)})"
+                placeholder="Amount in USD"
                 inputmode="decimal"
                 oninput="calcChange()" />
               <div class="change-box" id="change-box"></div>
@@ -820,44 +891,34 @@
           </div>
 
           <!-- Order summary -->
-          <div class="section-title">🧾 Order Summary</div>
+          <div class="section-title">🧾 ${I18N.t('orderSummary')}</div>
           <div class="order-summary">
             <div class="summary-row">
               <span class="label">Unit price</span>
               <span class="val" id="summary-unit">${fmtPrice(product.price)}</span>
             </div>
             <div class="summary-row">
-              <span class="label">Quantity</span>
-              <span class="val" id="summary-qty-disp">× 1</span>
+              <span class="label">${I18N.t('quantity')}</span>
+              <span class="val" id="summary-qty-disp">× ${quantity}</span>
             </div>
-            ${Object.entries(selectedOptions).length ? `
-            <div class="summary-row">
-              <span class="label">Options</span>
-              <span class="val" style="color:var(--primary);font-size:12px">
-                ${Object.entries(selectedOptions).map(([k,v]) => `${k}: ${v}`).join(' · ')}
-              </span>
-            </div>` : ''}
             <hr class="summary-divider" />
             <div class="summary-row total">
-              <span class="label">Total</span>
-              <span class="val" id="summary-total">${fmtPrice(product.price)}</span>
+              <span class="label">${I18N.t('totalPrice')}</span>
+              <span class="val" id="summary-total">${fmtPrice(product.price * quantity)}</span>
+            </div>
+            <div class="summary-row subtotal" id="summary-total-sub-row">
+              <span class="label"></span>
+              <span class="val" id="summary-total-sub">${fmtPriceSub(product.price * quantity)}</span>
             </div>
           </div>
 
-          <div class="alert-error" id="form-error"></div>
+          <div class="form-error" id="form-error"></div>
+
         </div>
       `;
 
       // Sync qty display and summary updates
       document.getElementById('qty-display').textContent = quantity;
-      // Watch qty changes to also update the "× N" label
-      const origChangeQty = window.changeQty;
-      window.changeQty = function(delta) {
-        origChangeQty(delta);
-        const ql = document.getElementById('summary-qty-disp');
-        if (ql) ql.textContent = '× ' + quantity;
-      };
-
       document.getElementById('submit-bar').style.display = 'block';
       updateCurrencyDisplay();
     }

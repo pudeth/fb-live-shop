@@ -161,7 +161,13 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Product Name <span class="req">*</span></label>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label class="form-label" style="margin:0">Product Name <span class="req">*</span></label>
+          <div style="display:flex;gap:5px">
+            <button type="button" onclick="autoTranslateBot('km')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;border:1px solid #10b981;color:#10b981;background:rgba(16,185,129,.08);font-weight:700" title="Auto-translate to Khmer">🤖 🇰🇭 to Khmer</button>
+            <button type="button" onclick="autoTranslateBot('zh')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;border:1px solid #3b82f6;color:#3b82f6;background:rgba(59,130,246,.08);font-weight:700" title="Auto-translate to Chinese">🤖 🇨🇳 to Chinese</button>
+          </div>
+        </div>
         <input class="form-control" type="text" id="f-name" placeholder="Enter product name" />
       </div>
       <div class="form-group">
@@ -515,6 +521,38 @@
     }
     renderImageSection();
     showToast('Image URL added', 'success');
+  }
+
+  async function autoTranslateBot(targetLang) {
+    const name = document.getElementById('f-name').value.trim();
+    const desc = document.getElementById('f-desc').value.trim();
+    if (!name && !desc) {
+      showToast('Please enter a product name or description first', 'warning');
+      return;
+    }
+    const langLabel = targetLang === 'km' ? 'Khmer 🇰🇭' : 'Chinese 🇨🇳';
+    showToast(`🤖 Auto-translating to ${langLabel}...`, 'info', 2500);
+    try {
+      const res = await api.translateProduct(name, desc);
+      if (res?.success && res.data?.[targetLang]) {
+        const t = res.data[targetLang];
+        if (t.name && (!name.includes(t.name))) {
+          document.getElementById('f-name').value = `${name} (${t.name})`;
+        }
+        if (t.description) {
+          const curDesc = document.getElementById('f-desc').value.trim();
+          const tag = targetLang === 'km' ? '🇰🇭 ភាសាខ្មែរ' : '🇨🇳 中文';
+          document.getElementById('f-desc').value = curDesc
+            ? `${curDesc}\n\n[${tag}]: ${t.description}`
+            : `[${tag}]: ${t.description}`;
+        }
+        showToast(`✅ Auto-translated to ${langLabel}!`, 'success');
+      } else {
+        showToast('Translation service unavailable', 'error');
+      }
+    } catch (e) {
+      showToast('Failed to auto-translate', 'error');
+    }
   }
 
   function openAddModal() {

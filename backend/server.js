@@ -37,6 +37,7 @@ const productsRoutes = require('./routes/products');
 const ordersRoutes = require('./routes/orders');
 const liveRoutes = require('./routes/live');
 const categoriesRoutes = require('./routes/categories');
+const translateRoutes = require('./routes/translate');
 const { setupLiveSocket } = require('./routes/socket-live');
 
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/translate', translateRoutes);
 
 // Serve uploaded product images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

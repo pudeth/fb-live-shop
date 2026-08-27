@@ -141,6 +141,34 @@
     }
     .nav-brand span { color: var(--primary); }
 
+    /* Language Switcher */
+    .lang-switch-group {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 2px 3px;
+    }
+    .lang-pill {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font);
+      padding: 4px 8px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-pill.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
     .hero-container {
       position: relative;
       width: 100%;
@@ -948,9 +976,10 @@
     }
 
     function stockBadge(stock) {
-      if (stock <= 0)  return { cls: 'stock-out', text: '🚫 Out of Stock' };
-      if (stock <= 10) return { cls: 'stock-low', text: `⚡ Low Stock (${stock} left)` };
-      return { cls: 'stock-in', text: `⚡ In Stock (${stock})` };
+      const lang = I18N.getLang();
+      if (stock <= 0)  return { cls: 'stock-out', text: `🚫 ${I18N.t('outOfStock')}` };
+      if (stock <= 10) return { cls: 'stock-low', text: `⚡ ${I18N.t('lowStock')} (${stock})` };
+      return { cls: 'stock-in', text: `⚡ ${I18N.t('inStock')} (${stock})` };
     }
 
     function toggleSave() {
@@ -960,11 +989,11 @@
       if (saved) {
         btn.classList.add('saved');
         btn.querySelector('.ab-icon').textContent = '❤️';
-        toast('❤️ Saved to Wishlist');
+        toast('❤️ ' + I18N.t('saved'));
       } else {
         btn.classList.remove('saved');
         btn.querySelector('.ab-icon').textContent = '🤍';
-        toast('Removed from Wishlist');
+        toast(I18N.t('save'));
       }
     }
 
@@ -984,12 +1013,12 @@
     function handleShareModalClick(e) { if (e.target === document.getElementById('share-modal')) closeShareModal(); }
 
     async function copyLink() {
-      try { await navigator.clipboard.writeText(customerUrl); toast('📋 Link copied to clipboard!'); }
+      try { await navigator.clipboard.writeText(customerUrl); toast('📋 ' + I18N.t('copyLink') + '!'); }
       catch {
         const ta = document.createElement('textarea');
         ta.value = customerUrl; ta.style.position = 'fixed'; ta.style.opacity = '0';
         document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-        toast('📋 Link copied to clipboard!');
+        toast('📋 ' + I18N.t('copyLink') + '!');
       }
     }
 
@@ -1002,30 +1031,67 @@
 
     function buyNow() { window.location.href = customerUrl; }
 
+    /* ─── Language Translation Bot ─── */
+    const translationCache = {};
+    let isLiveState = false;
+
+    async function setLanguage(lang) {
+      I18N.setLang(lang);
+      if (lang !== 'en' && product) {
+        const cacheKey = `${lang}_${product.id}`;
+        if (!translationCache[cacheKey]) {
+          toast(lang === 'km' ? '🤖 កំពុងបកប្រែជាភាសាខ្មែរ...' : '🤖 正在翻译中文...', 1800);
+          try {
+            const res = await api.translateProduct(product.name, product.description || '');
+            if (res?.success && res.data?.[lang]) {
+              translationCache[cacheKey] = res.data[lang];
+            }
+          } catch (e) {
+            console.warn('Auto-translation bot error:', e);
+          }
+        }
+      }
+      render(product, isLiveState);
+    }
+
     function render(p, isLive) {
+      isLiveState = isLive;
+      const curLang = I18N.getLang();
+      const translated = (curLang !== 'en' && translationCache[`${curLang}_${p.id}`]) || null;
+      const displayName = translated?.name || p.name;
+      const displayDesc = translated?.description || p.description;
+
       const sb = stockBadge(p.stock);
       allProductImages = Array.isArray(p.images) && p.images.length > 0 ? p.images.filter(Boolean) : (p.image ? [p.image] : []);
       if (allProductImages.length === 0 && p.image) allProductImages = [p.image];
-      const slidesHtml = allProductImages.length > 0 ? allProductImages.map(img => `<div class="hero-slide"><img src="${fmt.imgUrl(img)}" alt="${p.name}" loading="eager" /></div>`).join('') : `<div class="hero-slide"><div class="hero-empty">📦</div></div>`;
+      const slidesHtml = allProductImages.length > 0 ? allProductImages.map(img => `<div class="hero-slide"><img src="${fmt.imgUrl(img)}" alt="${displayName}" loading="eager" /></div>`).join('') : `<div class="hero-slide"><div class="hero-empty">📦</div></div>`;
       const hasMultiple = allProductImages.length > 1;
       const arrowsHtml = hasMultiple ? `<button class="slider-arrow prev" onclick="slidePrev()" title="Previous photo">‹</button><button class="slider-arrow next" onclick="slideNext()" title="Next photo">›</button>` : '';
       const dotsHtml = hasMultiple ? `<div class="slider-dots">${allProductImages.map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}" onclick="scrollToSlide(${i})"></div>`).join('')}</div>` : '<div></div>';
       const counterHtml = hasMultiple ? `<div class="slide-counter"><span>📸</span> <span id="slide-counter-num">1 / ${allProductImages.length}</span></div>` : '';
       const galleryHtml = hasMultiple ? `<div class="gallery-wrap"><div class="gallery-strip" id="gallery-strip">${allProductImages.map((img, idx) => `<div class="gallery-thumb ${idx === 0 ? 'active' : ''}" onclick="scrollToSlide(${idx})"><img src="${fmt.imgUrl(img)}" alt="thumb ${idx+1}" /></div>`).join('')}</div></div>` : '';
       const optsHtml = renderOptions(p.options);
-      const optSection = optsHtml ? `<div class="options-block"><div class="section-title">⚙️ Select Options</div>${optsHtml}</div>` : '';
-      const descHtml = p.description ? `<div class="description-block"><div class="section-title">📝 Product Description</div><div class="description-text">${escHtml(p.description)}</div></div>` : '';
+      const optSection = optsHtml ? `<div class="options-block"><div class="section-title">⚙️ ${I18N.t('chooseOptions')}</div>${optsHtml}</div>` : '';
+      const descHtml = displayDesc ? `<div class="description-block"><div class="section-title">📝 ${I18N.t('productDescription')}</div><div class="description-text">${escHtml(displayDesc)}</div></div>` : '';
+      
       document.getElementById('root').innerHTML = `
         <div class="top-nav">
           <button class="nav-btn" onclick="history.length > 1 ? history.back() : window.location.href='/customer/product.html'" title="Back">←</button>
-          <div class="nav-brand"><span>FB LIVE</span> SHOP</div>
+          
+          <!-- Auto-Bot Language Selector -->
+          <div class="lang-switch-group">
+            <button class="lang-pill ${curLang==='en'?'active':''}" onclick="setLanguage('en')">🇺🇸 EN</button>
+            <button class="lang-pill ${curLang==='km'?'active':''}" onclick="setLanguage('km')">🇰🇭 ខ្មែរ</button>
+            <button class="lang-pill ${curLang==='zh'?'active':''}" onclick="setLanguage('zh')">🇨🇳 中文</button>
+          </div>
+
           <button class="nav-btn" onclick="openShareModal()" title="Share">↗</button>
         </div>
         <div class="page-wrap">
           <div class="hero-container">
             <div class="hero-slider" id="hero-slider" onscroll="onHeroScroll()">${slidesHtml}</div>
             <div class="hero-gradient"></div>
-            <div class="live-ribbon ${isLive ? 'show' : ''}" id="live-ribbon"><span class="live-dot"></span> LIVE NOW</div>
+            <div class="live-ribbon ${isLive ? 'show' : ''}" id="live-ribbon"><span class="live-dot"></span> ${I18N.t('liveNow')}</div>
             <span class="stock-badge ${sb.cls}">${sb.text}</span>
             ${arrowsHtml}
             <div class="hero-footer-overlay">${dotsHtml}${counterHtml}</div>
@@ -1036,7 +1102,7 @@
               <div class="category-chip"><span>🏷️</span> ${escHtml(p.category_name || 'General')}</div>
               <div class="code-pill">Code: ${escHtml(p.product_code)}</div>
             </div>
-            <h1 class="prod-name">${escHtml(p.name)}</h1>
+            <h1 class="prod-name">${escHtml(displayName)}</h1>
             <div class="price-card">
               <div>
                 <div class="price-main" id="price-main">${priceMain(p.price)}</div>
@@ -1045,16 +1111,16 @@
               <button class="currency-pill" id="currency-pill" onclick="toggleCurrency()"><span>៛</span> Switch KHR</button>
             </div>
             <div class="trust-grid">
-              <div class="trust-item"><span class="trust-icon">🚚</span><span class="trust-text">Fast Delivery</span></div>
-              <div class="trust-item"><span class="trust-icon">💵</span><span class="trust-text">Cash on Delivery</span></div>
-              <div class="trust-item"><span class="trust-icon">🛡️</span><span class="trust-text">100% Quality</span></div>
+              <div class="trust-item"><span class="trust-icon">🚚</span><span class="trust-text">${I18N.t('fastDelivery')}</span></div>
+              <div class="trust-item"><span class="trust-icon">💵</span><span class="trust-text">${I18N.t('cod')}</span></div>
+              <div class="trust-item"><span class="trust-icon">🛡️</span><span class="trust-text">${I18N.t('genuineQuality')}</span></div>
             </div>
             ${optSection}
             ${descHtml}
             <div class="action-grid">
-              <button class="action-btn" id="btn-save" onclick="toggleSave()"><span class="ab-icon">🤍</span>Save</button>
-              <button class="action-btn" onclick="copyLink()"><span class="ab-icon">🔗</span>Copy Link</button>
-              <button class="action-btn" onclick="openShareModal()"><span class="ab-icon">📱</span>Scan QR</button>
+              <button class="action-btn" id="btn-save" onclick="toggleSave()"><span class="ab-icon">🤍</span>${I18N.t('save')}</button>
+              <button class="action-btn" onclick="copyLink()"><span class="ab-icon">🔗</span>${I18N.t('copyLink')}</button>
+              <button class="action-btn" onclick="openShareModal()"><span class="ab-icon">📱</span>${I18N.t('scanQr')}</button>
             </div>
             <div class="brand-footer">Powered by <span>FB Live Shop</span> &nbsp;·&nbsp; Scan. Shop. Done.</div>
           </div>
@@ -1062,10 +1128,10 @@
         <div class="sticky-checkout">
           <div class="sticky-inner">
             <div class="sticky-price-wrap">
-              <div class="sticky-price-label">Total Price</div>
+              <div class="sticky-price-label">${I18N.t('totalPrice')}</div>
               <div class="sticky-price-main" id="sticky-price-main">${priceMain(p.price)}</div>
             </div>
-            <button class="buy-btn" id="buy-btn" ${p.stock <= 0 ? 'disabled' : ''} onclick="buyNow()">${p.stock <= 0 ? '🚫 Out of Stock' : '🛒 Order Now'}</button>
+            <button class="buy-btn" id="buy-btn" ${p.stock <= 0 ? 'disabled' : ''} onclick="buyNow()">${p.stock <= 0 ? '🚫 ' + I18N.t('outOfStock') : '🛒 ' + I18N.t('orderNow')}</button>
           </div>
         </div>`;
       refreshPriceDisplay();

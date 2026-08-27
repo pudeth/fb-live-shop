@@ -60,11 +60,119 @@ const api = {
   updateOrderStatus:(id, status)  => api.patch(`/orders/${id}/status`, { status }),
   updatePayment:    (id, data)    => api.patch(`/orders/${id}/payment`, data),
 
+  /* --- Translation Bot --- */
+  translate:        (text, to = 'km', from = 'en') => api.post('/translate', { text, to, from }),
+  translateMultiple:(texts, to = 'km', from = 'en')=> api.post('/translate', { texts, to, from }),
+  translateProduct: (name, description)            => api.post('/translate/product', { name, description }),
+
   /* --- Live --- */
   getActiveLive:    ()            => api.get('/live/active'),
   getCurrentProduct:()            => api.get('/live/current-product'),
   createLiveSession:(data)        => api.post('/live', data),
   endLiveSession:   (id)          => api.patch(`/live/${id}/end`, {}),
+};
+
+/* ===== MULTI-LANGUAGE TRANSLATOR BOT (EN / KM / ZH) ===== */
+const I18N = {
+  getLang() {
+    return localStorage.getItem('app_lang') || 'en';
+  },
+  setLang(lang) {
+    localStorage.setItem('app_lang', lang);
+  },
+  dict: {
+    en: {
+      liveNow: 'LIVE NOW',
+      inStock: 'In Stock',
+      lowStock: 'Low Stock',
+      outOfStock: 'Out of Stock',
+      chooseOptions: 'Choose Options',
+      aboutProduct: 'About This Product',
+      productDescription: 'Product Description',
+      totalPrice: 'Total Price',
+      orderNow: 'Order Now',
+      save: 'Save',
+      saved: 'Saved',
+      copyLink: 'Copy Link',
+      share: 'Share',
+      scanQr: 'Scan QR',
+      fastDelivery: 'Fast Delivery',
+      cod: 'Cash on Delivery',
+      genuineQuality: '100% Quality',
+      placedOrder: 'Order Placed!',
+      fillDetails: 'Customer Information',
+      fullName: 'Full Name',
+      phoneNumber: 'Phone Number',
+      deliveryAddress: 'Delivery Address',
+      notes: 'Notes / Remarks (optional)',
+      paymentMethod: 'Payment Method',
+      confirmOrder: 'Confirm Order',
+      orderSummary: 'Order Summary',
+      quantity: 'Quantity',
+    },
+    km: {
+      liveNow: 'កំពុងផ្សាយផ្ទាល់',
+      inStock: 'មានក្នុងស្តុក',
+      lowStock: 'នៅសល់តិច',
+      outOfStock: 'អស់ពីស្តុក',
+      chooseOptions: 'ជ្រើសរើសជម្រើស',
+      aboutProduct: 'ព័ត៌មានលម្អិតអំពីទំនិញ',
+      productDescription: 'ការពិពណ៌នាអំពីទំនិញ',
+      totalPrice: 'តម្លៃសរុប',
+      orderNow: 'បញ្ជាទិញឥឡូវនេះ',
+      save: 'រក្សាទុក',
+      saved: 'បានរក្សាទុក',
+      copyLink: 'ចម្លងតំណភ្ជាប់',
+      share: 'ចែករំលែក',
+      scanQr: 'ស្កេន QR',
+      fastDelivery: 'ដឹកជញ្ជូនរហ័ស',
+      cod: 'ទូទាត់ពេលទទួល (COD)',
+      genuineQuality: 'គុណភាពពិត ១០០%',
+      placedOrder: 'ការបញ្ជាទិញបានជោគជ័យ!',
+      fillDetails: 'ព័ត៌មានអតិថិជន',
+      fullName: 'ឈ្មោះពេញ',
+      phoneNumber: 'លេខទូរស័ព្ទ',
+      deliveryAddress: 'អាសយដ្ឋានដឹកជញ្ជូន',
+      notes: 'ចំណាំបន្ថែម (ស្រេចចិត្ត)',
+      paymentMethod: 'វិធីសាស្ត្រទូទាត់ប្រាក់',
+      confirmOrder: 'បញ្ជាក់ការបញ្ជាទិញ',
+      orderSummary: 'សេចក្តីសង្ខេបការបញ្ជាទិញ',
+      quantity: 'ចំនួន',
+    },
+    zh: {
+      liveNow: '正在直播',
+      inStock: '有现货',
+      lowStock: '库存紧张',
+      outOfStock: '暂时缺货',
+      chooseOptions: '选择规格',
+      aboutProduct: '商品详情',
+      productDescription: '商品描述',
+      totalPrice: '总价',
+      orderNow: '立即下单',
+      save: '收藏',
+      saved: '已收藏',
+      copyLink: '复制链接',
+      share: '分享',
+      scanQr: '扫码查看',
+      fastDelivery: '急速发货',
+      cod: '货到付款 (COD)',
+      genuineQuality: '100% 正品保障',
+      placedOrder: '下单成功！',
+      fillDetails: '收货人信息',
+      fullName: '收货人姓名',
+      phoneNumber: '联系电话',
+      deliveryAddress: '收货详细地址',
+      notes: '订单备注 (选填)',
+      paymentMethod: '支付方式',
+      confirmOrder: '确认提交订单',
+      orderSummary: '订单明细',
+      quantity: '数量',
+    }
+  },
+  t(key) {
+    const lang = this.getLang();
+    return this.dict[lang]?.[key] || this.dict.en?.[key] || key;
+  }
 };
 
 /* ===== AUTH HELPERS ===== */

@@ -216,6 +216,24 @@
   </div>
 </div>
 
+<!-- Product View Detail Modal -->
+<div class="modal-backdrop" id="product-view-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="pvm-title">Product Details</div>
+        <div style="font-size:13px;color:var(--gray-500)" id="pvm-code"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('product-view-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="pvm-body">Loading…</div>
+    <div class="modal-footer" id="pvm-footer">
+      <button class="btn btn-outline" onclick="closeModal('product-view-modal')">Close</button>
+      <button class="btn btn-primary" id="pvm-edit-btn" onclick="closeModal('product-view-modal');openEditModal(window._currentViewProdId)">✏️ Edit Product</button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Confirm Modal -->
 <div class="modal-backdrop" id="delete-modal">
   <div class="modal" style="max-width:400px">
@@ -295,14 +313,20 @@
         ? `<div style="position:relative;display:inline-block;width:44px;height:44px"><img src="${fmt.imgUrl(p.image)}" class="product-img" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="product-thumb" style="display:none">📦</div>${imgCount}</div>`
         : `<div class="product-thumb" style="display:flex;align-items:center;justify-content:center">📦</div>`;
       return `<tr>
-        <td>${imgEl}</td>
-        <td><span class="code">${p.product_code}</span></td>
-        <td><div style="font-weight:600">${p.name}</div>${p.description ? `<div style="font-size:12px;color:var(--gray-400)">${p.description.substring(0,50)}${p.description.length>50?'…':''}</div>` : ''}</td>
+        <td><div style="cursor:pointer" onclick="openViewProductModal(${p.id})" title="Click to view details">${imgEl}</div></td>
+        <td><span class="code" style="cursor:pointer" onclick="openViewProductModal(${p.id})">${p.product_code}</span></td>
+        <td>
+          <a href="javascript:void(0)" onclick="openViewProductModal(${p.id})" style="font-weight:600;color:var(--gray-900);text-decoration:none">
+            ${p.name}
+          </a>
+          ${p.description ? `<div style="font-size:12px;color:var(--gray-400)">${p.description.substring(0,50)}${p.description.length>50?'…':''}</div>` : ''}
+        </td>
         <td>${p.category_name || '<span style="color:var(--gray-400)">—</span>'}</td>
         <td style="font-weight:700">${fmt.currency(p.price)}</td>
         <td><span class="badge ${p.stock <= 0 ? 'badge-danger' : p.stock <= 5 ? 'badge-warning' : 'badge-success'}">${p.stock}</span></td>
         <td>${fmt.statusBadge(p.status)}</td>
         <td><div class="table-actions">
+          <button class="btn btn-ghost btn-icon-sm" title="View Details" onclick="openViewProductModal(${p.id})">👁️</button>
           <button class="btn btn-ghost btn-icon-sm" title="Edit" onclick="openEditModal(${p.id})">✏️</button>
           <button class="btn btn-ghost btn-icon-sm" title="Delete" onclick="openDeleteModal(${p.id}, '${p.name.replace(/'/g, "\\'")}')">🗑️</button>
         </div></td>
@@ -553,6 +577,115 @@
     } catch (e) {
       showToast('Failed to auto-translate', 'error');
     }
+  }
+
+  async function openViewProductModal(id) {
+    window._currentViewProdId = id;
+    openModal('product-view-modal');
+    document.getElementById('pvm-title').textContent = 'Loading Product...';
+    document.getElementById('pvm-code').textContent = '';
+    document.getElementById('pvm-body').innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div></div>';
+
+    const res = await api.getProduct(id);
+    const p   = res?.data;
+    if (!p) {
+      document.getElementById('pvm-body').innerHTML = '<p style="color:var(--danger)">Failed to load product details.</p>';
+      return;
+    }
+
+    document.getElementById('pvm-title').textContent = p.name;
+    document.getElementById('pvm-code').textContent = `Code: ${p.product_code || 'N/A'}${p.barcode ? ` · Barcode: ${p.barcode}` : ''}`;
+
+    let images = [];
+    if (p.image) images.push(p.image);
+    if (p.images) {
+      try {
+        const sub = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+        if (Array.isArray(sub)) {
+          sub.forEach(img => { if (img && !images.includes(img)) images.push(img); });
+        }
+      } catch(e) {}
+    }
+
+    const galleryHtml = images.length > 0 ? `
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="width:100%;height:240px;border-radius:12px;background:var(--gray-100);overflow:hidden;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center">
+          <img id="pvm-main-img" src="${fmt.imgUrl(images[0])}" style="width:100%;height:100%;object-fit:contain" alt="${p.name}" />
+        </div>
+        ${images.length > 1 ? `
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+            ${images.map((img, idx) => `
+              <img src="${fmt.imgUrl(img)}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid ${idx===0?'var(--primary)':'var(--gray-200)'};cursor:pointer;flex-shrink:0" onclick="document.getElementById('pvm-main-img').src='${fmt.imgUrl(img)}';this.parentElement.querySelectorAll('img').forEach(i=>i.style.borderColor='var(--gray-200)');this.style.borderColor='var(--primary)'" />
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    ` : `
+      <div style="width:100%;height:180px;border-radius:12px;background:var(--gray-100);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gray-400);border:1px solid var(--gray-200)">
+        <span style="font-size:42px">📦</span>
+        <span style="font-size:12px;margin-top:6px">No Product Image</span>
+      </div>
+    `;
+
+    let optionsHtml = '';
+    if (p.options) {
+      try {
+        const opts = typeof p.options === 'string' ? JSON.parse(p.options) : p.options;
+        if (opts && typeof opts === 'object') {
+          optionsHtml = Object.entries(opts).map(([k, v]) => `
+            <div style="margin-bottom:6px">
+              <strong style="text-transform:capitalize">${k}:</strong> 
+              <span style="color:var(--gray-700)">${Array.isArray(v) ? v.join(', ') : v}</span>
+            </div>
+          `).join('');
+        }
+      } catch(e) {}
+    }
+
+    document.getElementById('pvm-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:230px 1fr;gap:20px">
+        <div>${galleryHtml}</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:18px;font-weight:800;color:var(--gray-900)">${p.name}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <span class="code" style="font-size:12px">${p.product_code}</span>
+              ${p.category_name ? `<span style="font-size:12px;background:var(--gray-100);color:var(--gray-600);padding:2px 8px;border-radius:6px">${p.category_name}</span>` : ''}
+              ${fmt.statusBadge(p.status || 'active')}
+            </div>
+          </div>
+
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <div style="font-size:11px;color:var(--gray-500);font-weight:600">UNIT PRICE</div>
+              <div style="font-size:18px;font-weight:900;color:var(--primary)">${fmt.currency(p.price)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--gray-500);font-weight:600">INVENTORY STOCK</div>
+              <div style="font-size:18px;font-weight:900;color:${Number(p.stock) > 0 ? '#10b981' : '#ef4444'}">${p.stock != null ? p.stock : 'N/A'} units</div>
+            </div>
+          </div>
+
+          ${p.description ? `
+            <div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:4px">Description</div>
+              <div style="font-size:13px;color:var(--gray-700);line-height:1.6;background:#fff;border:1px solid var(--gray-100);border-radius:8px;padding:10px;max-height:110px;overflow-y:auto">
+                ${p.description}
+              </div>
+            </div>
+          ` : ''}
+
+          ${optionsHtml ? `
+            <div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:4px">Variants & Options</div>
+              <div style="font-size:13px;background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.2);border-radius:8px;padding:8px 12px">
+                ${optionsHtml}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
   }
 
   function openAddModal() {

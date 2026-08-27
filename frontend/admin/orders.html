@@ -101,6 +101,21 @@
     </div>
     <div class="modal-body" id="order-modal-body">Loading…</div>
     <div class="modal-footer" id="order-modal-footer"></div>
+<!-- Product Detail Modal for Admin -->
+<div class="modal-backdrop" id="product-detail-modal" style="z-index:1100">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="pdm-title">Product Details</div>
+        <div style="font-size:13px;color:var(--gray-500)" id="pdm-code"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('product-detail-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="pdm-body">Loading…</div>
+    <div class="modal-footer" id="pdm-footer">
+      <button class="btn btn-outline" onclick="closeModal('product-detail-modal')">Close</button>
+      <a class="btn btn-primary" id="pdm-edit-btn" href="#" target="_blank">✏️ Edit in Products</a>
+    </div>
   </div>
 </div>
 
@@ -212,13 +227,28 @@
       <hr class="divider" />
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:10px">Order Items</div>
       <table class="table" style="margin-bottom:16px">
-        <thead><tr><th>Product</th><th>Code</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+        <thead><tr><th style="width:46px">Image</th><th>Product Name</th><th>Code</th><th>Price</th><th>Qty</th><th>Subtotal</th><th style="width:70px">Action</th></tr></thead>
         <tbody>${items.map(it => `<tr>
-          <td><strong>${it.product_name}</strong>${it.selected_options ? `<div style="font-size:12px;color:var(--gray-400)">${JSON.stringify(it.selected_options)}</div>` : ''}</td>
+          <td>
+            <div style="width:40px;height:40px;border-radius:8px;background:var(--gray-100);overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--gray-200);cursor:pointer" onclick="viewProductDetail(${it.product_id || 0}, '${encodeURIComponent(JSON.stringify(it))}')" title="Click to view product details">
+              ${it.product_image ? `<img src="${it.product_image}" style="width:100%;height:100%;object-fit:cover" alt="${it.product_name}" />` : `<span style="font-size:18px">📦</span>`}
+            </div>
+          </td>
+          <td>
+            <a href="javascript:void(0)" onclick="viewProductDetail(${it.product_id || 0}, '${encodeURIComponent(JSON.stringify(it))}')" style="font-weight:700;color:var(--primary);text-decoration:none">
+              ${it.product_name}
+            </a>
+            ${it.selected_options ? `<div style="font-size:12px;color:var(--gray-400)">${typeof it.selected_options === 'string' ? it.selected_options : JSON.stringify(it.selected_options)}</div>` : ''}
+          </td>
           <td><span class="code">${it.product_code}</span></td>
           <td>${fmt.currency(it.price)}</td>
           <td>${it.quantity}</td>
           <td style="font-weight:700">${fmt.currency(it.subtotal)}</td>
+          <td>
+            <button type="button" class="btn btn-outline btn-sm" onclick="viewProductDetail(${it.product_id || 0}, '${encodeURIComponent(JSON.stringify(it))}')" style="font-size:11px;padding:3px 8px">
+              🔍 Detail
+            </button>
+          </td>
         </tr>`).join('')}</tbody>
       </table>
       ${o.notes ? `<div style="background:var(--gray-50);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--gray-600)"><strong>Notes:</strong> ${o.notes}</div>` : ''}
@@ -245,6 +275,120 @@
       <button class="btn btn-outline" onclick="closeModal('order-modal')">Close</button>
       <button class="btn btn-warning" onclick="updateOrderStatus(${id})">Update Status</button>
       <button class="btn btn-success" onclick="updatePaymentStatus(${id})">Update Payment</button>
+    `;
+  }
+
+  async function viewProductDetail(productId, encodedItem) {
+    let item = null;
+    try {
+      if (encodedItem) item = JSON.parse(decodeURIComponent(encodedItem));
+    } catch(e) {}
+
+    openModal('product-detail-modal');
+    document.getElementById('pdm-title').textContent = item?.product_name || 'Product Details';
+    document.getElementById('pdm-code').textContent = item?.product_code ? `Code: ${item.product_code}` : '';
+    document.getElementById('pdm-body').innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div></div>';
+
+    if (productId) {
+      document.getElementById('pdm-edit-btn').href = `/admin/products.html`;
+      document.getElementById('pdm-edit-btn').style.display = 'inline-flex';
+    } else {
+      document.getElementById('pdm-edit-btn').style.display = 'none';
+    }
+
+    let p = null;
+    if (productId) {
+      const res = await api.getProduct(productId);
+      p = res?.data;
+    }
+
+    if (!p) {
+      p = {
+        name: item?.product_name || 'Product',
+        product_code: item?.product_code || 'N/A',
+        price: item?.price || 0,
+        image: item?.product_image || null,
+        description: item?.product_description || 'No detailed description available.',
+        stock: item?.product_stock != null ? item.product_stock : 'N/A',
+        category_name: item?.category_name || 'General',
+        status: 'active'
+      };
+    }
+
+    let images = [];
+    if (p.image) images.push(p.image);
+    if (p.images) {
+      try {
+        const sub = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+        if (Array.isArray(sub)) {
+          sub.forEach(img => { if (img && !images.includes(img)) images.push(img); });
+        }
+      } catch(e) {}
+    }
+
+    const galleryHtml = images.length > 0 ? `
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="width:100%;height:220px;border-radius:12px;background:var(--gray-100);overflow:hidden;border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center">
+          <img id="pdm-main-img" src="${images[0]}" style="width:100%;height:100%;object-fit:contain" alt="${p.name}" />
+        </div>
+        ${images.length > 1 ? `
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+            ${images.map((img, idx) => `
+              <img src="${img}" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid ${idx===0?'var(--primary)':'var(--gray-200)'};cursor:pointer;flex-shrink:0" onclick="document.getElementById('pdm-main-img').src='${img}';this.parentElement.querySelectorAll('img').forEach(i=>i.style.borderColor='var(--gray-200)');this.style.borderColor='var(--primary)'" />
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    ` : `
+      <div style="width:100%;height:180px;border-radius:12px;background:var(--gray-100);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gray-400);border:1px solid var(--gray-200)">
+        <span style="font-size:42px">📦</span>
+        <span style="font-size:12px;margin-top:6px">No Product Image</span>
+      </div>
+    `;
+
+    document.getElementById('pdm-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:20px">
+        <div>${galleryHtml}</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:18px;font-weight:800;color:var(--gray-900)">${p.name}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <span class="code" style="font-size:12px">${p.product_code}</span>
+              ${p.category_name ? `<span style="font-size:12px;background:var(--gray-100);color:var(--gray-600);padding:2px 8px;border-radius:6px">${p.category_name}</span>` : ''}
+              ${fmt.statusBadge(p.status || 'active')}
+            </div>
+          </div>
+
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <div style="font-size:11px;color:var(--gray-500);font-weight:600">UNIT PRICE</div>
+              <div style="font-size:18px;font-weight:900;color:var(--primary)">${fmt.currency(p.price)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--gray-500);font-weight:600">CURRENT STOCK</div>
+              <div style="font-size:18px;font-weight:900;color:${Number(p.stock) > 0 ? '#10b981' : '#ef4444'}">${p.stock != null ? p.stock : 'N/A'} units</div>
+            </div>
+          </div>
+
+          ${p.description ? `
+            <div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:4px">Description</div>
+              <div style="font-size:13px;color:var(--gray-700);line-height:1.6;background:#fff;border:1px solid var(--gray-100);border-radius:8px;padding:10px;max-height:100px;overflow-y:auto">
+                ${p.description}
+              </div>
+            </div>
+          ` : ''}
+
+          ${item?.selected_options ? `
+            <div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:4px">Ordered Options</div>
+              <div style="font-size:13px;color:var(--primary);font-weight:600;background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.2);border-radius:8px;padding:8px 12px">
+                ${typeof item.selected_options === 'string' ? item.selected_options : JSON.stringify(item.selected_options)}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
     `;
   }
 

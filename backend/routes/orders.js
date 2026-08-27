@@ -110,7 +110,11 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
 
         try {
             const [items] = await pool.query(
-                'SELECT * FROM order_items WHERE order_id = ?',
+                `SELECT oi.*, p.image as product_image, p.images as product_images, p.description as product_description, p.stock as product_stock, c.name as category_name
+                 FROM order_items oi
+                 LEFT JOIN products p ON oi.product_id = p.id
+                 LEFT JOIN categories c ON p.category_id = c.id
+                 WHERE oi.order_id = ?`,
                 [id]
             );
             order.items = items || [];
@@ -444,7 +448,13 @@ router.post('/track', async (req, res) => {
             }
 
             const order = orders[0];
-            const [items] = await pool.query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+            const [items] = await pool.query(
+                `SELECT oi.*, p.image as product_image, p.images as product_images, p.description as product_description, p.stock as product_stock
+                 FROM order_items oi
+                 LEFT JOIN products p ON oi.product_id = p.id
+                 WHERE oi.order_id = ?`,
+                [order.id]
+            );
             order.items = items;
 
             return res.json({
@@ -480,7 +490,13 @@ router.post('/track', async (req, res) => {
             );
 
             for (const o of orders) {
-                const [items] = await pool.query('SELECT * FROM order_items WHERE order_id = ?', [o.id]);
+                const [items] = await pool.query(
+                    `SELECT oi.*, p.image as product_image, p.images as product_images, p.description as product_description, p.stock as product_stock
+                     FROM order_items oi
+                     LEFT JOIN products p ON oi.product_id = p.id
+                     WHERE oi.order_id = ?`,
+                    [o.id]
+                );
                 o.items = items;
                 o.timeline = getOrderTimeline(o);
             }

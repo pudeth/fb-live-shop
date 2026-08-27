@@ -173,17 +173,28 @@
           </div>
 
           <!-- Customer Login Credentials -->
-          <div style="margin-top:14px;background:rgba(37,99,235,0.08);border:1.5px solid rgba(37,99,235,0.25);border-radius:12px;padding:10px 14px">
-            <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-              <span>🔐 Customer Login Details</span>
-              <span style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;padding:1px 6px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">Active</span>
+          <div style="margin-top:14px;background:rgba(37,99,235,0.08);border:1.5px solid rgba(37,99,235,0.25);border-radius:12px;padding:12px 14px">
+            <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+              <span>🔐 Customer Login (For Order Tracking)</span>
+              <span style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;padding:1px 6px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);font-weight:700">Active</span>
             </div>
-            <div style="font-size:13px;line-height:1.6">
-              <div>👤 <strong>Username:</strong> <code style="font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px">${o.customer_phone || o.account_username || 'N/A'}</code></div>
-              <div style="margin-top:4px;display:flex;align-items:center;justify-content:space-between">
-                <div>🔑 <strong>Password:</strong> <code style="font-size:13px;font-weight:900;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:6px">${o.customer_pin || o.raw_pin || 'Available'}</code></div>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="copyCustomerCreds('${o.customer_phone || o.account_username}','${o.customer_pin || o.raw_pin || ''}')" style="font-size:11px;padding:3px 8px;border:1px solid var(--gray-300);background:#fff">📋 Copy</button>
+            <div style="font-size:13px;line-height:1.8">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>👤 <strong>Username:</strong></span>
+                <code style="font-size:13px;font-weight:700;background:var(--gray-100);padding:2px 8px;border-radius:4px" id="modal-cust-user">${o.customer_phone || o.account_username || 'N/A'}</code>
               </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+                <span>🔑 <strong>6-Digit PIN:</strong></span>
+                <code style="font-size:15px;font-weight:900;background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:6px;letter-spacing:1px" id="modal-cust-pin">${o.customer_pin || '---'}</code>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button type="button" class="btn btn-primary btn-sm" onclick="copyCustomerCreds('${o.customer_phone || o.account_username}','${o.customer_pin || ''}','${o.order_number}')" style="flex:1;font-size:12px;padding:6px 10px;display:flex;align-items:center;justify-content:center;gap:4px">
+                📋 Copy Login for Customer
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="resetCustomerPin(${o.id},'${o.order_number}')" style="font-size:12px;padding:6px 10px" title="Generate fresh 6-digit PIN if customer forgot">
+                🔄 Reset PIN
+              </button>
             </div>
           </div>
         </div>
@@ -251,15 +262,33 @@
     else showToast(res?.message || 'Update failed', 'error');
   }
 
-  async function copyCustomerCreds(user, pin) {
-    const text = `Shop Customer Login:\n👤 Username: ${user}\n🔑 6-Digit PIN: ${pin}`;
+  async function copyCustomerCreds(user, pin, orderNum) {
+    const activePin = document.getElementById('modal-cust-pin')?.textContent?.trim() || pin;
+    const activeUser = document.getElementById('modal-cust-user')?.textContent?.trim() || user;
+    const trackingLink = `${window.location.origin}/customer/track.html?order=${encodeURIComponent(orderNum || '')}`;
+    const text = `🛍️ Shop Login Info:\n👤 Username: ${activeUser}\n🔑 6-Digit PIN: ${activePin}\n🔗 Track Order: ${trackingLink}`;
     try {
       await navigator.clipboard.writeText(text);
-      showToast('📋 Customer login info copied!', 'success');
+      showToast('📋 Login info copied! Ready to send to customer.', 'success');
     } catch {
       const ta = document.createElement('textarea');
       ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-      showToast('📋 Customer login info copied!', 'success');
+      showToast('📋 Login info copied! Ready to send to customer.', 'success');
+    }
+  }
+
+  async function resetCustomerPin(orderId, orderNum) {
+    if (!confirm('Generate a new 6-digit PIN for this customer?')) return;
+    try {
+      const res = await api.post(`/orders/${orderId}/reset-pin`);
+      if (res?.success && res.pin) {
+        document.getElementById('modal-cust-pin').textContent = res.pin;
+        showToast('✅ New PIN generated: ' + res.pin, 'success');
+      } else {
+        showToast(res?.message || 'Failed to reset PIN', 'error');
+      }
+    } catch(e) {
+      showToast('Error resetting PIN', 'error');
     }
   }
 

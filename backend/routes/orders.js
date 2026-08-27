@@ -83,6 +83,31 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
 
         order.customer_pin = order.customer_pin || order.raw_pin || null;
 
+        // If order doesn't have a customer_pin yet, auto-create a 6-digit PIN now
+        if (!order.customer_pin) {
+            const pin = Math.floor(100000 + Math.random() * 900000).toString();
+            order.customer_pin = pin;
+            try {
+                const hashed = await bcrypt.hash(pin, 10);
+                await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [pin, id]);
+                const cleanPhone = (order.customer_phone || '').trim().replace(/[^0-9+]/g, '');
+                if (cleanPhone) {
+                    const [u] = await pool.query('SELECT id FROM users WHERE username = ? OR phone = ? LIMIT 1', [cleanPhone, order.customer_phone]);
+                    if (u.length > 0) {
+                        await pool.query('UPDATE users SET password = ?, raw_pin = ? WHERE id = ?', [hashed, pin, u[0].id]);
+                    } else {
+                        await pool.query(
+                            `INSERT INTO users (username, password, raw_pin, full_name, email, phone, address, role, status)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, 'customer', 'active')`,
+                            [cleanPhone, hashed, pin, order.customer_name, order.customer_email || null, order.customer_phone, order.customer_address || null]
+                        );
+                    }
+                }
+            } catch(e) {
+                console.warn('Auto-generating PIN error:', e.message);
+            }
+        }
+
         try {
             const [items] = await pool.query(
                 'SELECT * FROM order_items WHERE order_id = ?',
@@ -104,6 +129,49 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
             success: false, 
             message: 'Server error: ' + error.message 
         });
+    }
+});
+
+// Reset / generate fresh customer PIN (admin/cashier only)
+router.post('/:id/reset-pin', authenticate, authorize('admin', 'cashier'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+        if (orders.length === 0) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+        const order = orders[0];
+        const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashed = await bcrypt.hash(newPin, 10);
+
+        try {
+            await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [newPin, id]);
+            const cleanPhone = (order.customer_phone || '').trim().replace(/[^0-9+]/g, '');
+            if (cleanPhone) {
+                const [u] = await pool.query('SELECT id FROM users WHERE username = ? OR phone = ? LIMIT 1', [cleanPhone, order.customer_phone]);
+                if (u.length > 0) {
+                    await pool.query('UPDATE users SET password = ?, raw_pin = ? WHERE id = ?', [hashed, newPin, u[0].id]);
+                } else {
+                    await pool.query(
+                        `INSERT INTO users (username, password, raw_pin, full_name, email, phone, address, role, status)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, 'customer', 'active')`,
+                        [cleanPhone, hashed, newPin, order.customer_name, order.customer_email || null, order.customer_phone, order.customer_address || null]
+                    );
+                }
+            }
+        } catch(e) {
+            console.warn('Reset PIN DB update error:', e.message);
+        }
+
+        res.json({
+            success: true,
+            message: 'Customer PIN updated successfully',
+            pin: newPin,
+            username: (order.customer_phone || '').trim().replace(/[^0-9+]/g, '') || order.customer_phone
+        });
+    } catch (err) {
+        console.error('Reset PIN error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 

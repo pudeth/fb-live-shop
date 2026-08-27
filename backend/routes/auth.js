@@ -109,7 +109,7 @@ router.post('/register', validationRules.register, validate, async (req, res) =>
 router.get('/me', authenticate, async (req, res) => {
     try {
         const [users] = await pool.query(
-            'SELECT id, username, raw_pin, full_name, email, phone, address, role, status, created_at FROM users WHERE id = ?',
+            'SELECT id, username, raw_pin, full_name, email, phone, address, avatar, role, status, created_at FROM users WHERE id = ?',
             [req.user.id]
         );
         if (users.length === 0) {
@@ -122,10 +122,10 @@ router.get('/me', authenticate, async (req, res) => {
     }
 });
 
-// Update profile (name, phone, email, address, optional PIN)
+// Update profile (name, phone, email, address, avatar, optional PIN)
 router.put('/profile', authenticate, async (req, res) => {
     try {
-        const { full_name, phone, email, address, pin } = req.body;
+        const { full_name, phone, email, address, avatar, pin } = req.body;
         const updates = [];
         const params = [];
 
@@ -133,6 +133,7 @@ router.put('/profile', authenticate, async (req, res) => {
         if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
         if (email !== undefined) { updates.push('email = ?'); params.push(email || null); }
         if (address !== undefined) { updates.push('address = ?'); params.push(address || null); }
+        if (avatar !== undefined) { updates.push('avatar = ?'); params.push(avatar || null); }
 
         if (pin && pin.trim().length >= 4) {
             const cleanPin = pin.trim();
@@ -149,7 +150,7 @@ router.put('/profile', authenticate, async (req, res) => {
         await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
 
         const [users] = await pool.query(
-            'SELECT id, username, raw_pin, full_name, email, phone, address, role, status FROM users WHERE id = ?',
+            'SELECT id, username, raw_pin, full_name, email, phone, address, avatar, role, status FROM users WHERE id = ?',
             [req.user.id]
         );
 
@@ -168,7 +169,7 @@ router.put('/profile', authenticate, async (req, res) => {
 router.get('/users', authenticate, authorize('admin'), async (req, res) => {
     try {
         const [users] = await pool.query(
-            'SELECT id, username, raw_pin, full_name, email, phone, address, role, status, created_at FROM users ORDER BY created_at DESC'
+            'SELECT id, username, raw_pin, full_name, email, phone, address, avatar, role, status, created_at FROM users ORDER BY created_at DESC'
         );
         res.json({ success: true, data: users });
     } catch (err) {

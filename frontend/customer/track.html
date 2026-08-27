@@ -676,7 +676,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════════ -->
-    <!-- VIEW 2: EDIT PROFILE (Feature 3)                                       -->
+    <!-- VIEW 2: EDIT PROFILE (Feature 3 with Photo Upload)                     -->
     <!-- ════════════════════════════════════════════════════════════════════════ -->
     <div id="sec-profile-wrap" style="display:none">
       <div class="card">
@@ -684,11 +684,36 @@
           <div style="width:40px;height:40px;border-radius:50%;background:rgba(16,185,129,0.15);border:1.5px solid #34d399;display:flex;align-items:center;justify-content:center;font-size:20px">⚙️</div>
           <div>
             <h2 style="font-size:17px;font-weight:900" id="txt-prof-title">Edit My Profile</h2>
-            <p style="font-size:12px;color:var(--text-muted)" id="txt-prof-sub">Update your delivery address & login PIN</p>
+            <p style="font-size:12px;color:var(--text-muted)" id="txt-prof-sub">Update your profile photo, delivery address & login PIN</p>
           </div>
         </div>
 
         <form onsubmit="handleSaveProfile(event)">
+          <!-- Profile Picture Uploader Component -->
+          <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px;padding:16px;background:rgba(255,255,255,0.02);border:1.5px dashed var(--border2);border-radius:16px">
+            <div style="position:relative;cursor:pointer" onclick="document.getElementById('inp-avatar-file').click()" title="Click to upload profile photo">
+              <div id="prof-avatar-preview" style="width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg, #2563eb, #10b981);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;overflow:hidden;border:3px solid rgba(56,189,248,0.5);box-shadow:0 6px 20px rgba(37,99,235,0.35)">
+                <span id="prof-avatar-letter">👤</span>
+                <img id="prof-avatar-img" src="" style="width:100%;height:100%;object-fit:cover;display:none" alt="Avatar" />
+              </div>
+              <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;background:var(--primary);border:2px solid #0f172a;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.5)">
+                📷
+              </div>
+            </div>
+            
+            <input type="file" id="inp-avatar-file" accept="image/*" style="display:none" onchange="handleAvatarFileSelect(event)" />
+            
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button type="button" class="icon-btn" onclick="document.getElementById('inp-avatar-file').click()" style="padding:6px 12px;font-size:12px">
+                <span>📷</span> <span id="txt-btn-changephoto">Change Photo</span>
+              </button>
+              <button type="button" class="icon-btn" id="btn-remove-avatar" onclick="handleRemoveAvatar()" style="padding:6px 10px;font-size:12px;color:#f87171;display:none">
+                <span>🗑️</span> <span id="txt-btn-removephoto">Remove</span>
+              </button>
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:6px" id="txt-avatar-hint">Tap photo to upload from camera or gallery</div>
+          </div>
+
           <div class="form-group">
             <label class="form-label" id="txt-lbl-fullname">Full Name</label>
             <div class="input-wrap">
@@ -813,6 +838,8 @@
     let cachedOrders = [];
     let currentFilter = 'all';
 
+    let currentAvatarData = null;
+
     const I18N_PORTAL = {
       en: {
         title: 'Customer Portal',
@@ -826,7 +853,10 @@
         signInBtn: 'Sign In & View Orders',
         loginTip: 'Forgot your PIN? Contact the live host/admin to copy or reset your PIN.',
         profTitle: 'Edit My Profile',
-        profSub: 'Update your delivery address & login PIN',
+        profSub: 'Update your profile photo, delivery address & login PIN',
+        changePhoto: 'Change Photo',
+        removePhoto: 'Remove',
+        avatarHint: 'Tap photo to upload from camera or gallery',
         fullName: 'Full Name',
         profPhone: 'Phone Number',
         profEmail: 'Email (Optional)',
@@ -853,7 +883,10 @@
         signInBtn: 'ចូលគណនី & មើលការបញ្ជាទិញ',
         loginTip: 'ភ្លេចលេខ PIN? សូមទាក់ទងអ្នកលក់ដើម្បីសុំលេខ PIN ថ្មី។',
         profTitle: 'កែប្រែព័ត៌មានផ្ទាល់ខ្លួន',
-        profSub: 'ផ្លាស់ប្តូរអាសយដ្ឋានដឹកជញ្ជូន និងលេខកូដសម្ងាត់',
+        profSub: 'ផ្លាស់ប្តូររូបថត អាសយដ្ឋានដឹកជញ្ជូន និងលេខកូដសម្ងាត់',
+        changePhoto: 'ប្តូររូបថត',
+        removePhoto: 'លុបរូបថត',
+        avatarHint: 'ចុចលើរូបថតដើម្បីបង្ហោះពីរូបភាព ឬកាមេរ៉ា',
         fullName: 'ឈ្មោះពេញ',
         profPhone: 'លេខទូរស័ព្ទ',
         profEmail: 'អ៊ីមែល (ស្រេចចិត្ត)',
@@ -880,7 +913,10 @@
         signInBtn: '登录并查看订单',
         loginTip: '忘记密码？请联系主播/管理员重置密码。',
         profTitle: '修改个人资料',
-        profSub: '更新收货地址及登录密码',
+        profSub: '更新头像、收货地址及登录密码',
+        changePhoto: '更换头像',
+        removePhoto: '删除头像',
+        avatarHint: '点击头像从相机或相册上传',
         fullName: '收货人姓名',
         profPhone: '联系手机',
         profEmail: '电子邮箱 (选填)',
@@ -917,6 +953,9 @@
       document.getElementById('txt-login-tip').textContent = t.loginTip;
       document.getElementById('txt-prof-title').textContent = t.profTitle;
       document.getElementById('txt-prof-sub').textContent = t.profSub;
+      document.getElementById('txt-btn-changephoto').textContent = t.changePhoto || 'Change Photo';
+      document.getElementById('txt-btn-removephoto').textContent = t.removePhoto || 'Remove';
+      document.getElementById('txt-avatar-hint').textContent = t.avatarHint || 'Tap photo to upload from camera or gallery';
       document.getElementById('txt-lbl-fullname').textContent = t.fullName;
       document.getElementById('txt-lbl-profphone').textContent = t.profPhone;
       document.getElementById('txt-lbl-profemail').textContent = t.profEmail;
@@ -957,6 +996,72 @@
     function goBack() {
       if (history.length > 1) history.back();
       else window.location.href = '/customer/product.html';
+    }
+
+    /* ─── Avatar Upload & Compression ─── */
+    function handleAvatarFileSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        return toast('Please select a valid image file');
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        return toast('Image is too large (max 10MB)');
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 320;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+          } else {
+            if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          currentAvatarData = canvas.toDataURL('image/jpeg', 0.85);
+
+          setAvatarPreview(currentAvatarData, currentUser?.full_name || currentUser?.username || 'C');
+          toast('📸 Profile photo selected! Click Save to apply.');
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleRemoveAvatar() {
+      currentAvatarData = '';
+      setAvatarPreview('', currentUser?.full_name || currentUser?.username || 'C');
+      document.getElementById('inp-avatar-file').value = '';
+      toast('🗑️ Photo removed. Click Save to apply.');
+    }
+
+    function setAvatarPreview(avatarUrl, name) {
+      const imgEl = document.getElementById('prof-avatar-img');
+      const letterEl = document.getElementById('prof-avatar-letter');
+      const removeBtn = document.getElementById('btn-remove-avatar');
+
+      if (avatarUrl) {
+        imgEl.src = avatarUrl;
+        imgEl.style.display = 'block';
+        letterEl.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'inline-flex';
+      } else {
+        imgEl.src = '';
+        imgEl.style.display = 'none';
+        letterEl.style.display = 'block';
+        letterEl.textContent = (name || 'C')[0].toUpperCase();
+        if (removeBtn) removeBtn.style.display = 'none';
+      }
     }
 
     /* ─── View Switching ─── */
@@ -1026,7 +1131,12 @@
       document.getElementById('user-profile-hero').style.display = 'flex';
 
       const initial = (user.full_name || user.username || 'C')[0].toUpperCase();
-      document.getElementById('hero-avatar').textContent = initial;
+      const heroAvatar = document.getElementById('hero-avatar');
+      if (user.avatar) {
+        heroAvatar.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="Avatar" />`;
+      } else {
+        heroAvatar.textContent = initial;
+      }
       document.getElementById('hero-name').textContent = user.full_name || user.username;
       document.getElementById('hero-phone').textContent = user.phone || user.username;
 
@@ -1037,6 +1147,7 @@
       if (!confirm('Log out from your customer account?')) return;
       currentUser = null;
       cachedOrders = [];
+      currentAvatarData = null;
       localStorage.removeItem('customer_token');
       localStorage.removeItem('customer_user');
       document.getElementById('user-profile-hero').style.display = 'none';
@@ -1047,6 +1158,8 @@
     }
 
     function populateProfileFields(user) {
+      currentAvatarData = user.avatar || null;
+      setAvatarPreview(user.avatar, user.full_name || user.username);
       document.getElementById('prof-name').value = user.full_name || '';
       document.getElementById('prof-phone').value = user.phone || user.username || '';
       document.getElementById('prof-email').value = user.email || '';
@@ -1065,6 +1178,10 @@
         email: document.getElementById('prof-email').value.trim() || null,
         address: document.getElementById('prof-address').value.trim() || null,
       };
+
+      if (currentAvatarData !== null) {
+        payload.avatar = currentAvatarData || null;
+      }
 
       const newPin = document.getElementById('prof-new-pin').value.trim();
       if (newPin) {
@@ -1089,7 +1206,7 @@
           currentUser = res.data;
           localStorage.setItem('customer_user', JSON.stringify(currentUser));
           renderCustomerLoggedInState(currentUser, cachedOrders);
-          toast('✅ Profile & Delivery Address saved!');
+          toast('✅ Profile & Photo saved successfully!');
           switchPortalView('orders');
         } else {
           toast(res?.message || 'Failed to update profile');

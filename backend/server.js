@@ -351,6 +351,11 @@ async function autoMigrate() {
             await pool.execute(`ALTER TABLE users ADD COLUMN raw_pin VARCHAR(20) NULL`);
         } catch(e) { /* non-fatal */ }
 
+        // Ensure users table has avatar column
+        try {
+            await pool.execute(`ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL`);
+        } catch(e) { /* non-fatal */ }
+
         // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
         try {
             await pool.execute(

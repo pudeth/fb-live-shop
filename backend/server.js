@@ -342,6 +342,15 @@ async function autoMigrate() {
             await pool.execute(`ALTER TABLE users MODIFY COLUMN email VARCHAR(100) NULL`);
         } catch(e) { /* non-fatal */ }
 
+        // Ensure customer PIN columns exist
+        try {
+            await pool.execute(`ALTER TABLE orders ADD COLUMN customer_pin VARCHAR(20) NULL`);
+        } catch(e) { /* non-fatal */ }
+
+        try {
+            await pool.execute(`ALTER TABLE users ADD COLUMN raw_pin VARCHAR(20) NULL`);
+        } catch(e) { /* non-fatal */ }
+
         // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
         try {
             await pool.execute(

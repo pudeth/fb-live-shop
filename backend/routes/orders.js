@@ -51,30 +51,48 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
     try {
         const { id } = req.params;
 
-        const [orders] = await pool.query(
-            `SELECT o.*, u.raw_pin, u.username as account_username
-             FROM orders o 
-             LEFT JOIN users u ON (u.phone = o.customer_phone OR u.username = o.customer_phone)
-             WHERE o.id = ?`,
-            [id]
-        );
+        let order = null;
 
-        if (orders.length === 0) {
+        // Try primary query with user PIN join
+        try {
+            const [orders] = await pool.query(
+                `SELECT o.*, u.raw_pin, u.username as account_username
+                 FROM orders o 
+                 LEFT JOIN users u ON (u.phone = o.customer_phone OR u.username = o.customer_phone)
+                 WHERE o.id = ?
+                 LIMIT 1`,
+                [id]
+            );
+            if (orders.length > 0) {
+                order = orders[0];
+            }
+        } catch (queryErr) {
+            console.warn('Join query failed, falling back to simple query:', queryErr.message);
+            const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+            if (orders.length > 0) {
+                order = orders[0];
+            }
+        }
+
+        if (!order) {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Order not found' 
             });
         }
 
-        const order = orders[0];
         order.customer_pin = order.customer_pin || order.raw_pin || null;
 
-        const [items] = await pool.query(
-            'SELECT * FROM order_items WHERE order_id = ?',
-            [id]
-        );
-
-        order.items = items;
+        try {
+            const [items] = await pool.query(
+                'SELECT * FROM order_items WHERE order_id = ?',
+                [id]
+            );
+            order.items = items || [];
+        } catch (itemsErr) {
+            console.warn('Failed to load items for order', id, itemsErr.message);
+            order.items = [];
+        }
 
         res.json({
             success: true,
@@ -84,7 +102,7 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
         console.error('Get order error:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Server error' 
+            message: 'Server error: ' + error.message 
         });
     }
 });

@@ -2,44 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b14" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Product Details</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="/public/qr-code-styling.js"></script>
   <style>
     :root {
-      --bg:          #0a0f1e;
-      --card:        #111827;
-      --card2:       #1a2235;
-      --border:      rgba(255,255,255,.08);
-      --border2:     rgba(255,255,255,.12);
+      --bg:          #070b14;
+      --bg-surface:  #0d1424;
+      --card:        rgba(17, 26, 46, 0.75);
+      --card-solid:  #101a2e;
+      --card2:       rgba(24, 36, 64, 0.6);
+      --border:      rgba(255, 255, 255, 0.08);
+      --border2:     rgba(255, 255, 255, 0.14);
+      --border-focus:rgba(59, 130, 246, 0.6);
       --primary:     #3b82f6;
       --primary-d:   #2563eb;
-      --primary-glow:rgba(59,130,246,.3);
-      --green:       #4ade80;
-      --green-bg:    rgba(74,222,128,.12);
-      --green-border:rgba(74,222,128,.25);
-      --red:         #f87171;
-      --red-bg:      rgba(248,113,113,.12);
-      --yellow:      #fbbf24;
-      --yellow-bg:   rgba(251,191,36,.12);
-      --text:        #f1f5f9;
+      --primary-glow:rgba(59, 130, 246, 0.35);
+      --accent:      #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+      --green:       #10b981;
+      --green-bg:    rgba(16, 185, 129, 0.15);
+      --green-border:rgba(16, 185, 129, 0.3);
+      --red:         #ef4444;
+      --red-bg:      rgba(239, 68, 68, 0.15);
+      --yellow:      #f59e0b;
+      --yellow-bg:   rgba(245, 158, 11, 0.15);
+      --text:        #f8fafc;
       --text-muted:  #94a3b8;
-      --text-dim:    #4b5563;
-      --font:        'Inter', system-ui, -apple-system, sans-serif;
-      --radius:      20px;
-      --radius-sm:   12px;
-      --radius-xs:   8px;
-      --shadow-card: 0 32px 80px rgba(0,0,0,.6);
+      --text-dim:    #64748b;
+      --font:        'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --radius:      24px;
+      --radius-sm:   16px;
+      --radius-xs:   10px;
+      --shadow-xl:   0 24px 60px rgba(0, 0, 0, 0.6);
+      --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.15);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -47,521 +54,632 @@
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       overscroll-behavior-y: contain;
+      line-height: 1.5;
     }
 
-    /* ─────────────── LOADING ─────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.05) 50%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
     .loader {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100svh;
-      gap: 16px;
+      gap: 18px;
       padding: 32px;
+      position: relative;
+      z-index: 1;
     }
     .loader-ring {
-      width: 52px; height: 52px;
+      width: 56px; height: 56px;
       border: 4px solid rgba(255,255,255,.08);
       border-top-color: var(--primary);
       border-radius: 50%;
-      animation: spin .75s linear infinite;
+      animation: spin .8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      box-shadow: 0 0 24px var(--primary-glow);
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loader-text { font-size: 14px; color: var(--text-muted); letter-spacing: .02em; }
+    .loader-text { font-size: 14px; font-weight: 600; color: var(--text-muted); letter-spacing: .02em; }
 
-    /* ─────────────── HERO ─────────────── */
-    .hero {
+    .page-wrap {
+      max-width: 500px;
+      margin: 0 auto;
+      padding-bottom: calc(100px + env(safe-area-inset-bottom, 0));
+      position: relative;
+      z-index: 1;
+    }
+
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: rgba(7, 11, 20, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.25s ease;
+    }
+    .nav-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s;
+    }
+    .nav-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.15); }
+    .nav-brand {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-brand span { color: var(--primary); }
+
+    .hero-container {
       position: relative;
       width: 100%;
-      aspect-ratio: 1 / 1;
-      max-height: 380px;
-      background: #0d1220;
+      background: #090e1a;
       overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
-    .hero img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .hero-empty {
-      width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 96px;
-      opacity: .3;
-    }
-    /* Gradient overlay — makes text readable */
-    .hero::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom,
-        rgba(0,0,0,.25) 0%,
-        rgba(0,0,0,0)   40%,
-        rgba(10,15,30,.85) 100%);
-      pointer-events: none;
-    }
-
-    /* Gallery thumbnails strip */
-    .gallery-strip {
+    .hero-slider {
       display: flex;
-      gap: 8px;
-      padding: 12px 18px 0;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 440px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      cursor: grab;
+      touch-action: pan-y pinch-zoom;
     }
-    .gallery-strip::-webkit-scrollbar { display: none; }
-    .gallery-thumb {
-      flex-shrink: 0;
-      width: 62px;
-      height: 62px;
-      border-radius: var(--radius-xs);
-      overflow: hidden;
-      border: 2px solid var(--border);
-      cursor: pointer;
-      scroll-snap-align: start;
-      transition: all .2s;
-      background: var(--card2);
+    .hero-slider::-webkit-scrollbar { display: none; }
+    .hero-slider:active { cursor: grabbing; }
+    .hero-slide {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      scroll-snap-align: center;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      background: #070c18;
     }
-    .gallery-thumb.active {
-      border-color: var(--primary);
-      box-shadow: 0 0 10px var(--primary-glow);
-    }
-    .gallery-thumb img {
+    .hero-slide img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .hero-empty {
+      font-size: 96px;
+      opacity: .25;
     }
 
-    /* LIVE ribbon */
+    .hero-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.3) 0%,
+        rgba(0,0,0,0) 40%,
+        rgba(7, 11, 20, 0.9) 100%);
+      pointer-events: none;
+    }
+
     .live-ribbon {
       position: absolute;
-      top: 14px; left: 14px;
-      z-index: 2;
-      background: #ef4444;
+      top: 16px; left: 16px;
+      z-index: 10;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: #fff;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 900;
-      letter-spacing: .12em;
+      letter-spacing: .1em;
       text-transform: uppercase;
-      padding: 5px 12px;
+      padding: 6px 13px;
       border-radius: 20px;
       display: none;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 12px rgba(239,68,68,.5);
+      gap: 7px;
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.55);
+      backdrop-filter: blur(8px);
     }
     .live-ribbon.show { display: flex; }
     .live-dot {
       width: 7px; height: 7px;
       border-radius: 50%;
       background: #fff;
-      animation: blink 1s ease infinite;
-      flex-shrink: 0;
+      animation: blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+    @keyframes blink { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.2; transform:scale(0.8)} }
 
-    /* Stock badge */
     .stock-badge {
       position: absolute;
-      top: 14px; right: 14px;
-      z-index: 2;
+      top: 16px; right: 16px;
+      z-index: 10;
       font-size: 11px;
-      font-weight: 700;
-      padding: 5px 11px;
+      font-weight: 800;
+      padding: 6px 13px;
       border-radius: 20px;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
     }
-    .stock-in  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
-    .stock-low { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,.3); }
-    .stock-out { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(248,113,113,.3); }
+    .stock-in  { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .stock-low { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .stock-out { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
 
-    /* ─────────────── MAIN CARD ─────────────── */
-    .page-wrap {
-      max-width: 480px;
-      margin: 0 auto;
-      padding-bottom: 32px;
+    .slider-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(10, 15, 28, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+      opacity: 0.85;
+    }
+    .slider-arrow:hover { background: rgba(59, 130, 246, 0.8); opacity: 1; border-color: var(--primary); }
+    .slider-arrow:active { transform: translateY(-50%) scale(0.9); }
+    .slider-arrow.prev { left: 12px; }
+    .slider-arrow.next { right: 12px; }
+
+    .hero-footer-overlay {
+      position: absolute;
+      bottom: 14px;
+      left: 16px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .slider-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: all;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .dot.active {
+      width: 22px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(255,255,255,0.7);
+    }
+    .slide-counter {
+      background: rgba(7, 11, 20, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .gallery-wrap {
+      padding: 14px 18px 0;
+    }
+    .gallery-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 4px;
+    }
+    .gallery-strip::-webkit-scrollbar { display: none; }
+    .gallery-thumb {
+      flex-shrink: 0;
+      width: 68px;
+      height: 68px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      scroll-snap-align: start;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--card-solid);
+      position: relative;
+    }
+    .gallery-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .gallery-thumb:hover img { transform: scale(1.06); }
+    .gallery-thumb.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 16px var(--primary-glow);
+      transform: translateY(-2px);
+    }
+    .gallery-thumb.active::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px solid var(--primary);
+      border-radius: inherit;
+      pointer-events: none;
     }
 
     .content-body {
       padding: 20px 18px 0;
     }
 
-    .category-label {
-      font-size: 10px;
-      font-weight: 800;
-      color: var(--primary);
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      margin-bottom: 7px;
-    }
-
-    .prod-name {
-      font-size: 26px;
-      font-weight: 900;
-      color: var(--text);
-      line-height: 1.15;
-      letter-spacing: -.3px;
-      margin-bottom: 10px;
-      word-break: break-word;
-    }
-
-    .prod-code-row {
+    .meta-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
-    .code-pill {
-      background: rgba(59,130,246,.15);
-      border: 1px solid rgba(59,130,246,.3);
-      color: var(--primary);
-      font-family: monospace;
-      font-size: 12px;
+    .category-chip {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      font-size: 11px;
       font-weight: 800;
       padding: 4px 12px;
       border-radius: 20px;
+      text-transform: uppercase;
       letter-spacing: .08em;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    .category-chip {
-      background: rgba(255,255,255,.06);
+    .code-pill {
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 600;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
       padding: 4px 10px;
-      border-radius: 20px;
+      border-radius: 12px;
+      letter-spacing: .05em;
     }
 
-    /* ── Price block ── */
-    .price-block {
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
-      margin-bottom: 20px;
+    .prod-name {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1.25;
+      letter-spacing: -.02em;
+      margin-bottom: 16px;
+      word-break: break-word;
+    }
+
+    .price-card {
+      background: linear-gradient(135deg, rgba(16, 26, 46, 0.85) 0%, rgba(24, 36, 64, 0.6) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 22px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
     }
-    .price-main-wrap { flex: 1; }
+    .price-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 120px; height: 100%;
+      background: radial-gradient(circle at right, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
     .price-main {
-      font-size: 38px;
+      font-size: 34px;
       font-weight: 900;
       color: var(--green);
       letter-spacing: -1.5px;
       line-height: 1;
+      text-shadow: 0 2px 14px rgba(16, 185, 129, 0.3);
     }
     .price-sub {
       font-size: 13px;
       color: var(--text-muted);
       font-weight: 600;
-      margin-top: 4px;
+      margin-top: 5px;
     }
     .currency-pill {
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 7px 13px;
-      border-radius: 20px;
+      gap: 5px;
+      padding: 8px 14px;
+      border-radius: 24px;
       border: 1.5px solid var(--primary);
-      background: rgba(59,130,246,.1);
-      color: var(--primary);
-      font-size: 11px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #fff;
+      font-size: 12px;
       font-weight: 800;
       font-family: var(--font);
       cursor: pointer;
-      transition: all .15s;
+      transition: all .2s;
       white-space: nowrap;
       user-select: none;
+      box-shadow: 0 4px 12px var(--primary-glow);
     }
-    .currency-pill:hover,
-    .currency-pill:active { background: rgba(59,130,246,.2); }
+    .currency-pill:active { transform: scale(0.95); }
 
-    /* ── Description ── */
-    .description-block {
-      margin-bottom: 20px;
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 22px;
     }
-    .section-label {
-      font-size: 10px;
-      font-weight: 800;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      margin-bottom: 8px;
+    .trust-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      text-align: center;
     }
-    .description-text {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.7;
-    }
+    .trust-icon { font-size: 18px; margin-bottom: 3px; display: block; }
+    .trust-text { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
 
-    /* ── Options selector ── */
     .options-block {
-      margin-bottom: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 22px;
+      backdrop-filter: blur(12px);
     }
     .opt-group {
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     .opt-group:last-child { margin-bottom: 0; }
     .opt-group-label {
-      font-size: 11px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .opt-selected-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.12);
+      padding: 2px 10px;
+      border-radius: 12px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 8px 18px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1.5px solid var(--border2);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .2s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chip:hover { border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+    .chip.active {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 14px var(--primary-glow);
+    }
+    .color-chip {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 3px solid var(--border2);
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .color-chip::after {
+      content: '✓';
+      font-size: 15px;
+      font-weight: 900;
+      color: #fff;
+      opacity: 0;
+      text-shadow: 0 1px 3px rgba(0,0,0,.9);
+      transition: opacity .15s;
+    }
+    .color-chip.active {
+      border-color: #fff;
+      transform: scale(1.08);
+      box-shadow: 0 0 0 2px var(--primary), 0 6px 16px var(--primary-glow);
+    }
+    .color-chip.active::after { opacity: 1; }
+
+    .description-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 22px;
+    }
+    .section-title {
+      font-size: 12px;
       font-weight: 800;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: .08em;
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
-    .opt-group-label .opt-selected {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--primary);
-      text-transform: none;
-      letter-spacing: 0;
-      background: rgba(59,130,246,.12);
-      padding: 1px 8px;
-      border-radius: 10px;
-    }
-    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
-    .chip {
-      padding: 7px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
-      background: rgba(255,255,255,.05);
-      border: 1.5px solid var(--border2);
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all .15s;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .chip:hover  { border-color: rgba(255,255,255,.25); color: var(--text); }
-    .chip.active {
-      background: rgba(59,130,246,.18);
-      border-color: var(--primary);
-      color: var(--primary);
-      font-weight: 700;
-    }
-    /* Color swatches */
-    .color-chip {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      border: 2.5px solid var(--border2);
-      cursor: pointer;
-      transition: all .15s;
-      position: relative;
-      display: flex; align-items: center; justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .color-chip::after {
-      content: '✓';
+    .description-text {
       font-size: 14px;
-      font-weight: 900;
-      color: #fff;
-      opacity: 0;
-      text-shadow: 0 1px 3px rgba(0,0,0,.8);
-      transition: opacity .15s;
-    }
-    .color-chip.active {
-      border-color: #fff;
-      box-shadow: 0 0 0 2px var(--primary);
-    }
-    .color-chip.active::after { opacity: 1; }
-
-    /* ── Divider ── */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 20px 0;
+      color: #cbd5e1;
+      line-height: 1.7;
     }
 
-    /* ── Share / QR section ── */
-    .qr-section {
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 14px;
-      align-items: center;
-    }
-    .qr-box {
-      background: #fff;
-      border-radius: var(--radius-xs);
-      padding: 7px;
-      width: 104px; height: 104px;
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-    }
-    .qr-box canvas,
-    .qr-box img { width: 90px !important; height: 90px !important; border-radius: 3px; }
-    .qr-info { flex: 1; min-width: 0; }
-    .qr-title {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .qr-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.55;
-      margin-bottom: 10px;
-    }
-    .qr-share-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 7px 13px;
-      border-radius: 20px;
-      background: rgba(59,130,246,.15);
-      border: 1px solid rgba(59,130,246,.3);
-      color: var(--primary);
-      font-size: 11px;
-      font-weight: 700;
-      font-family: var(--font);
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .qr-share-btn:hover { background: rgba(59,130,246,.25); }
-
-    /* ── Action grid ── */
     .action-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 24px;
     }
     .action-btn {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 7px;
-      padding: 14px 8px;
+      gap: 6px;
+      padding: 12px 6px;
       border-radius: var(--radius-sm);
       border: 1.5px solid var(--border2);
-      background: rgba(255,255,255,.03);
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text-muted);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
       font-family: var(--font);
-      transition: all .18s;
+      transition: all .2s;
       text-transform: uppercase;
       letter-spacing: .04em;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
-    .action-btn .ab-icon { font-size: 22px; line-height: 1; }
-    .action-btn:hover,
-    .action-btn:active { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.2); color: #fff; }
+    .action-btn .ab-icon { font-size: 18px; line-height: 1; }
+    .action-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; border-color: rgba(255, 255, 255, 0.25); }
     .action-btn.saved { background: var(--green-bg); border-color: var(--green); color: var(--green); }
 
-    /* ── Buy button ── */
-    .buy-wrap {
-      padding: 0 0 4px;
+    .sticky-checkout {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 80;
+      background: rgba(7, 11, 20, 0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0));
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+    }
+    .sticky-inner {
+      max-width: 500px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .sticky-price-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    .sticky-price-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-dim);
+    }
+    .sticky-price-main {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--green);
+      line-height: 1.1;
+      letter-spacing: -0.5px;
     }
     .buy-btn {
-      width: 100%;
-      padding: 18px 20px;
+      flex: 2;
+      padding: 16px 22px;
       background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
       color: #fff;
       border: none;
       border-radius: var(--radius-sm);
-      font-size: 17px;
-      font-weight: 900;
+      font-size: 16px;
+      font-weight: 800;
       font-family: var(--font);
       cursor: pointer;
-      box-shadow: 0 8px 28px rgba(59,130,246,.4);
-      transition: all .18s;
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.45);
+      transition: all .2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      letter-spacing: .01em;
-      -webkit-tap-highlight-color: transparent;
+      gap: 8px;
+      text-decoration: none;
     }
-    .buy-btn:hover  { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(59,130,246,.5); }
-    .buy-btn:active { transform: translateY(0); box-shadow: 0 4px 16px rgba(59,130,246,.3); }
-    .buy-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .buy-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(59, 130, 246, 0.6); }
+    .buy-btn:active { transform: translateY(0); }
+    .buy-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    /* ── How to order ── */
-    .how-section {
-      margin-top: 28px;
-      padding: 18px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-    }
-    .how-title {
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      margin-bottom: 14px;
-    }
-    .how-steps {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .how-step {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-    .step-num {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: rgba(59,130,246,.15);
-      border: 1.5px solid rgba(59,130,246,.3);
-      color: var(--primary);
-      font-size: 12px;
-      font-weight: 900;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .step-text { flex: 1; }
-    .step-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-    .step-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    /* ── Brand footer ── */
     .brand-footer {
-      margin-top: 24px;
+      margin-top: 10px;
       font-size: 11px;
       color: var(--text-dim);
       text-align: center;
       letter-spacing: .03em;
-      padding: 0 18px;
     }
     .brand-footer span { color: var(--primary); font-weight: 700; }
 
-    /* ── Toast ── */
     #toast {
       position: fixed;
-      bottom: 28px; left: 50%;
+      bottom: calc(90px + env(safe-area-inset-bottom, 0));
+      left: 50%;
       transform: translateX(-50%) translateY(12px);
-      background: rgba(17,24,39,.97);
+      background: rgba(17, 24, 39, 0.95);
       border: 1px solid var(--border2);
       color: #fff;
       padding: 12px 22px;
@@ -574,40 +692,27 @@
       pointer-events: none;
       z-index: 999;
       backdrop-filter: blur(16px);
-      box-shadow: 0 8px 32px rgba(0,0,0,.5);
-      max-width: 90vw;
+      box-shadow: 0 10px 30px rgba(0,0,0,.6);
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── Error ── */
-    .error-wrap {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 80svh; gap: 14px;
-      text-align: center; padding: 32px;
-    }
-    .error-wrap .e-icon { font-size: 60px; }
-    .error-wrap h2 { font-size: 22px; font-weight: 900; }
-    .error-wrap p  { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-
-    /* ── Share modal ── */
     .share-modal-bg {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.7);
+      background: rgba(0,0,0,.75);
       z-index: 900;
       display: flex; align-items: flex-end; justify-content: center;
       padding-bottom: env(safe-area-inset-bottom, 0);
-      opacity: 0;
-      pointer-events: none;
+      opacity: 0; pointer-events: none;
       transition: opacity .25s;
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(8px);
     }
     .share-modal-bg.open { opacity: 1; pointer-events: all; }
     .share-modal {
-      background: var(--card);
+      background: var(--card-solid);
       border: 1px solid var(--border2);
       border-radius: var(--radius) var(--radius) 0 0;
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
       padding: 24px 20px 32px;
       transform: translateY(100%);
       transition: transform .3s cubic-bezier(.34,1.1,.64,1);
@@ -617,34 +722,17 @@
       width: 40px; height: 4px;
       background: var(--border2);
       border-radius: 2px;
-      margin: 0 auto 20px;
+      margin: 0 auto 18px;
     }
-    .share-modal-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 18px;
-      text-align: center;
-    }
-    /* Big QR in modal */
-    .share-qr-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 20px;
-    }
+    .share-modal-title { font-size: 16px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 16px; }
+    .share-qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 20px; }
     .share-qr-box {
       background: #fff;
       border-radius: 16px;
-      padding: 14px;
-      width: 196px; height: 196px;
+      padding: 12px;
+      width: 180px; height: 180px;
       display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0,0,0,.4);
     }
-    .share-qr-box canvas,
-    .share-qr-box img { width: 168px !important; height: 168px !important; }
     .share-url-box {
       width: 100%;
       background: rgba(255,255,255,.05);
@@ -657,38 +745,24 @@
       word-break: break-all;
       text-align: center;
     }
-    .share-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+    .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .share-action-btn {
       padding: 14px;
       border-radius: var(--radius-sm);
       border: 1.5px solid var(--border2);
-      background: rgba(255,255,255,.04);
-      color: var(--text);
+      background: rgba(255,255,255,.05);
+      color: #fff;
       font-size: 13px;
       font-weight: 700;
-      font-family: var(--font);
       cursor: pointer;
-      transition: all .15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .share-action-btn:hover,
-    .share-action-btn:active { background: rgba(255,255,255,.09); }
-    .share-action-btn.primary {
-      background: var(--primary);
-      border-color: var(--primary);
-      box-shadow: 0 4px 16px var(--primary-glow);
-    }
-    .share-action-btn.primary:hover { background: var(--primary-d); }
+    .share-action-btn.primary { background: var(--primary); border-color: var(--primary); }
 
-    /* Safe area bottom padding for notched phones */
-    .page-wrap { padding-bottom: calc(32px + env(safe-area-inset-bottom, 0)); }
+    .error-wrap {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 80svh; gap: 14px; text-align: center; padding: 32px;
+    }
   </style>
 </head>
 <body>
@@ -696,51 +770,50 @@
   <div id="root">
     <div class="loader">
       <div class="loader-ring"></div>
-      <p class="loader-text">Loading product…</p>
+      <p class="loader-text">Loading product details…</p>
     </div>
   </div>
 
   <div id="toast"></div>
 
-  <!-- Share / QR modal -->
   <div class="share-modal-bg" id="share-modal" onclick="handleShareModalClick(event)">
     <div class="share-modal">
       <div class="share-modal-handle"></div>
-      <div class="share-modal-title">📱 Share This Product</div>
+      <div class="share-modal-title">Share Product</div>
       <div class="share-qr-wrap">
         <div class="share-qr-box" id="share-qr-wrap"></div>
-        <div class="share-url-box" id="share-url-text">—</div>
+        <div class="share-url-box" id="share-url-text"></div>
       </div>
       <div class="share-actions">
         <button class="share-action-btn" onclick="copyLink()">📋 Copy Link</button>
-        <button class="share-action-btn primary" onclick="nativeShare()">↑ Share</button>
+        <button class="share-action-btn primary" onclick="nativeShare()">🚀 Share</button>
       </div>
     </div>
   </div>
 
   <script src="/assets/js/api.js"></script>
   <script>
-    /* ─── State ─── */
     const params      = new URLSearchParams(window.location.search);
     const productCode = (params.get('code') || params.get('id') || '').trim();
     const API         = window.location.origin + '/api';
     let product       = null;
     let saved         = false;
-    let selectedOpts  = {};    // { Color: 'Blue', Size: 'M' }
+    let selectedOpts  = {};
     let customerUrl   = '';
     let shareQrBuilt  = false;
+    let currentSlide  = 0;
+    let allProductImages = [];
 
-    /* ─── Toast ─── */
     let toastTimer;
     function toast(msg, dur = 2500) {
       const el = document.getElementById('toast');
+      if (!el) return;
       el.textContent = msg;
       el.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => el.classList.remove('show'), dur);
     }
 
-    /* ─── Currency helpers ─── */
     function priceMain(v) {
       return currencyMode.isKHR()
         ? '៛' + Math.round(Number(v) * KHR_RATE).toLocaleString('en-US')
@@ -758,23 +831,52 @@
     function refreshPriceDisplay() {
       const pMain = document.getElementById('price-main');
       const pSub  = document.getElementById('price-sub');
+      const sMain = document.getElementById('sticky-price-main');
       const btn   = document.getElementById('currency-pill');
-      if (!pMain || !pSub || !product) return;
-      pMain.textContent = priceMain(product.price);
-      pSub.textContent  = priceSub(product.price);
+      if (!product) return;
+      const mainText = priceMain(product.price);
+      const subText  = priceSub(product.price);
+      if (pMain) pMain.textContent = mainText;
+      if (pSub)  pSub.textContent  = subText;
+      if (sMain) sMain.textContent = mainText;
       if (btn) {
         const isKHR = currencyMode.isKHR();
-        btn.innerHTML = isKHR
-          ? '<span style="opacity:.6">$</span> USD'
-          : '<span style="opacity:.6">៛</span> KHR';
-        btn.style.borderColor = isKHR ? '#fbbf24' : '#3b82f6';
-        btn.style.color       = isKHR ? '#fbbf24' : '#3b82f6';
-        btn.style.background  = isKHR ? 'rgba(251,191,36,.1)' : 'rgba(59,130,246,.1)';
+        btn.innerHTML = isKHR ? '<span>$</span> Switch USD' : '<span>៛</span> Switch KHR';
       }
     }
 
-    /* ─── QR builder ─── */
-    function buildQR(containerId, url, size = 90) {
+    function scrollToSlide(idx) {
+      const slider = document.getElementById('hero-slider');
+      if (!slider) return;
+      const slides = slider.querySelectorAll('.hero-slide');
+      if (idx < 0 || idx >= slides.length) return;
+      currentSlide = idx;
+      slides[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      updateActiveSlideUI(idx);
+    }
+    function slideNext() { scrollToSlide(currentSlide + 1 < allProductImages.length ? currentSlide + 1 : 0); }
+    function slidePrev() { scrollToSlide(currentSlide - 1 >= 0 ? currentSlide - 1 : allProductImages.length - 1); }
+
+    function updateActiveSlideUI(idx) {
+      currentSlide = idx;
+      document.querySelectorAll('.slider-dots .dot').forEach((d, i) => { d.classList.toggle('active', i === idx); });
+      const counterEl = document.getElementById('slide-counter-num');
+      if (counterEl) counterEl.textContent = `${idx + 1} / ${allProductImages.length}`;
+      document.querySelectorAll('.gallery-thumb').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
+        if (i === idx) t.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+    }
+
+    function onHeroScroll() {
+      const slider = document.getElementById('hero-slider');
+      if (!slider) return;
+      const width = slider.clientWidth || 1;
+      const idx = Math.round(slider.scrollLeft / width);
+      if (idx !== currentSlide && idx >= 0 && idx < allProductImages.length) updateActiveSlideUI(idx);
+    }
+
+    function buildQR(containerId, url, size = 150) {
       const wrap = document.getElementById(containerId);
       if (!wrap || typeof QRCodeStyling === 'undefined') return;
       wrap.innerHTML = '';
@@ -782,101 +884,75 @@
         width:  size, height: size,
         type:   'canvas',
         data:   url,
-        dotsOptions:          { color: '#0a0a0a', type: 'rounded' },
-        cornersSquareOptions: { type: 'extra-rounded', color: '#0a0a0a' },
-        cornersDotOptions:    { type: 'dot', color: '#0a0a0a' },
+        dotsOptions:         { color: '#090e1a', type: 'rounded' },
+        cornersSquareOptions: { type: 'extra-rounded', color: '#090e1a' },
+        cornersDotOptions:    { type: 'dot', color: '#3b82f6' },
         backgroundOptions:    { color: '#ffffff' },
-        qrOptions:            { errorCorrectionLevel: 'M' },
       }).append(wrap);
     }
 
-    /* ─── Option selection ─── */
-    function selectOption(groupKey, value, el) {
-      selectedOpts[groupKey] = value;
-      // Update active chip in this group
-      el.closest('.chips').querySelectorAll('.chip, .color-chip').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
-      // Update label
-      const label = el.closest('.opt-group').querySelector('.opt-selected');
-      if (label) label.textContent = value;
-      // Rebuild customer URL with new opts
+    function selectOption(key, val, el) {
+      selectedOpts[key] = val;
+      const group = el.closest('.opt-group');
+      if (group) {
+        group.querySelectorAll('.chip, .color-chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        const label = group.querySelector('.opt-selected-val');
+        if (label) label.textContent = val;
+      }
       refreshCustomerUrl();
     }
 
     function refreshCustomerUrl() {
-      const base = `${window.location.origin}/customer/order.html?code=${encodeURIComponent(product.product_code)}`;
-      const opts  = Object.keys(selectedOpts).length
-        ? '&opts=' + encodeURIComponent(JSON.stringify(selectedOpts))
-        : '';
-      customerUrl = base + opts;
-      // Re-render inline QR
-      requestAnimationFrame(() => buildQR('qr-wrap', customerUrl, 90));
-      // Update share modal URL text if visible
-      const urlText = document.getElementById('share-url-text');
-      if (urlText) urlText.textContent = customerUrl;
+      const u = new URL(window.location.origin + '/customer/order.html');
+      u.searchParams.set('code', product?.product_code || '');
+      Object.entries(selectedOpts).forEach(([k, v]) => u.searchParams.set(`opt_${k}`, v));
+      customerUrl = u.toString();
     }
 
-    /* ─── Color name → CSS color ─── */
-    const COLOR_MAP = {
-      red:'#ef4444', blue:'#3b82f6', green:'#22c55e', yellow:'#eab308',
-      orange:'#f97316', purple:'#a855f7', pink:'#ec4899', black:'#1a1a1a',
-      white:'#f5f5f5', gray:'#6b7280', grey:'#6b7280', brown:'#92400e',
-      navy:'#1e3a8a', teal:'#0d9488', gold:'#d97706', silver:'#94a3b8',
-      beige:'#d4b896', cream:'#fef9c3', maroon:'#7f1d1d', cyan:'#06b6d4',
-      lime:'#84cc16', indigo:'#6366f1', violet:'#7c3aed',
-    };
     function nameToColor(name) {
-      return COLOR_MAP[name.toLowerCase()] || null;
+      const map = {
+        white:'#ffffff', black:'#0f172a', red:'#ef4444', blue:'#3b82f6',
+        green:'#10b981', yellow:'#f59e0b', pink:'#ec4899', purple:'#a855f7',
+        orange:'#f97316', gray:'#64748b', grey:'#64748b', navy:'#1e3a8a',
+        gold:'#eab308', silver:'#cbd5e1', brown:'#78350f', beige:'#d4b896'
+      };
+      return map[(name || '').toLowerCase().trim()] || null;
     }
 
-    /* ─── Options render ─── */
     function renderOptions(opts) {
       if (!opts || typeof opts !== 'object') return '';
       const entries = Object.entries(opts);
       if (!entries.length) return '';
-
       return entries.map(([key, values]) => {
         if (!Array.isArray(values) || !values.length) return '';
         const firstVal = values[0];
-        selectedOpts[key] = firstVal; // default first option
-
-        // Check if this looks like a colour group
+        selectedOpts[key] = firstVal;
         const isColor = key.toLowerCase().includes('color') || key.toLowerCase().includes('colour');
         const chipsHtml = isColor
           ? values.map((v, i) => {
               const css = nameToColor(v);
-              if (css) {
-                return `<div
-                  class="color-chip ${i === 0 ? 'active' : ''}"
-                  style="background:${css}"
-                  title="${v}"
-                  onclick="selectOption('${key}','${v}',this)"
-                ></div>`;
-              }
+              if (css) return `<div class="color-chip ${i === 0 ? 'active' : ''}" style="background:${css}" title="${v}" onclick="selectOption('${key}','${v}',this)"></div>`;
               return `<button class="chip ${i === 0 ? 'active' : ''}" onclick="selectOption('${key}','${v}',this)">${v}</button>`;
             }).join('')
-          : values.map((v, i) =>
-              `<button class="chip ${i === 0 ? 'active' : ''}" onclick="selectOption('${key}','${v}',this)">${v}</button>`
-            ).join('');
-
-        return `<div class="opt-group">
-          <div class="opt-group-label">
-            ${key}
-            <span class="opt-selected">${firstVal}</span>
-          </div>
-          <div class="chips">${chipsHtml}</div>
-        </div>`;
+          : values.map((v, i) => `<button class="chip ${i === 0 ? 'active' : ''}" onclick="selectOption('${key}','${v}',this)">${v}</button>`).join('');
+        return `
+          <div class="opt-group">
+            <div class="opt-group-label">
+              <span>${key}</span>
+              <span class="opt-selected-val">${firstVal}</span>
+            </div>
+            <div class="chips">${chipsHtml}</div>
+          </div>`;
       }).join('');
     }
 
-    /* ─── Stock badge ─── */
     function stockBadge(stock) {
-      if (stock <= 0)  return { cls: 'stock-out', text: 'Out of Stock' };
-      if (stock <= 10) return { cls: 'stock-low', text: `Low Stock · ${stock} left` };
-      return { cls: 'stock-in', text: `In Stock · ${stock}` };
+      if (stock <= 0)  return { cls: 'stock-out', text: '🚫 Out of Stock' };
+      if (stock <= 10) return { cls: 'stock-low', text: `⚡ Low Stock (${stock} left)` };
+      return { cls: 'stock-in', text: `⚡ In Stock (${stock})` };
     }
 
-    /* ─── Save (wishlist) ─── */
     function toggleSave() {
       saved = !saved;
       const btn = document.getElementById('btn-save');
@@ -884,242 +960,136 @@
       if (saved) {
         btn.classList.add('saved');
         btn.querySelector('.ab-icon').textContent = '❤️';
-        toast('❤️ Saved to wishlist');
+        toast('❤️ Saved to Wishlist');
       } else {
         btn.classList.remove('saved');
         btn.querySelector('.ab-icon').textContent = '🤍';
-        toast('Removed from wishlist');
+        toast('Removed from Wishlist');
       }
     }
 
-    /* ─── Share modal ─── */
     function openShareModal() {
       const modal = document.getElementById('share-modal');
       modal.classList.add('open');
       document.body.style.overflow = 'hidden';
-      // Build large QR only once
       if (!shareQrBuilt && customerUrl) {
         requestAnimationFrame(() => {
-          buildQR('share-qr-wrap', customerUrl, 168);
+          buildQR('share-qr-wrap', customerUrl, 150);
           document.getElementById('share-url-text').textContent = customerUrl;
           shareQrBuilt = true;
         });
       }
     }
-    function closeShareModal() {
-      document.getElementById('share-modal').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    function handleShareModalClick(e) {
-      if (e.target === document.getElementById('share-modal')) closeShareModal();
-    }
+    function closeShareModal() { document.getElementById('share-modal').classList.remove('open'); document.body.style.overflow = ''; }
+    function handleShareModalClick(e) { if (e.target === document.getElementById('share-modal')) closeShareModal(); }
 
     async function copyLink() {
-      try {
-        await navigator.clipboard.writeText(customerUrl);
-        toast('📋 Link copied!');
-      } catch {
-        // Fallback
+      try { await navigator.clipboard.writeText(customerUrl); toast('📋 Link copied to clipboard!'); }
+      catch {
         const ta = document.createElement('textarea');
         ta.value = customerUrl; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); ta.remove();
-        toast('📋 Link copied!');
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        toast('📋 Link copied to clipboard!');
       }
     }
 
     async function nativeShare() {
       if (navigator.share) {
-        try {
-          await navigator.share({
-            title: product?.name || 'Check out this product',
-            text:  `${product?.name} — ${priceMain(product?.price || 0)}`,
-            url:   customerUrl,
-          });
-        } catch (e) {
-          if (e.name !== 'AbortError') copyLink();
-        }
-      } else {
-        copyLink();
-      }
+        try { await navigator.share({ title: product?.name, text: `${product?.name} — ${priceMain(product?.price || 0)}`, url: customerUrl }); }
+        catch (e) { if (e.name !== 'AbortError') copyLink(); }
+      } else copyLink();
     }
 
-    /* ─── Buy ─── */
-    function buyNow() {
-      window.location.href = customerUrl;
-    }
+    function buyNow() { window.location.href = customerUrl; }
 
-    function selectGalleryImg(src, el) {
-      const hero = document.getElementById('hero-img-el');
-      if (hero) hero.src = src;
-      document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-      if (el) el.classList.add('active');
-    }
-
-    /* ─── Render ─── */
     function render(p, isLive) {
-      const sb    = stockBadge(p.stock);
-      const allImgs = Array.isArray(p.images) && p.images.length > 0
-        ? p.images.filter(Boolean)
-        : (p.image ? [p.image] : []);
-      const mainImgSrc = allImgs[0] || p.image || '';
-
-      const imgEl = mainImgSrc
-        ? `<img id="hero-img-el" src="${fmt.imgUrl(mainImgSrc)}" alt="${p.name}" loading="lazy" />`
-        : `<div class="hero-empty">📦</div>`;
-
-      const galleryHtml = allImgs.length > 1
-        ? `<div class="gallery-strip">
-            ${allImgs.map((img, idx) => `
-              <div class="gallery-thumb ${idx === 0 ? 'active' : ''}" onclick="selectGalleryImg('${fmt.imgUrl(img)}', this)">
-                <img src="${fmt.imgUrl(img)}" alt="thumb ${idx+1}" />
-              </div>
-            `).join('')}
-           </div>`
-        : '';
-
-      const optsHtml   = renderOptions(p.options);
-      const optSection = optsHtml
-        ? `<div class="options-block">
-             <div class="section-label">Choose Options</div>
-             ${optsHtml}
-           </div><hr class="divider" />`
-        : '';
-
-      const descHtml = p.description
-        ? `<div class="description-block">
-             <div class="section-label">About This Product</div>
-             <div class="description-text">${escHtml(p.description)}</div>
-           </div><hr class="divider" />`
-        : '';
-
+      const sb = stockBadge(p.stock);
+      allProductImages = Array.isArray(p.images) && p.images.length > 0 ? p.images.filter(Boolean) : (p.image ? [p.image] : []);
+      if (allProductImages.length === 0 && p.image) allProductImages = [p.image];
+      const slidesHtml = allProductImages.length > 0 ? allProductImages.map(img => `<div class="hero-slide"><img src="${fmt.imgUrl(img)}" alt="${p.name}" loading="eager" /></div>`).join('') : `<div class="hero-slide"><div class="hero-empty">📦</div></div>`;
+      const hasMultiple = allProductImages.length > 1;
+      const arrowsHtml = hasMultiple ? `<button class="slider-arrow prev" onclick="slidePrev()" title="Previous photo">‹</button><button class="slider-arrow next" onclick="slideNext()" title="Next photo">›</button>` : '';
+      const dotsHtml = hasMultiple ? `<div class="slider-dots">${allProductImages.map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}" onclick="scrollToSlide(${i})"></div>`).join('')}</div>` : '<div></div>';
+      const counterHtml = hasMultiple ? `<div class="slide-counter"><span>📸</span> <span id="slide-counter-num">1 / ${allProductImages.length}</span></div>` : '';
+      const galleryHtml = hasMultiple ? `<div class="gallery-wrap"><div class="gallery-strip" id="gallery-strip">${allProductImages.map((img, idx) => `<div class="gallery-thumb ${idx === 0 ? 'active' : ''}" onclick="scrollToSlide(${idx})"><img src="${fmt.imgUrl(img)}" alt="thumb ${idx+1}" /></div>`).join('')}</div></div>` : '';
+      const optsHtml = renderOptions(p.options);
+      const optSection = optsHtml ? `<div class="options-block"><div class="section-title">⚙️ Select Options</div>${optsHtml}</div>` : '';
+      const descHtml = p.description ? `<div class="description-block"><div class="section-title">📝 Product Description</div><div class="description-text">${escHtml(p.description)}</div></div>` : '';
       document.getElementById('root').innerHTML = `
+        <div class="top-nav">
+          <button class="nav-btn" onclick="history.length > 1 ? history.back() : window.location.href='/customer/product.html'" title="Back">←</button>
+          <div class="nav-brand"><span>FB LIVE</span> SHOP</div>
+          <button class="nav-btn" onclick="openShareModal()" title="Share">↗</button>
+        </div>
         <div class="page-wrap">
-
-          <!-- Hero image -->
-          <div class="hero">
-            ${imgEl}
-            <div class="live-ribbon ${isLive ? 'show' : ''}" id="live-ribbon">
-              <span class="live-dot"></span> LIVE NOW
-            </div>
+          <div class="hero-container">
+            <div class="hero-slider" id="hero-slider" onscroll="onHeroScroll()">${slidesHtml}</div>
+            <div class="hero-gradient"></div>
+            <div class="live-ribbon ${isLive ? 'show' : ''}" id="live-ribbon"><span class="live-dot"></span> LIVE NOW</div>
             <span class="stock-badge ${sb.cls}">${sb.text}</span>
+            ${arrowsHtml}
+            <div class="hero-footer-overlay">${dotsHtml}${counterHtml}</div>
           </div>
-
           ${galleryHtml}
-
-          <!-- Content body -->
           <div class="content-body">
-
-            <!-- Category + name + code -->
-            <div style="margin-top:18px">
-              ${p.category_name ? `<div class="category-label">${escHtml(p.category_name)}</div>` : ''}
-              <div class="prod-name">${escHtml(p.name)}</div>
-              <div class="prod-code-row">
-                <span class="code-pill">${escHtml(p.product_code)}</span>
-                ${p.category_name ? `<span class="category-chip">${escHtml(p.category_name)}</span>` : ''}
-              </div>
+            <div class="meta-row">
+              <div class="category-chip"><span>🏷️</span> ${escHtml(p.category_name || 'General')}</div>
+              <div class="code-pill">Code: ${escHtml(p.product_code)}</div>
             </div>
-
-            <!-- Price -->
-            <div class="price-block">
-              <div class="price-main-wrap">
+            <h1 class="prod-name">${escHtml(p.name)}</h1>
+            <div class="price-card">
+              <div>
                 <div class="price-main" id="price-main">${priceMain(p.price)}</div>
-                <div class="price-sub"  id="price-sub">${priceSub(p.price)}</div>
+                <div class="price-sub" id="price-sub">${priceSub(p.price)}</div>
               </div>
-              <button class="currency-pill" id="currency-pill" onclick="toggleCurrency()">
-                <span style="opacity:.6">៛</span> KHR
-              </button>
+              <button class="currency-pill" id="currency-pill" onclick="toggleCurrency()"><span>៛</span> Switch KHR</button>
             </div>
-
-            <!-- Description -->
-            ${descHtml}
-
-            <!-- Options -->
+            <div class="trust-grid">
+              <div class="trust-item"><span class="trust-icon">🚚</span><span class="trust-text">Fast Delivery</span></div>
+              <div class="trust-item"><span class="trust-icon">💵</span><span class="trust-text">Cash on Delivery</span></div>
+              <div class="trust-item"><span class="trust-icon">🛡️</span><span class="trust-text">100% Quality</span></div>
+            </div>
             ${optSection}
-
-            <!-- Action buttons -->
+            ${descHtml}
             <div class="action-grid">
-              <button class="action-btn" id="btn-save" onclick="toggleSave()">
-                <span class="ab-icon">🤍</span>Save
-              </button>
-              <button class="action-btn" onclick="copyLink()">
-                <span class="ab-icon">🔗</span>Copy Link
-              </button>
-              <button class="action-btn" onclick="nativeShare()">
-                <span class="ab-icon">↑</span>Share
-              </button>
+              <button class="action-btn" id="btn-save" onclick="toggleSave()"><span class="ab-icon">🤍</span>Save</button>
+              <button class="action-btn" onclick="copyLink()"><span class="ab-icon">🔗</span>Copy Link</button>
+              <button class="action-btn" onclick="openShareModal()"><span class="ab-icon">📱</span>Scan QR</button>
             </div>
-
-            <!-- Buy button -->
-            <div class="buy-wrap">
-              <button class="buy-btn" id="buy-btn"
-                ${p.stock <= 0 ? 'disabled' : ''}
-                onclick="buyNow()">
-                ${p.stock <= 0 ? '🚫 Out of Stock' : '🛒 Order Now'}
-              </button>
+            <div class="brand-footer">Powered by <span>FB Live Shop</span> &nbsp;·&nbsp; Scan. Shop. Done.</div>
+          </div>
+        </div>
+        <div class="sticky-checkout">
+          <div class="sticky-inner">
+            <div class="sticky-price-wrap">
+              <div class="sticky-price-label">Total Price</div>
+              <div class="sticky-price-main" id="sticky-price-main">${priceMain(p.price)}</div>
             </div>
-
-            <div class="brand-footer">
-              Powered by <span>FB Live Shop</span> &nbsp;·&nbsp; Scan. Shop. Done.
-            </div>
-
-          </div><!-- /content-body -->
-        </div><!-- /page-wrap -->
-      `;
-
-      // Sync currency pill on load
+            <button class="buy-btn" id="buy-btn" ${p.stock <= 0 ? 'disabled' : ''} onclick="buyNow()">${p.stock <= 0 ? '🚫 Out of Stock' : '🛒 Order Now'}</button>
+          </div>
+        </div>`;
       refreshPriceDisplay();
     }
-
-    function escHtml(str) {
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    /* ─── Init ─── */
+    function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     async function init() {
-      if (!productCode) {
-        showError('No product code provided.', 'Point your camera at a product QR code on the live stream screen.');
-        return;
-      }
+      if (!productCode) { showError('No product code.', 'Please scan a valid product QR code.'); return; }
       try {
-        const [pRes, lRes] = await Promise.all([
-          fetch(`${API}/products/${encodeURIComponent(productCode)}`).then(r => r.json()),
-          fetch(`${API}/live/active`).then(r => r.json()).catch(() => null),
-        ]);
-
-        if (!pRes.success || !pRes.data) {
-          showError('Product not found.', `Code "${productCode}" didn't match any product. Try scanning the QR again.`);
-          return;
-        }
-
+        const [pRes, lRes] = await Promise.all([fetch(`${API}/products/${encodeURIComponent(productCode)}`).then(r => r.json()), fetch(`${API}/live/active`).then(r => r.json()).catch(() => null)]);
+        if (!pRes.success || !pRes.data) { showError('Product not found.', `Code "${productCode}" could not be located.`); return; }
         product = pRes.data;
-        // Parse options if string
-        if (typeof product.options === 'string') {
-          try { product.options = JSON.parse(product.options); } catch { product.options = null; }
-        }
-
-        const isLive = lRes?.data?.current_product_id != null;
-
-        // Build base URL with defaults before render (renderOptions sets selectedOpts)
-        // We call render first (which also calls renderOptions), then build URL after
-        render(product, isLive);
-
-        // Build initial customer URL (selectedOpts is populated by renderOptions inside render)
+        if (typeof product.options === 'string') { try { product.options = JSON.parse(product.options); } catch { product.options = null; } }
+        render(product, lRes?.data?.current_product_id != null);
         refreshCustomerUrl();
-
-      } catch (err) {
-        showError('Connection error.', 'Could not reach the server. Make sure you are connected to the same network.');
-      }
+      } catch (err) { showError('Connection error.', 'Please check your internet connection.'); }
     }
-
     function showError(title, msg = '') {
       document.getElementById('root').innerHTML = `
         <div class="error-wrap">
-          <div class="e-icon">😕</div>
-          <h2>${escHtml(title)}</h2>
-          <p>${escHtml(msg)}</p>
+          <div style="font-size:56px">📦</div>
+          <h2 style="font-size:20px;font-weight:900;margin:10px 0 6px">${escHtml(title)}</h2>
+          <p style="font-size:13px;color:var(--text-muted);max-width:320px">${escHtml(msg)}</p>
           <button onclick="history.back()"
-            style="margin-top:8px;padding:12px 28px;border-radius:30px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
+            style="margin-top:16px;padding:12px 28px;border-radius:30px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
             ← Go Back
           </button>
         </div>`;

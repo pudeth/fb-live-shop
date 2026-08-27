@@ -317,8 +317,20 @@ async function autoMigrate() {
         // Ensure products table has images JSON column
         try {
             await pool.execute(`ALTER TABLE products ADD COLUMN images JSON DEFAULT NULL`);
-            console.log('✅ Added images column to products');
         } catch(e) { /* column exists */ }
+
+        // Ensure orders table has payment columns
+        const orderCols = [
+            `payment_method ENUM('cash','gcash','bank_transfer','cod','credit_card') DEFAULT 'cod'`,
+            `payment_status ENUM('unpaid','paid','partial') DEFAULT 'unpaid'`,
+            `amount_tendered DECIMAL(10,2) NULL`,
+            `change_amount DECIMAL(10,2) NULL`
+        ];
+        for (const col of orderCols) {
+            try {
+                await pool.execute(`ALTER TABLE orders ADD COLUMN ${col}`);
+            } catch(e) { /* column exists */ }
+        }
 
         // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
         try {

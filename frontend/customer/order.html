@@ -935,11 +935,12 @@
           body:    JSON.stringify(payload),
         }).then(r => r.json());
 
-        if (res.success) {
+        if (res && res.success) {
           renderSuccess(res.data);
         } else {
+          const errMsg = res?.message || (res?.errors?.[0]?.msg) || 'Failed to place order. Please try again.';
           const errEl = document.getElementById('form-error');
-          errEl.textContent = '❌ ' + (res.message || 'Failed to place order. Please try again.');
+          errEl.textContent = '❌ ' + errMsg;
           errEl.classList.add('show');
           errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }

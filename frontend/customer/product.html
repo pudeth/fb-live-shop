@@ -169,6 +169,68 @@
       box-shadow: 0 2px 8px var(--primary-glow);
     }
 
+    /* Auto-Translate Bot Card */
+    .bot-translate-card {
+      background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(16,185,129,0.12));
+      border: 1.5px solid rgba(96,165,250,0.35);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .bot-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 9px;
+    }
+    .bot-header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: #93c5fd;
+    }
+    .bot-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(16,185,129,0.2);
+      color: #34d399;
+      border: 1px solid rgba(52,211,153,0.3);
+    }
+    .bot-lang-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .bot-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 9px 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .bot-btn:active { transform: scale(0.95); }
+    .bot-btn.active {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-color: #60a5fa;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.5);
+    }
+
     .hero-container {
       position: relative;
       width: 100%;
@@ -1098,6 +1160,28 @@
           </div>
           ${galleryHtml}
           <div class="content-body">
+            <!-- Prominent Auto-Translate Bot Card -->
+            <div class="bot-translate-card">
+              <div class="bot-header">
+                <div class="bot-header-left">
+                  <span style="font-size:16px">🤖</span>
+                  <span>Auto-Translate Bot (បកប្រែ)</span>
+                </div>
+                <span class="bot-tag">AI Powered</span>
+              </div>
+              <div class="bot-lang-buttons">
+                <button class="bot-btn ${curLang==='km'?'active':''}" onclick="setLanguage('km')">
+                  <span>🇰🇭</span> ភាសាខ្មែរ
+                </button>
+                <button class="bot-btn ${curLang==='zh'?'active':''}" onclick="setLanguage('zh')">
+                  <span>🇨🇳</span> 中文
+                </button>
+                <button class="bot-btn ${curLang==='en'?'active':''}" onclick="setLanguage('en')">
+                  <span>🇺🇸</span> English
+                </button>
+              </div>
+            </div>
+
             <div class="meta-row">
               <div class="category-chip"><span>🏷️</span> ${escHtml(p.category_name || 'General')}</div>
               <div class="code-pill">Code: ${escHtml(p.product_code)}</div>

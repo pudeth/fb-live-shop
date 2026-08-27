@@ -852,28 +852,6 @@
       document.getElementById('main-content').innerHTML = `
         <div class="page-wrap">
 
-          <!-- Prominent Auto-Translate Bot Card -->
-          <div class="bot-translate-card">
-            <div class="bot-header">
-              <div class="bot-header-left">
-                <span style="font-size:16px">🤖</span>
-                <span>Auto-Translate Bot (បកប្រែ)</span>
-              </div>
-              <span class="bot-tag">AI Powered</span>
-            </div>
-            <div class="bot-lang-buttons">
-              <button class="bot-btn ${curLang==='km'?'active':''}" onclick="setOrderLang('km')">
-                <span>🇰🇭</span> ភាសាខ្មែរ
-              </button>
-              <button class="bot-btn ${curLang==='zh'?'active':''}" onclick="setOrderLang('zh')">
-                <span>🇨🇳</span> 中文
-              </button>
-              <button class="bot-btn ${curLang==='en'?'active':''}" onclick="setOrderLang('en')">
-                <span>🇺🇸</span> English
-              </button>
-            </div>
-          </div>
-
           <!-- Product summary -->
           <div class="section-title">🛒 ${curLang === 'km' ? 'ទំនិញ' : (curLang === 'zh' ? '商品' : 'Product')}</div>
           <div class="product-summary">

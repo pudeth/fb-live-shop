@@ -1160,28 +1160,6 @@
           </div>
           ${galleryHtml}
           <div class="content-body">
-            <!-- Prominent Auto-Translate Bot Card -->
-            <div class="bot-translate-card">
-              <div class="bot-header">
-                <div class="bot-header-left">
-                  <span style="font-size:16px">🤖</span>
-                  <span>Auto-Translate Bot (បកប្រែ)</span>
-                </div>
-                <span class="bot-tag">AI Powered</span>
-              </div>
-              <div class="bot-lang-buttons">
-                <button class="bot-btn ${curLang==='km'?'active':''}" onclick="setLanguage('km')">
-                  <span>🇰🇭</span> ភាសាខ្មែរ
-                </button>
-                <button class="bot-btn ${curLang==='zh'?'active':''}" onclick="setLanguage('zh')">
-                  <span>🇨🇳</span> 中文
-                </button>
-                <button class="bot-btn ${curLang==='en'?'active':''}" onclick="setLanguage('en')">
-                  <span>🇺🇸</span> English
-                </button>
-              </div>
-            </div>
-
             <div class="meta-row">
               <div class="category-chip"><span>🏷️</span> ${escHtml(p.category_name || 'General')}</div>
               <div class="code-pill">Code: ${escHtml(p.product_code)}</div>

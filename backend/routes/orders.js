@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate, validationRules } = require('../middleware/validator');
@@ -207,6 +209,82 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
 
         await connection.commit();
 
+        // ── Auto Customer Account Generation ──
+        let customerAccount = null;
+        let customerToken = null;
+        let plainPassword = '';
+
+        try {
+            const cleanPhone = (customer_phone || '').trim().replace(/[^0-9+]/g, '');
+            const customerUsername = cleanPhone || ('cust_' + Date.now());
+
+            const [existingUsers] = await pool.query(
+                'SELECT id, username, role, full_name FROM users WHERE username = ? OR phone = ? LIMIT 1',
+                [customerUsername, customer_phone]
+            );
+
+            if (existingUsers.length === 0) {
+                plainPassword = Math.floor(100000 + Math.random() * 900000).toString();
+                const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+                const [userRes] = await pool.query(
+                    `INSERT INTO users (username, password, full_name, email, phone, address, role, status)
+                     VALUES (?, ?, ?, ?, ?, ?, 'customer', 'active')`,
+                    [
+                        customerUsername,
+                        hashedPassword,
+                        customer_name,
+                        customer_email || null,
+                        customer_phone,
+                        customer_address || null
+                    ]
+                );
+
+                customerAccount = {
+                    id: userRes.insertId,
+                    username: customerUsername,
+                    password: plainPassword,
+                    full_name: customer_name,
+                    is_new: true
+                };
+            } else {
+                const existing = existingUsers[0];
+                if (existing.role === 'customer') {
+                    plainPassword = Math.floor(100000 + Math.random() * 900000).toString();
+                    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+                    await pool.query(
+                        'UPDATE users SET password = ?, full_name = ?, address = ? WHERE id = ?',
+                        [hashedPassword, customer_name, customer_address || null, existing.id]
+                    );
+                    customerAccount = {
+                        id: existing.id,
+                        username: existing.username,
+                        password: plainPassword,
+                        full_name: customer_name,
+                        is_new: false
+                    };
+                } else {
+                    customerAccount = {
+                        id: existing.id,
+                        username: existing.username,
+                        password: '(Use your staff login)',
+                        full_name: existing.full_name,
+                        is_new: false
+                    };
+                }
+            }
+
+            if (customerAccount && process.env.JWT_SECRET) {
+                customerToken = jwt.sign(
+                    { id: customerAccount.id, username: customerAccount.username, role: 'customer' },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '30d' }
+                );
+            }
+        } catch (accErr) {
+            console.warn('Customer auto-account creation warning:', accErr.message);
+        }
+
         res.status(201).json({
             success: true,
             message: 'Order created successfully',
@@ -217,7 +295,9 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
                 payment_method: resolvedPaymentMethod,
                 payment_status: resolvedPaymentStatus,
                 amount_tendered: tendered,
-                change_amount: change
+                change_amount: change,
+                customer_account: customerAccount,
+                customer_token: customerToken
             }
         });
     } catch (error) {
@@ -229,6 +309,103 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
         });
     } finally {
         connection.release();
+    }
+});
+
+// Helper to compute order progress steps
+function getOrderTimeline(order) {
+    const isCompleted = order.status === 'completed';
+    const isShipping = ['shipping', 'completed'].includes(order.status);
+    const isProcessing = ['processing', 'shipping', 'completed'].includes(order.status) || order.payment_status === 'paid';
+
+    return [
+        { key: 'placed', title: 'Order Placed', desc: 'Order received & confirmed', icon: '📝', done: true, time: order.created_at },
+        { key: 'processing', title: 'Processing & Packed', desc: 'Item prepared by shop', icon: '📦', done: isProcessing },
+        { key: 'shipping', title: 'Out for Delivery', desc: 'Package with courier rider', icon: '🚚', done: isShipping },
+        { key: 'completed', title: 'Delivered', desc: 'Order successfully received', icon: '✅', done: isCompleted }
+    ];
+}
+
+// Public Order Tracking by Order Number OR Phone + Password
+router.post('/track', async (req, res) => {
+    try {
+        const { order_number, phone, password } = req.body;
+
+        // Mode 1: Track by Order Number
+        if (order_number) {
+            const [orders] = await pool.query(
+                'SELECT * FROM orders WHERE order_number = ?',
+                [order_number.trim()]
+            );
+
+            if (orders.length === 0) {
+                return res.status(404).json({ success: false, message: 'Order not found' });
+            }
+
+            const order = orders[0];
+            const [items] = await pool.query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+            order.items = items;
+
+            return res.json({
+                success: true,
+                data: {
+                    order,
+                    timeline: getOrderTimeline(order)
+                }
+            });
+        }
+
+        // Mode 2: Track by Customer Phone + Password
+        if (phone && password) {
+            const cleanPhone = phone.trim().replace(/[^0-9+]/g, '');
+            const [users] = await pool.query(
+                'SELECT * FROM users WHERE (username = ? OR phone = ?) AND status = ?',
+                [cleanPhone, phone.trim(), 'active']
+            );
+
+            if (users.length === 0) {
+                return res.status(401).json({ success: false, message: 'Customer account not found' });
+            }
+
+            const user = users[0];
+            const isValid = await bcrypt.compare(password.trim(), user.password);
+            if (!isValid) {
+                return res.status(401).json({ success: false, message: 'Invalid password or PIN' });
+            }
+
+            const [orders] = await pool.query(
+                'SELECT * FROM orders WHERE customer_phone = ? OR customer_name = ? ORDER BY created_at DESC',
+                [user.phone || phone, user.full_name]
+            );
+
+            for (const o of orders) {
+                const [items] = await pool.query('SELECT * FROM order_items WHERE order_id = ?', [o.id]);
+                o.items = items;
+                o.timeline = getOrderTimeline(o);
+            }
+
+            const token = jwt.sign(
+                { id: user.id, username: user.username, role: user.role },
+                process.env.JWT_SECRET || 'secret',
+                { expiresIn: '30d' }
+            );
+
+            delete user.password;
+
+            return res.json({
+                success: true,
+                data: {
+                    user,
+                    token,
+                    orders
+                }
+            });
+        }
+
+        res.status(400).json({ success: false, message: 'Please provide order number or phone and password' });
+    } catch (err) {
+        console.error('Order tracking error:', err);
+        res.status(500).json({ success: false, message: 'Failed to track order' });
     }
 });
 

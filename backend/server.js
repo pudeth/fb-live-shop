@@ -337,6 +337,11 @@ async function autoMigrate() {
             } catch(e) { /* column exists */ }
         }
 
+        // Ensure users.email is nullable for customer accounts
+        try {
+            await pool.execute(`ALTER TABLE users MODIFY COLUMN email VARCHAR(100) NULL`);
+        } catch(e) { /* non-fatal */ }
+
         // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
         try {
             await pool.execute(

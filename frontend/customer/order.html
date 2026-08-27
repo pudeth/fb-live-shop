@@ -531,6 +531,97 @@
       border: 1.5px solid var(--border2);
       color: var(--text-muted);
     }
+    .success-btn.track {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(16,185,129,.4);
+    }
+
+    /* Account & Login Info Card */
+    .account-card {
+      background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(16,185,129,0.14));
+      border: 1.5px solid rgba(96,165,250,0.45);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin: 14px 0;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      text-align: left;
+    }
+    .ac-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .ac-header-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #93c5fd;
+    }
+    .ac-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(16,185,129,0.25);
+      color: #34d399;
+      border: 1px solid rgba(52,211,153,0.4);
+    }
+    .ac-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .ac-box {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .ac-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .ac-val {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      font-family: monospace, var(--font);
+      word-break: break-all;
+    }
+    .ac-val.highlight {
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .ac-copy-btn {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: background 0.15s;
+    }
+    .ac-copy-btn:active { background: rgba(255,255,255,0.18); }
+    .ac-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
 
     /* ─────────── TOAST ─────────── */
     #toast {
@@ -1080,6 +1171,10 @@
     function renderSuccess(data) {
       document.getElementById('submit-bar').style.display = 'none';
 
+      if (data.customer_token) {
+        localStorage.setItem('customer_token', data.customer_token);
+      }
+
       const optsHtml = Object.entries(selectedOptions).length
         ? `<div class="receipt-row">
              <span>Options</span>
@@ -1092,6 +1187,35 @@
         bank_transfer: '🏦 Bank Transfer', gcash: '📱 GCash', credit_card: '💳 Credit Card',
       };
 
+      const custPhone = document.getElementById('f-phone')?.value.trim() || '';
+      const username = data.customer_account?.username || custPhone;
+      const password = data.customer_account?.password || '';
+
+      const accountHtml = password ? `
+        <div class="account-card">
+          <div class="ac-header">
+            <div class="ac-header-title">
+              <span style="font-size:16px">🔐</span>
+              <span>Your Login to View Order Status</span>
+            </div>
+            <span class="ac-badge">Active Account</span>
+          </div>
+          <div class="ac-grid">
+            <div class="ac-box">
+              <div class="ac-label">👤 Username (Phone)</div>
+              <div class="ac-val">${escHtml(username)}</div>
+            </div>
+            <div class="ac-box">
+              <div class="ac-label">🔑 Password / PIN</div>
+              <div class="ac-val highlight">${escHtml(password)}</div>
+            </div>
+          </div>
+          <button class="ac-copy-btn" onclick="copyCreds('${escHtml(username)}', '${escHtml(password)}')">
+            📋 Copy Username & Password
+          </button>
+          <div class="ac-hint">💡 Save this PIN! You can log in anytime with your phone & PIN to track your order.</div>
+        </div>` : '';
+
       document.getElementById('main-content').innerHTML = `
         <div class="success-wrap">
 
@@ -1100,7 +1224,7 @@
           <div class="success-title">Order Placed!</div>
           <div class="success-sub">
             Your order has been received and is being processed.<br/>
-            We'll contact you on <strong style="color:var(--text)">${escHtml(document.getElementById('f-phone')?.value || '')}</strong> shortly.
+            We'll contact you on <strong style="color:var(--text)">${escHtml(custPhone)}</strong> shortly.
           </div>
 
           <!-- Order number — tap to copy -->
@@ -1111,6 +1235,8 @@
               <span class="copy-icon">📋</span>
             </div>
           </div>
+
+          ${accountHtml}
 
           <!-- Receipt -->
           <div class="receipt-card">
@@ -1144,6 +1270,9 @@
 
           <!-- Actions -->
           <div class="success-actions">
+            <button class="success-btn track" onclick="window.location.href='/customer/track.html?order=${encodeURIComponent(data.order_number)}'">
+              🚚 Track Order Status
+            </button>
             <button class="success-btn primary" onclick="window.location.href='/customer/product.html?code=${encodeURIComponent(productCode)}'">
               ← Back to Product
             </button>
@@ -1153,6 +1282,18 @@
           </div>
 
         </div>`;
+    }
+
+    async function copyCreds(u, p) {
+      const text = `Shop Login:\n👤 Username: ${u}\n🔑 Password: ${p}`;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      toast('📋 Login info copied!');
     }
 
     async function copyOrderNumber(num) {

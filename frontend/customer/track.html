@@ -1,0 +1,523 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Track Order — FB Live Shop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #070b14;
+      --surface: #0f172a;
+      --surface2: #1e293b;
+      --primary: #2563eb;
+      --primary-glow: rgba(37,99,235,0.4);
+      --green: #10b981;
+      --green-glow: rgba(16,185,129,0.3);
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --radius: 16px;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 50px;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      max-width: 540px;
+      background: rgba(15,23,42,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .back-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    .lang-switch-group {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 2px 4px;
+    }
+    .lang-pill {
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      padding: 3px 6px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .lang-pill.active {
+      background: var(--primary);
+      box-shadow: 0 2px 6px var(--primary-glow);
+    }
+    .container {
+      width: 100%;
+      max-width: 540px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .tab-bar {
+      display: flex;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 3px 12px var(--primary-glow);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .order-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .status-pending   { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .status-processing{ background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .status-shipping  { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .status-completed { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    
+    /* Timeline */
+    .timeline {
+      position: relative;
+      margin: 16px 0 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 15px;
+      width: 2px;
+      background: var(--border2);
+    }
+    .tl-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .tl-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 2px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .tl-step.done .tl-icon {
+      background: var(--green);
+      border-color: #34d399;
+      box-shadow: 0 0 14px var(--green-glow);
+    }
+    .tl-info { flex: 1; }
+    .tl-title { font-size: 14px; font-weight: 800; color: var(--text-dim); }
+    .tl-step.done .tl-title { color: var(--text); }
+    .tl-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .tl-time { font-size: 11px; color: #38bdf8; margin-top: 2px; font-weight: 600; }
+
+    /* Product Item */
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-img {
+      width: 54px;
+      height: 54px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--surface2);
+    }
+    .item-info { flex: 1; }
+    .item-name { font-size: 14px; font-weight: 700; }
+    .item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .item-price { font-size: 15px; font-weight: 800; color: #38bdf8; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .form-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+    .form-input {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font);
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--primary); }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 800;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 4px 18px var(--primary-glow);
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(15,23,42,0.95);
+      border: 1px solid var(--border2);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transition: all 0.25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <div class="topbar-title" id="page-title">Order Status</div>
+    <div class="lang-switch-group">
+      <button class="lang-pill" id="lp-en" onclick="setLang('en')">🇺🇸</button>
+      <button class="lang-pill" id="lp-km" onclick="setLang('km')">🇰🇭</button>
+      <button class="lang-pill" id="lp-zh" onclick="setLang('zh')">🇨🇳</button>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-btn-track" onclick="switchTab('track')">🔍 Track by Order #</button>
+      <button class="tab-btn" id="tab-btn-login" onclick="switchTab('login')">👤 Customer Login</button>
+    </div>
+
+    <!-- Tab 1: Track by Order # -->
+    <div id="view-track">
+      <div class="card" id="search-card" style="margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Order Number</label>
+          <input class="form-input" id="inp-order-num" placeholder="e.g. ORD-1724..." />
+        </div>
+        <button class="btn btn-primary" onclick="searchByOrderNumber()">🔎 Search Order</button>
+      </div>
+
+      <div id="order-result"></div>
+    </div>
+
+    <!-- Tab 2: Login to view all orders -->
+    <div id="view-login" style="display:none">
+      <div class="card" id="login-card">
+        <div style="text-align:center;margin-bottom:14px">
+          <div style="font-size:42px;margin-bottom:6px">🔐</div>
+          <h2 style="font-size:18px;font-weight:900">Customer Login</h2>
+          <p style="font-size:13px;color:var(--text-muted)">Log in with your phone number and PIN password</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number / Username</label>
+          <input class="form-input" id="inp-phone" placeholder="e.g. 012 345 678" inputmode="tel" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password / 6-Digit PIN</label>
+          <input class="form-input" id="inp-password" type="password" placeholder="6-digit PIN" />
+        </div>
+        <button class="btn btn-primary" onclick="loginCustomer()" style="margin-top:6px">🔓 Log In & View Orders</button>
+      </div>
+
+      <div id="customer-orders-result" style="margin-top:14px"></div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    const API = window.location.origin + '/api';
+    let curLang = localStorage.getItem('app_lang') || 'en';
+
+    function setLang(lang) {
+      curLang = lang;
+      localStorage.setItem('app_lang', lang);
+      ['en','km','zh'].forEach(l => {
+        const b = document.getElementById('lp-' + l);
+        if (b) b.classList.toggle('active', l === curLang);
+      });
+      document.getElementById('page-title').textContent = lang === 'km' ? 'ស្ថានភាពការបញ្ជាទិញ' : (lang === 'zh' ? '订单状态查询' : 'Order Status');
+    }
+    setLang(curLang);
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-btn-track').classList.toggle('active', tab === 'track');
+      document.getElementById('tab-btn-login').classList.toggle('active', tab === 'login');
+      document.getElementById('view-track').style.display = tab === 'track' ? 'block' : 'none';
+      document.getElementById('view-login').style.display = tab === 'login' ? 'block' : 'none';
+    }
+
+    // Auto-search if ?order= is in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const qOrder = urlParams.get('order');
+    if (qOrder) {
+      document.getElementById('inp-order-num').value = qOrder;
+      searchByOrderNumber(qOrder);
+    }
+
+    async function searchByOrderNumber(orderNum) {
+      const num = (orderNum || document.getElementById('inp-order-num').value).trim();
+      if (!num) return toast('Please enter an order number');
+
+      const resEl = document.getElementById('order-result');
+      resEl.innerHTML = '<div class="spinner"></div>';
+
+      try {
+        const res = await fetch(`${API}/orders/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_number: num })
+        }).then(r => r.json());
+
+        if (res?.success && res.data?.order) {
+          renderOrderCard(res.data.order, res.data.timeline, resEl);
+        } else {
+          resEl.innerHTML = `
+            <div class="card" style="text-align:center;padding:24px">
+              <div style="font-size:36px;margin-bottom:8px">📦</div>
+              <h3 style="font-size:16px;font-weight:800">Order Not Found</h3>
+              <p style="font-size:13px;color:var(--text-muted);margin-top:4px">Could not find order "${num}". Please check the order number and try again.</p>
+            </div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div class="card" style="text-align:center;color:#ef4444">Connection error. Please try again.</div>`;
+      }
+    }
+
+    async function loginCustomer() {
+      const phone = document.getElementById('inp-phone').value.trim();
+      const password = document.getElementById('inp-password').value.trim();
+      if (!phone || !password) return toast('Please enter phone and password');
+
+      const resEl = document.getElementById('customer-orders-result');
+      resEl.innerHTML = '<div class="spinner"></div>';
+
+      try {
+        const res = await fetch(`${API}/orders/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        }).then(r => r.json());
+
+        if (res?.success && res.data?.orders) {
+          const orders = res.data.orders;
+          if (orders.length === 0) {
+            resEl.innerHTML = `
+              <div class="card" style="text-align:center;padding:24px">
+                <div style="font-size:36px;margin-bottom:8px">🛍️</div>
+                <h3 style="font-size:16px;font-weight:800">No Orders Yet</h3>
+                <p style="font-size:13px;color:var(--text-muted)">You have not placed any orders with this phone number yet.</p>
+              </div>`;
+            return;
+          }
+          resEl.innerHTML = `<div style="font-size:14px;font-weight:800;margin-bottom:8px">Found ${orders.length} Order(s) for ${res.data.user.full_name}:</div>` +
+            orders.map(o => getOrderCardHtml(o, o.timeline)).join('');
+        } else {
+          resEl.innerHTML = `
+            <div class="card" style="text-align:center;padding:24px;border-color:rgba(239,68,68,0.4)">
+              <div style="font-size:36px;margin-bottom:8px">❌</div>
+              <h3 style="font-size:16px;font-weight:800;color:#ef4444">Login Failed</h3>
+              <p style="font-size:13px;color:var(--text-muted);margin-top:4px">${res?.message || 'Invalid phone or PIN'}</p>
+            </div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div class="card" style="text-align:center;color:#ef4444">Connection error. Please try again.</div>`;
+      }
+    }
+
+    function renderOrderCard(order, timeline, container) {
+      container.innerHTML = getOrderCardHtml(order, timeline);
+    }
+
+    function getOrderCardHtml(order, timeline = []) {
+      const statusMap = {
+        pending:    { cls: 'status-pending', text: '⏳ Pending Confirmation' },
+        processing: { cls: 'status-processing', text: '📦 Processing & Packed' },
+        shipping:   { cls: 'status-shipping', text: '🚚 Out for Delivery' },
+        completed:  { cls: 'status-completed', text: '✅ Delivered' },
+        cancelled:  { cls: 'status-pending', text: '❌ Cancelled' },
+      };
+      const st = statusMap[order.status] || { cls: 'status-pending', text: order.status };
+
+      const itemsHtml = (order.items || []).map(it => `
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-name">${it.product_name}</div>
+            <div class="item-meta">Qty: ${it.quantity} &nbsp;·&nbsp; Unit: $${Number(it.price).toFixed(2)}</div>
+          </div>
+          <div class="item-price">$${Number(it.subtotal).toFixed(2)}</div>
+        </div>
+      `).join('');
+
+      const tlHtml = (timeline || []).map(step => `
+        <div class="tl-step ${step.done ? 'done' : ''}">
+          <div class="tl-icon">${step.done ? '✓' : step.icon}</div>
+          <div class="tl-info">
+            <div class="tl-title">${step.title}</div>
+            <div class="tl-desc">${step.desc}</div>
+            ${step.time && step.done ? `<div class="tl-time">${new Date(step.time).toLocaleString()}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      return `
+        <div class="card" style="margin-bottom:14px">
+          <div class="order-badge-row">
+            <div>
+              <div style="font-size:11px;color:var(--text-dim);font-weight:700">ORDER #</div>
+              <div style="font-size:14px;font-weight:900;color:#38bdf8;font-family:monospace">${order.order_number}</div>
+            </div>
+            <span class="status-pill ${st.cls}">${st.text}</span>
+          </div>
+
+          <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:var(--text-muted)">📈 DELIVERY TIMELINE</div>
+          <div class="timeline">${tlHtml}</div>
+
+          <div style="font-size:13px;font-weight:800;margin:16px 0 6px;color:var(--text-muted)">🛍️ ORDERED ITEMS</div>
+          <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:0 12px">${itemsHtml}</div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+            <span style="font-size:14px;font-weight:800">Total Price:</span>
+            <span style="font-size:18px;font-weight:900;color:var(--green)">$${Number(order.total_amount).toFixed(2)}</span>
+          </div>
+
+          <div style="margin-top:10px;font-size:12px;color:var(--text-muted);background:rgba(255,255,255,0.02);padding:10px;border-radius:10px">
+            📍 <strong>Deliver To:</strong> ${order.customer_name} (${order.customer_phone})<br/>
+            🏠 <strong>Address:</strong> ${order.customer_address || 'N/A'}<br/>
+            💳 <strong>Payment:</strong> ${(order.payment_method || 'cod').toUpperCase()} (${order.payment_status || 'unpaid'})
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

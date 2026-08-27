@@ -77,15 +77,10 @@
         <div class="table-wrapper">
           <table class="table">
             <thead><tr>
-              <th>User</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th>
+              <th>User</th><th>Username</th><th>Customer PIN / Pw</th><th>Email / Phone</th><th>Role</th><th>Status</th><th>Joined</th>
             </tr></thead>
             <tbody id="users-body">
-              <tr><td colspan="6" style="text-align:center;padding:40px">
-                <div style="color:var(--gray-400)">
-                  <p>User listing requires direct database access.</p>
-                  <p style="margin-top:8px;font-size:13px">You can create new cashier accounts using the form below.</p>
-                </div>
-              </td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -157,44 +152,81 @@
   }
   function logout() { auth.clear(); window.location.href = '/login.html'; }
 
-  // Pre-load the current admin user in the table as a seed
-  const seedUsers = [];
-  function renderSeedUsers(users) {
+  let allUsers = [];
+
+  async function loadUsers() {
     const body = document.getElementById('users-body');
-    if (users.length === 0) {
-      body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><h3>No users created yet</h3></div></td></tr>`;
-      return;
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>';
+
+    try {
+      const res = await api.getUsers();
+      if (res?.success && Array.isArray(res.data)) {
+        allUsers = res.data;
+        renderUsers(allUsers);
+      } else {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Failed to load users.</td></tr>';
+      }
+    } catch (e) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Error loading users.</td></tr>';
     }
-    body.innerHTML = users.map(u => `<tr>
-      <td>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">${(u.full_name||u.username)[0].toUpperCase()}</div>
-          <strong>${u.full_name}</strong>
-        </div>
-      </td>
-      <td><span class="code">${u.username}</span></td>
-      <td style="font-size:13px">${u.email}</td>
-      <td><span class="badge ${u.role==='admin'?'badge-primary':'badge-info'}">${u.role}</span></td>
-      <td>${fmt.statusBadge('active')}</td>
-      <td style="font-size:13px;color:var(--gray-500)">${u.created_at ? fmt.date(u.created_at) : 'Now'}</td>
-    </tr>`).join('');
   }
 
-  // Show currently logged-in user + any created this session
-  const currentUser = auth.getUser();
-  if (currentUser) {
-    seedUsers.push({ ...currentUser, created_at: null });
-    renderSeedUsers(seedUsers);
+  function renderUsers(users) {
+    const body = document.getElementById('users-body');
+    if (!users || users.length === 0) {
+      body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👥</div><h3>No users found</h3></div></td></tr>`;
+      return;
+    }
+    body.innerHTML = users.map(u => {
+      const roleBadge = u.role === 'admin' 
+        ? 'badge-primary' 
+        : (u.role === 'cashier' ? 'badge-info' : 'badge-warning');
+      const pinDisplay = u.raw_pin 
+        ? `<div style="display:flex;align-items:center;gap:6px">
+             <code style="font-size:12px;font-weight:800;color:var(--primary);background:var(--primary-light);padding:2px 6px;border-radius:4px">${u.raw_pin}</code>
+             <button class="btn btn-ghost btn-sm" onclick="copyPin('${u.username}','${u.raw_pin}')" style="font-size:10px;padding:2px 5px">📋</button>
+           </div>`
+        : `<span style="color:var(--gray-400);font-size:12px">Hashed</span>`;
+
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:${u.role==='customer'?'#10b981':'var(--primary)'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px">${(u.full_name||u.username||'?')[0].toUpperCase()}</div>
+            <div>
+              <strong>${u.full_name || u.username}</strong>
+              ${u.role === 'customer' ? '<span style="font-size:10px;color:#10b981;display:block">Customer</span>' : ''}
+            </div>
+          </div>
+        </td>
+        <td><span class="code">${u.username}</span></td>
+        <td>${pinDisplay}</td>
+        <td style="font-size:13px">${u.email || u.phone || '-'}</td>
+        <td><span class="badge ${roleBadge}">${u.role}</span></td>
+        <td>${fmt.statusBadge(u.status || 'active')}</td>
+        <td style="font-size:13px;color:var(--gray-500)">${u.created_at ? fmt.date(u.created_at) : 'Now'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function copyPin(user, pin) {
+    const text = `User Login:\n👤 Username: ${user}\n🔑 PIN: ${pin}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('📋 Login info copied!', 'success');
+    } catch {
+      showToast('Copied: ' + pin, 'info');
+    }
   }
 
   function filterUsers() {
     const search = document.getElementById('search-input').value.toLowerCase();
-    const filtered = seedUsers.filter(u =>
-      u.full_name?.toLowerCase().includes(search) ||
-      u.username?.toLowerCase().includes(search) ||
-      u.email?.toLowerCase().includes(search)
+    const filtered = allUsers.filter(u =>
+      (u.full_name || '').toLowerCase().includes(search) ||
+      (u.username || '').toLowerCase().includes(search) ||
+      (u.email || '').toLowerCase().includes(search) ||
+      (u.phone || '').toLowerCase().includes(search)
     );
-    renderSeedUsers(filtered);
+    renderUsers(filtered);
   }
 
   function openAddModal() {
@@ -234,15 +266,17 @@
     if (res?.success) {
       sucDiv.textContent = `✅ User "${payload.username}" created successfully! Default role: cashier.`;
       sucDiv.style.display = 'block';
-      seedUsers.push({ ...payload, role: 'cashier', created_at: new Date().toISOString() });
-      renderSeedUsers(seedUsers);
+      loadUsers();
       showToast('User created successfully', 'success');
+      setTimeout(() => closeModal('user-modal'), 1200);
     } else {
       const msg = res?.errors?.[0]?.msg || res?.message || 'Failed to create user';
       errDiv.textContent = msg;
       errDiv.style.display = 'block';
     }
   }
+
+  loadUsers();
 </script>
 </body>
 </html>

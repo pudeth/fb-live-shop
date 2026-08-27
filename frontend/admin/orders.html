@@ -171,6 +171,21 @@
             ${o.customer_email ? `<div style="color:var(--gray-500)">${o.customer_email}</div>` : ''}
             <div style="color:var(--gray-500);margin-top:4px">${o.customer_address}</div>
           </div>
+
+          <!-- Customer Login Credentials -->
+          <div style="margin-top:14px;background:rgba(37,99,235,0.08);border:1.5px solid rgba(37,99,235,0.25);border-radius:12px;padding:10px 14px">
+            <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+              <span>🔐 Customer Login Details</span>
+              <span style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;padding:1px 6px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">Active</span>
+            </div>
+            <div style="font-size:13px;line-height:1.6">
+              <div>👤 <strong>Username:</strong> <code style="font-size:12px;background:var(--gray-100);padding:2px 6px;border-radius:4px">${o.customer_phone || o.account_username || 'N/A'}</code></div>
+              <div style="margin-top:4px;display:flex;align-items:center;justify-content:space-between">
+                <div>🔑 <strong>Password:</strong> <code style="font-size:13px;font-weight:900;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:6px">${o.customer_pin || o.raw_pin || 'Available'}</code></div>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="copyCustomerCreds('${o.customer_phone || o.account_username}','${o.customer_pin || o.raw_pin || ''}')" style="font-size:11px;padding:3px 8px;border:1px solid var(--gray-300);background:#fff">📋 Copy</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-500);margin-bottom:10px">Payment Info</div>
@@ -234,6 +249,18 @@
     const res = await api.updatePayment(id, { payment_status });
     if (res?.success) { showToast('Payment status updated', 'success'); loadOrders(); closeModal('order-modal'); }
     else showToast(res?.message || 'Update failed', 'error');
+  }
+
+  async function copyCustomerCreds(user, pin) {
+    const text = `Shop Customer Login:\n👤 Username: ${user}\n🔑 6-Digit PIN: ${pin}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('📋 Customer login info copied!', 'success');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      showToast('📋 Customer login info copied!', 'success');
+    }
   }
 
   initCurrencyToggle(loadOrders);

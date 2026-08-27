@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
+const { authenticate, authorize } = require('../middleware/auth');
 const { validate, validationRules } = require('../middleware/validator');
 
 // Login
@@ -101,6 +102,19 @@ router.post('/register', validationRules.register, validate, async (req, res) =>
             success: false, 
             message: 'Server error' 
         });
+    }
+});
+
+// Get all users (admin only)
+router.get('/users', authenticate, authorize('admin'), async (req, res) => {
+    try {
+        const [users] = await pool.query(
+            'SELECT id, username, raw_pin, full_name, email, phone, address, role, status, created_at FROM users ORDER BY created_at DESC'
+        );
+        res.json({ success: true, data: users });
+    } catch (err) {
+        console.error('Get users error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 

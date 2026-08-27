@@ -46,12 +46,18 @@ router.get('/', authenticate, authorize('admin', 'cashier'), async (req, res) =>
     }
 });
 
-// Get order by ID with items
+// Get order by ID with items (admin/cashier only)
 router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res) => {
     try {
         const { id } = req.params;
 
-        const [orders] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
+        const [orders] = await pool.query(
+            `SELECT o.*, u.raw_pin, u.username as account_username
+             FROM orders o 
+             LEFT JOIN users u ON (u.phone = o.customer_phone OR u.username = o.customer_phone)
+             WHERE o.id = ?`,
+            [id]
+        );
 
         if (orders.length === 0) {
             return res.status(404).json({ 
@@ -61,6 +67,7 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
         }
 
         const order = orders[0];
+        order.customer_pin = order.customer_pin || order.raw_pin || null;
 
         const [items] = await pool.query(
             'SELECT * FROM order_items WHERE order_id = ?',
@@ -228,17 +235,21 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
                 const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
                 const [userRes] = await pool.query(
-                    `INSERT INTO users (username, password, full_name, email, phone, address, role, status)
-                     VALUES (?, ?, ?, ?, ?, ?, 'customer', 'active')`,
+                    `INSERT INTO users (username, password, raw_pin, full_name, email, phone, address, role, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 'customer', 'active')`,
                     [
                         customerUsername,
                         hashedPassword,
+                        plainPassword,
                         customer_name,
                         customer_email || null,
                         customer_phone,
                         customer_address || null
                     ]
                 );
+
+                // Also update the order record with customer_pin
+                await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [plainPassword, orderId]);
 
                 customerAccount = {
                     id: userRes.insertId,
@@ -253,9 +264,13 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
                     plainPassword = Math.floor(100000 + Math.random() * 900000).toString();
                     const hashedPassword = await bcrypt.hash(plainPassword, 10);
                     await pool.query(
-                        'UPDATE users SET password = ?, full_name = ?, address = ? WHERE id = ?',
-                        [hashedPassword, customer_name, customer_address || null, existing.id]
+                        'UPDATE users SET password = ?, raw_pin = ?, full_name = ?, address = ? WHERE id = ?',
+                        [hashedPassword, plainPassword, customer_name, customer_address || null, existing.id]
                     );
+
+                    // Also update order record with customer_pin
+                    await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [plainPassword, orderId]);
+
                     customerAccount = {
                         id: existing.id,
                         username: existing.username,

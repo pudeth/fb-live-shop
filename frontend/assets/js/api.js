@@ -36,7 +36,9 @@ const api = {
   upload: (path, formData) => api._request('POST',   path, formData, true),
 
   /* --- Auth --- */
-  login: (credentials) => api.post('/auth/login', credentials),
+  login:    (credentials) => api.post('/auth/login', credentials),
+  getUsers: ()            => api.get('/auth/users'),
+  register: (data)        => api.post('/auth/register', data),
 
   /* --- Categories --- */
   getCategories:    (params = '') => api.get(`/categories${params}`),

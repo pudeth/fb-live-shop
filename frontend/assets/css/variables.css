@@ -78,3 +78,8 @@ input, select, textarea { font-family: inherit; }
 img { max-width: 100%; display: block; }
 ul, ol { list-style: none; }
 table { border-collapse: collapse; width: 100%; }
+select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+  padding: 8px 12px;
+}

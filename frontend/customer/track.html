@@ -587,6 +587,150 @@
       margin: 30px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─────────── CUSTOM COUNTRY PICKER ─────────── */
+    select option {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      padding: 10px 14px;
+    }
+    .phone-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .phone-input-wrapper:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+      background: rgba(59,130,246,0.04);
+    }
+    .country-select-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 10px;
+      background: rgba(255,255,255,0.03);
+      border-right: 1.5px solid var(--border2);
+      border-top-left-radius: var(--radius-sm);
+      border-bottom-left-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .country-select-btn:hover {
+      background: rgba(255,255,255,0.08);
+    }
+    .cs-flag { font-size: 18px; line-height: 1; }
+    .cs-code {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      font-family: monospace, var(--font);
+    }
+    .cs-arrow {
+      font-size: 10px;
+      color: var(--text-muted);
+      transition: transform 0.2s;
+    }
+    .phone-input-wrapper.open .cs-arrow {
+      transform: rotate(180deg);
+    }
+    .phone-field {
+      flex: 1;
+      border: none !important;
+      background: transparent !important;
+      padding: 12px 14px !important;
+      font-size: 14px;
+      color: var(--text);
+      font-family: var(--font);
+      outline: none !important;
+      box-shadow: none !important;
+      width: 100%;
+    }
+    .phone-field::placeholder { color: var(--text-dim); }
+
+    /* Floating Dropdown */
+    .country-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      max-width: 320px;
+      background: #0f172a;
+      border: 1.5px solid rgba(56,189,248,0.3);
+      border-radius: 14px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08);
+      z-index: 1000;
+      overflow: hidden;
+      animation: ddSlideIn 0.16s ease-out;
+    }
+    @keyframes ddSlideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .phone-input-wrapper.open .country-dropdown-menu {
+      display: block;
+    }
+    .cd-search-wrap {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+    .cd-search-input {
+      width: 100%;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      font-family: var(--font);
+    }
+    .cd-search-input:focus {
+      border-color: var(--primary);
+    }
+    .cd-options-list {
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .cd-options-list::-webkit-scrollbar { width: 5px; }
+    .cd-options-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    .cd-opt-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      transition: background 0.12s;
+    }
+    .cd-opt-item:hover, .cd-opt-item.active {
+      background: rgba(37,99,235,0.3);
+      color: #fff;
+    }
+    .cd-opt-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cd-opt-flag { font-size: 16px; }
+    .cd-opt-name { font-weight: 600; }
+    .cd-opt-code {
+      font-family: monospace, var(--font);
+      font-weight: 800;
+      color: #38bdf8;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -655,25 +799,20 @@
           <form onsubmit="handleCustomerLogin(event)">
             <div class="form-group">
               <label class="form-label" id="txt-lbl-phone">Phone Number / Username</label>
-              <div style="display:flex;gap:8px;align-items:center">
-                <select class="form-input" id="login-country-code" style="width:130px;flex-shrink:0;padding:12px 6px;font-size:13px;font-weight:700;cursor:pointer">
-                  <option value="+855" selected>🇰🇭 +855 (KH)</option>
-                  <option value="+1">🇺🇸 +1 (US)</option>
-                  <option value="+66">🇹🇭 +66 (TH)</option>
-                  <option value="+84">🇻🇳 +84 (VN)</option>
-                  <option value="+86">🇨🇳 +86 (CN)</option>
-                  <option value="+856">🇱🇦 +856 (LA)</option>
-                  <option value="+65">🇸🇬 +65 (SG)</option>
-                  <option value="+60">🇲🇾 +60 (MY)</option>
-                  <option value="+63">🇵🇭 +63 (PH)</option>
-                  <option value="+82">🇰🇷 +82 (KR)</option>
-                  <option value="+81">🇯🇵 +81 (JP)</option>
-                  <option value="+44">🇬🇧 +44 (UK)</option>
-                  <option value="">🌐 Other</option>
-                </select>
-                <div class="input-wrap" style="flex:1">
-                  <span class="input-icon">📱</span>
-                  <input class="form-input" id="inp-login-phone" placeholder="012 345 678" inputmode="tel" required />
+              <div class="phone-input-wrapper" id="login-phone-wrap">
+                <input type="hidden" id="login-country-code" value="+855" />
+                <div class="country-select-btn" onclick="toggleCountryDropdown('login-phone-wrap')">
+                  <span class="cs-flag" id="cs-flag-login">🇰🇭</span>
+                  <span class="cs-code" id="cs-code-login">+855</span>
+                  <span class="cs-arrow">▾</span>
+                </div>
+                <input class="phone-field" id="inp-login-phone" placeholder="012 345 678" inputmode="tel" required />
+                
+                <div class="country-dropdown-menu" id="cd-menu-login">
+                  <div class="cd-search-wrap">
+                    <input type="text" class="cd-search-input" placeholder="🔍 Search country..." oninput="filterCountryList('login-phone-wrap', this.value)" />
+                  </div>
+                  <div class="cd-options-list" id="cd-opts-login"></div>
                 </div>
               </div>
             </div>
@@ -764,25 +903,20 @@
 
           <div class="form-group">
             <label class="form-label" id="txt-lbl-profphone">Phone Number</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <select class="form-input" id="prof-country-code" style="width:130px;flex-shrink:0;padding:12px 6px;font-size:13px;font-weight:700;cursor:pointer">
-                <option value="+855" selected>🇰🇭 +855 (KH)</option>
-                <option value="+1">🇺🇸 +1 (US)</option>
-                <option value="+66">🇹🇭 +66 (TH)</option>
-                <option value="+84">🇻🇳 +84 (VN)</option>
-                <option value="+86">🇨🇳 +86 (CN)</option>
-                <option value="+856">🇱🇦 +856 (LA)</option>
-                <option value="+65">🇸🇬 +65 (SG)</option>
-                <option value="+60">🇲🇾 +60 (MY)</option>
-                <option value="+63">🇵🇭 +63 (PH)</option>
-                <option value="+82">🇰🇷 +82 (KR)</option>
-                <option value="+81">🇯🇵 +81 (JP)</option>
-                <option value="+44">🇬🇧 +44 (UK)</option>
-                <option value="">🌐 Other</option>
-              </select>
-              <div class="input-wrap" style="flex:1">
-                <span class="input-icon">📱</span>
-                <input class="form-input" id="prof-phone" placeholder="012 345 678" inputmode="tel" required />
+            <div class="phone-input-wrapper" id="prof-phone-wrap">
+              <input type="hidden" id="prof-country-code" value="+855" />
+              <div class="country-select-btn" onclick="toggleCountryDropdown('prof-phone-wrap')">
+                <span class="cs-flag" id="cs-flag-prof">🇰🇭</span>
+                <span class="cs-code" id="cs-code-prof">+855</span>
+                <span class="cs-arrow">▾</span>
+              </div>
+              <input class="phone-field" id="prof-phone" placeholder="012 345 678" inputmode="tel" required />
+              
+              <div class="country-dropdown-menu" id="cd-menu-prof">
+                <div class="cd-search-wrap">
+                  <input type="text" class="cd-search-input" placeholder="🔍 Search country..." oninput="filterCountryList('prof-phone-wrap', this.value)" />
+                </div>
+                <div class="cd-options-list" id="cd-opts-prof"></div>
               </div>
             </div>
           </div>
@@ -1338,7 +1472,14 @@
       currentAvatarData = user.avatar || null;
       setAvatarPreview(user.avatar, user.full_name || user.username);
       document.getElementById('prof-name').value = user.full_name || '';
-      document.getElementById('prof-phone').value = user.phone || user.username || '';
+      let p = user.phone || user.username || '';
+      if (p.startsWith('+855')) {
+        selectCountryCode('prof-phone-wrap', '🇰🇭', '+855', '012 345 678');
+        let rest = p.slice(4);
+        if (!rest.startsWith('0')) rest = '0' + rest;
+        p = rest;
+      }
+      document.getElementById('prof-phone').value = p;
       document.getElementById('prof-email').value = user.email || '';
       document.getElementById('prof-address').value = user.address || '';
       document.getElementById('prof-new-pin').value = '';
@@ -1747,6 +1888,83 @@
         resEl.innerHTML = `<div class="card" style="text-align:center;color:#ef4444">Connection error.</div>`;
       }
     }
+
+    /* ─── Country Code Picker ─── */
+    const COUNTRY_LIST = [
+      { flag: '🇰🇭', name: 'Cambodia', code: '+855', placeholder: '012 345 678' },
+      { flag: '🇺🇸', name: 'United States', code: '+1', placeholder: '(555) 000-0000' },
+      { flag: '🇹🇭', name: 'Thailand', code: '+66', placeholder: '081 234 5678' },
+      { flag: '🇻🇳', name: 'Vietnam', code: '+84', placeholder: '091 234 5678' },
+      { flag: '🇨🇳', name: 'China', code: '+86', placeholder: '138 0000 0000' },
+      { flag: '🇱🇦', name: 'Laos', code: '+856', placeholder: '020 1234 5678' },
+      { flag: '🇸🇬', name: 'Singapore', code: '+65', placeholder: '8123 4567' },
+      { flag: '🇲🇾', name: 'Malaysia', code: '+60', placeholder: '012 345 6789' },
+      { flag: '🇵🇭', name: 'Philippines', code: '+63', placeholder: '0912 345 6789' },
+      { flag: '🇰🇷', name: 'South Korea', code: '+82', placeholder: '010 1234 5678' },
+      { flag: '🇯🇵', name: 'Japan', code: '+81', placeholder: '090 1234 5678' },
+      { flag: '🇬🇧', name: 'United Kingdom', code: '+44', placeholder: '07123 456789' },
+      { flag: '🇦🇺', name: 'Australia', code: '+61', placeholder: '0412 345 678' },
+      { flag: '🇫🇷', name: 'France', code: '+33', placeholder: '06 12 34 56 78' },
+      { flag: '🇩🇪', name: 'Germany', code: '+49', placeholder: '0151 23456789' },
+      { flag: '🌐', name: 'Other Country', code: '', placeholder: 'Phone number' }
+    ];
+
+    function renderCountryOptions(wrapId, filterText = '') {
+      const wrap = document.getElementById(wrapId);
+      if (!wrap) return;
+      const list = wrap.querySelector('.cd-options-list');
+      const curCode = wrap.querySelector('input[type="hidden"]')?.value || '+855';
+      const q = filterText.toLowerCase().trim();
+      
+      const filtered = COUNTRY_LIST.filter(c => 
+        !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+      );
+
+      list.innerHTML = filtered.map(c => `
+        <div class="cd-opt-item ${c.code === curCode ? 'active' : ''}" onclick="selectCountryCode('${wrapId}', '${c.flag}', '${c.code}', '${c.placeholder}')">
+          <div class="cd-opt-left">
+            <span class="cd-opt-flag">${c.flag}</span>
+            <span class="cd-opt-name">${c.name}</span>
+          </div>
+          <span class="cd-opt-code">${c.code || 'Other'}</span>
+        </div>
+      `).join('');
+    }
+
+    function toggleCountryDropdown(wrapId) {
+      const wrap = document.getElementById(wrapId);
+      if (!wrap) return;
+      const isOpen = wrap.classList.contains('open');
+      document.querySelectorAll('.phone-input-wrapper').forEach(w => w.classList.remove('open'));
+      if (!isOpen) {
+        wrap.classList.add('open');
+        renderCountryOptions(wrapId);
+        const searchInp = wrap.querySelector('.cd-search-input');
+        if (searchInp) { searchInp.value = ''; setTimeout(() => searchInp.focus(), 50); }
+      }
+    }
+
+    function filterCountryList(wrapId, val) {
+      renderCountryOptions(wrapId, val);
+    }
+
+    function selectCountryCode(wrapId, flag, code, placeholder) {
+      const wrap = document.getElementById(wrapId);
+      if (!wrap) return;
+      wrap.querySelector('input[type="hidden"]').value = code;
+      wrap.querySelector('.cs-flag').textContent = flag;
+      wrap.querySelector('.cs-code').textContent = code || '🌐';
+      const phoneInp = wrap.querySelector('.phone-field');
+      if (phoneInp && placeholder) phoneInp.placeholder = placeholder;
+      wrap.classList.remove('open');
+      if (phoneInp) phoneInp.focus();
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.phone-input-wrapper')) {
+        document.querySelectorAll('.phone-input-wrapper').forEach(w => w.classList.remove('open'));
+      }
+    });
 
     /* ─── Auto-Init ─── */
     async function initPortal() {

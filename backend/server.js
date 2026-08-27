@@ -67,9 +67,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Body parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parser (50mb limit to support multi-image base64 payloads)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // API Routes - Must come BEFORE static file serving
 app.use('/api/auth', authRoutes);

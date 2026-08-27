@@ -1147,7 +1147,10 @@
             <button class="lang-pill ${curLang==='zh'?'active':''}" onclick="setLanguage('zh')">🇨🇳 中文</button>
           </div>
 
-          <button class="nav-btn" onclick="openShareModal()" title="Share">↗</button>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="nav-btn" onclick="window.location.href='/customer/track.html'" title="Track My Order / Login">📦</button>
+            <button class="nav-btn" onclick="openShareModal()" title="Share">↗</button>
+          </div>
         </div>
         <div class="page-wrap">
           <div class="hero-container">

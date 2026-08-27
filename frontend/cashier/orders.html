@@ -604,7 +604,21 @@
             <div class="checkout-section">
               <h6>👤 Customer Info</h6>
               <input class="cf-input" id="c-name"    placeholder="Customer name *" />
-              <input class="cf-input" id="c-phone"   placeholder="Phone number *" />
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+                <select class="cf-input" id="c-country-code" style="width:125px;flex-shrink:0;margin-bottom:0;font-weight:700">
+                  <option value="+855" selected>🇰🇭 +855 (KH)</option>
+                  <option value="+1">🇺🇸 +1 (US)</option>
+                  <option value="+66">🇹🇭 +66 (TH)</option>
+                  <option value="+84">🇻🇳 +84 (VN)</option>
+                  <option value="+86">🇨🇳 +86 (CN)</option>
+                  <option value="+856">🇱🇦 +856 (LA)</option>
+                  <option value="+65">🇸🇬 +65 (SG)</option>
+                  <option value="+60">🇲🇾 +60 (MY)</option>
+                  <option value="+63">🇵🇭 +63 (PH)</option>
+                  <option value="">🌐 Other</option>
+                </select>
+                <input class="cf-input" id="c-phone" placeholder="Phone number *" style="flex:1;margin-bottom:0" />
+              </div>
               <input class="cf-input" id="c-address" placeholder="Delivery address *" />
               <input class="cf-input" id="c-email"   placeholder="Email (optional)" />
               <textarea class="cf-input" id="c-notes" placeholder="Order notes (optional)"></textarea>
@@ -859,10 +873,20 @@
   // ── Place Order ──
   async function placeOrder() {
     if (!cart.length) { showToast('Cart is empty', 'warning'); return; }
-    const name    = document.getElementById('c-name').value.trim();
-    const phone   = document.getElementById('c-phone').value.trim();
+    const name        = document.getElementById('c-name').value.trim();
+    const rawPhone    = document.getElementById('c-phone').value.trim();
+    const countryCode = document.getElementById('c-country-code')?.value || '+855';
+    let phone = rawPhone;
+    if (countryCode && !rawPhone.startsWith('+')) {
+      const clean = rawPhone.replace(/[^0-9]/g, '');
+      if (countryCode === '+855') {
+        phone = clean.startsWith('0') ? clean : ('0' + clean);
+      } else {
+        phone = countryCode + clean;
+      }
+    }
     const address = document.getElementById('c-address').value.trim();
-    if (!name || !phone || !address) { showToast('Customer name, phone and address are required', 'warning'); return; }
+    if (!name || !rawPhone || !address) { showToast('Customer name, phone and address are required', 'warning'); return; }
 
     const btn = document.getElementById('place-order-btn');
     btn.disabled = true; btn.textContent = 'Placing order…';

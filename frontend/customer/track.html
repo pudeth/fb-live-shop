@@ -655,9 +655,26 @@
           <form onsubmit="handleCustomerLogin(event)">
             <div class="form-group">
               <label class="form-label" id="txt-lbl-phone">Phone Number / Username</label>
-              <div class="input-wrap">
-                <span class="input-icon">📱</span>
-                <input class="form-input" id="inp-login-phone" placeholder="e.g. 012 345 678" inputmode="tel" required />
+              <div style="display:flex;gap:8px;align-items:center">
+                <select class="form-input" id="login-country-code" style="width:130px;flex-shrink:0;padding:12px 6px;font-size:13px;font-weight:700;cursor:pointer">
+                  <option value="+855" selected>🇰🇭 +855 (KH)</option>
+                  <option value="+1">🇺🇸 +1 (US)</option>
+                  <option value="+66">🇹🇭 +66 (TH)</option>
+                  <option value="+84">🇻🇳 +84 (VN)</option>
+                  <option value="+86">🇨🇳 +86 (CN)</option>
+                  <option value="+856">🇱🇦 +856 (LA)</option>
+                  <option value="+65">🇸🇬 +65 (SG)</option>
+                  <option value="+60">🇲🇾 +60 (MY)</option>
+                  <option value="+63">🇵🇭 +63 (PH)</option>
+                  <option value="+82">🇰🇷 +82 (KR)</option>
+                  <option value="+81">🇯🇵 +81 (JP)</option>
+                  <option value="+44">🇬🇧 +44 (UK)</option>
+                  <option value="">🌐 Other</option>
+                </select>
+                <div class="input-wrap" style="flex:1">
+                  <span class="input-icon">📱</span>
+                  <input class="form-input" id="inp-login-phone" placeholder="012 345 678" inputmode="tel" required />
+                </div>
               </div>
             </div>
 
@@ -747,9 +764,26 @@
 
           <div class="form-group">
             <label class="form-label" id="txt-lbl-profphone">Phone Number</label>
-            <div class="input-wrap">
-              <span class="input-icon">📱</span>
-              <input class="form-input" id="prof-phone" placeholder="012 345 678" inputmode="tel" required />
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="form-input" id="prof-country-code" style="width:130px;flex-shrink:0;padding:12px 6px;font-size:13px;font-weight:700;cursor:pointer">
+                <option value="+855" selected>🇰🇭 +855 (KH)</option>
+                <option value="+1">🇺🇸 +1 (US)</option>
+                <option value="+66">🇹🇭 +66 (TH)</option>
+                <option value="+84">🇻🇳 +84 (VN)</option>
+                <option value="+86">🇨🇳 +86 (CN)</option>
+                <option value="+856">🇱🇦 +856 (LA)</option>
+                <option value="+65">🇸🇬 +65 (SG)</option>
+                <option value="+60">🇲🇾 +60 (MY)</option>
+                <option value="+63">🇵🇭 +63 (PH)</option>
+                <option value="+82">🇰🇷 +82 (KR)</option>
+                <option value="+81">🇯🇵 +81 (JP)</option>
+                <option value="+44">🇬🇧 +44 (UK)</option>
+                <option value="">🌐 Other</option>
+              </select>
+              <div class="input-wrap" style="flex:1">
+                <span class="input-icon">📱</span>
+                <input class="form-input" id="prof-phone" placeholder="012 345 678" inputmode="tel" required />
+              </div>
             </div>
           </div>
 
@@ -1223,9 +1257,20 @@
     /* ─── Authentication & Profile ─── */
     async function handleCustomerLogin(e) {
       e.preventDefault();
-      const phone = document.getElementById('inp-login-phone').value.trim();
+      const rawPhone = document.getElementById('inp-login-phone').value.trim();
       const password = document.getElementById('inp-login-pin').value.trim();
-      if (!phone || !password) return toast('Please enter phone and PIN');
+      const code = document.getElementById('login-country-code')?.value || '+855';
+      if (!rawPhone || !password) return toast('Please enter phone and PIN');
+
+      let phone = rawPhone;
+      if (code && !rawPhone.startsWith('+')) {
+        const clean = rawPhone.replace(/[^0-9]/g, '');
+        if (code === '+855') {
+          phone = clean.startsWith('0') ? clean : ('0' + clean);
+        } else {
+          phone = code + clean;
+        }
+      }
 
       const btn = document.getElementById('btn-login-submit');
       btn.disabled = true;
@@ -1304,9 +1349,21 @@
       const token = localStorage.getItem('customer_token');
       if (!token) return toast('Please sign in first');
 
+      const rawPhone = document.getElementById('prof-phone').value.trim();
+      const code = document.getElementById('prof-country-code')?.value || '+855';
+      let phone = rawPhone;
+      if (code && !rawPhone.startsWith('+')) {
+        const clean = rawPhone.replace(/[^0-9]/g, '');
+        if (code === '+855') {
+          phone = clean.startsWith('0') ? clean : ('0' + clean);
+        } else {
+          phone = code + clean;
+        }
+      }
+
       const payload = {
         full_name: document.getElementById('prof-name').value.trim(),
-        phone: document.getElementById('prof-phone').value.trim(),
+        phone: phone,
         email: document.getElementById('prof-email').value.trim() || null,
         address: document.getElementById('prof-address').value.trim() || null,
       };

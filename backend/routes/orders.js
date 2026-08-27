@@ -486,10 +486,16 @@ router.post('/track', async (req, res) => {
 
         // Mode 2: Track by Customer Phone + Password
         if (phone && password) {
-            const cleanPhone = phone.trim().replace(/[^0-9+]/g, '');
+            const rawPhone = phone.trim();
+            const cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
+            const cleanDigits = rawPhone.replace(/[^0-9]/g, '');
+            const coreDigits = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
             const [users] = await pool.query(
-                'SELECT * FROM users WHERE (username = ? OR phone = ?) AND status = ?',
-                [cleanPhone, phone.trim(), 'active']
+                `SELECT * FROM users 
+                 WHERE (username = ? OR phone = ? OR username = ? OR phone = ? OR username LIKE ? OR phone LIKE ?) AND status = ?
+                 ORDER BY id ASC LIMIT 1`,
+                [rawPhone, rawPhone, cleanPhone, cleanDigits, `%${coreDigits}%`, `%${coreDigits}%`, 'active']
             );
 
             if (users.length === 0) {
@@ -503,8 +509,10 @@ router.post('/track', async (req, res) => {
             }
 
             const [orders] = await pool.query(
-                'SELECT * FROM orders WHERE customer_phone = ? OR customer_name = ? ORDER BY created_at DESC',
-                [user.phone || phone, user.full_name]
+                `SELECT * FROM orders 
+                 WHERE customer_phone = ? OR customer_phone = ? OR customer_phone = ? OR customer_phone LIKE ? OR customer_name = ? 
+                 ORDER BY created_at DESC`,
+                [user.phone || phone, cleanPhone, cleanDigits, `%${coreDigits}%`, user.full_name]
             );
 
             for (const o of orders) {

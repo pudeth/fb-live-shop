@@ -167,6 +167,7 @@
       <div class="role-tabs">
         <button class="role-tab active" data-role="admin" onclick="setRole('admin')">🛡️ Admin</button>
         <button class="role-tab" data-role="cashier" onclick="setRole('cashier')">🧾 Cashier</button>
+        <button class="role-tab" data-role="customer" onclick="setRole('customer')">👤 Customer</button>
       </div>
 
       <div id="error-alert" class="alert alert-error">
@@ -176,14 +177,14 @@
 
       <form id="login-form" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label class="form-label">Username</label>
+          <label class="form-label" id="label-username">Username</label>
           <div class="input-wrap">
             <span class="input-icon">👤</span>
             <input id="username" type="text" class="form-control" placeholder="Enter username" autocomplete="username" required />
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Password</label>
+          <label class="form-label" id="label-password">Password</label>
           <div class="input-wrap">
             <span class="input-icon">🔒</span>
             <input id="password" type="password" class="form-control" placeholder="Enter password" autocomplete="current-password" required />
@@ -195,11 +196,13 @@
           <span class="btn-text">Sign In</span>
         </button>
       </form>
-    <p class="footer-note">Default: admin / admin123 &nbsp;|&nbsp; cashier / cashier123</p>
+    </div>
+
+    <p class="footer-note" id="footer-note">Default: admin / admin123 &nbsp;|&nbsp; cashier / cashier123</p>
 
     <div style="text-align:center;margin-top:16px">
-      <a href="/customer/track.html" style="color:rgba(255,255,255,0.8);font-size:13px;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);transition:background .2s">
-        🛍️ Customer? <strong style="color:#60a5fa">Track Order & View Status →</strong>
+      <a href="/customer/track.html" style="color:rgba(255,255,255,0.85);font-size:13px;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);transition:all .2s">
+        📦 Customer? <strong style="color:#38bdf8">Track Order & View Live Status →</strong>
       </a>
     </div>
   </div>
@@ -219,10 +222,31 @@
       document.querySelectorAll('.role-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.role === role);
       });
-      // Pre-fill demo credentials
-      const demos = { admin: ['admin', 'admin123'], cashier: ['cashier', 'cashier123'] };
-      document.getElementById('username').value = demos[role][0];
-      document.getElementById('password').value = demos[role][1];
+
+      const uInput = document.getElementById('username');
+      const pInput = document.getElementById('password');
+      const uLabel = document.getElementById('label-username');
+      const pLabel = document.getElementById('label-password');
+      const fNote  = document.getElementById('footer-note');
+
+      if (role === 'customer') {
+        uLabel.textContent = 'Phone Number / Username';
+        uInput.placeholder = 'e.g. 012 345 678';
+        uInput.value = '';
+        pLabel.textContent = '6-Digit PIN Password';
+        pInput.placeholder = 'Enter your 6-digit PIN';
+        pInput.value = '';
+        fNote.innerHTML = '💡 Enter the Phone & 6-digit PIN you received upon placing your order.';
+      } else {
+        uLabel.textContent = 'Username';
+        uInput.placeholder = 'Enter username';
+        pLabel.textContent = 'Password';
+        pInput.placeholder = 'Enter password';
+        const demos = { admin: ['admin', 'admin123'], cashier: ['cashier', 'cashier123'] };
+        uInput.value = demos[role][0];
+        pInput.value = demos[role][1];
+        fNote.innerHTML = 'Default: admin / admin123 &nbsp;|&nbsp; cashier / cashier123';
+      }
     }
 
     function togglePw() {
@@ -241,8 +265,9 @@
       btn.disabled = true;
       errAlert.classList.remove('show');
 
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
+      const rawUsername = document.getElementById('username').value.trim();
+      const username = currentRole === 'customer' ? rawUsername.replace(/[^0-9+]/g, '') || rawUsername : rawUsername;
+      const password = document.getElementById('password').value.trim();
 
       try {
         const res = await api.login({ username, password });
@@ -250,7 +275,7 @@
           auth.setSession(res.token, res.user);
           redirectByRole(res.user.role);
         } else {
-          errMsg.textContent = res?.message || 'Invalid credentials';
+          errMsg.textContent = res?.message || (currentRole === 'customer' ? 'Invalid phone number or 6-digit PIN' : 'Invalid credentials');
           errAlert.classList.add('show');
         }
       } catch (err) {
@@ -265,7 +290,8 @@
     function redirectByRole(role) {
       if (role === 'admin') window.location.href = '/admin/dashboard.html';
       else if (role === 'cashier') window.location.href = '/cashier/live.html';
-      else window.location.href = '/login.html';
+      else if (role === 'customer') window.location.href = '/customer/track.html';
+      else window.location.href = '/customer/track.html';
     }
 
     // Pre-fill admin by default

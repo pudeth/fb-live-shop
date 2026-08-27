@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -376,9 +376,18 @@
       document.getElementById('view-login').style.display = tab === 'login' ? 'block' : 'none';
     }
 
-    // Auto-search if ?order= is in URL
+    // Auto-search or tab switch from URL
     const urlParams = new URLSearchParams(window.location.search);
     const qOrder = urlParams.get('order');
+    const qTab = urlParams.get('tab');
+    if (qTab === 'login') switchTab('login');
+
+    const savedPhone = localStorage.getItem('customer_phone');
+    if (savedPhone) {
+      const pInp = document.getElementById('inp-phone');
+      if (pInp && !pInp.value) pInp.value = savedPhone;
+    }
+
     if (qOrder) {
       document.getElementById('inp-order-num').value = qOrder;
       searchByOrderNumber(qOrder);
@@ -417,6 +426,8 @@
       const phone = document.getElementById('inp-phone').value.trim();
       const password = document.getElementById('inp-password').value.trim();
       if (!phone || !password) return toast('Please enter phone and password');
+
+      localStorage.setItem('customer_phone', phone);
 
       const resEl = document.getElementById('customer-orders-result');
       resEl.innerHTML = '<div class="spinner"></div>';

@@ -36,9 +36,18 @@
       font-family: var(--font);
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       padding-bottom: 70px;
+    }
+
+    /* ── App Shell / Centered Desktop Container ── */
+    .app-wrapper {
+      width: 100%;
+      max-width: 540px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      margin: 0 auto;
     }
 
     /* ── Top Navigation ── */
@@ -47,10 +56,9 @@
       top: 0;
       z-index: 100;
       width: 100%;
-      max-width: 540px;
-      background: rgba(15,23,42,0.88);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
+      background: rgba(15,23,42,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
       padding: 12px 16px;
       display: flex;
@@ -77,7 +85,7 @@
     .lang-switch-group {
       display: flex;
       align-items: center;
-      gap: 2px;
+      gap: 3px;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border2);
       border-radius: 16px;
@@ -87,11 +95,12 @@
       border: none;
       background: transparent;
       font-size: 12px;
-      padding: 4px 7px;
+      padding: 4px 8px;
       border-radius: 12px;
       cursor: pointer;
       color: var(--text-muted);
       font-weight: 700;
+      font-family: var(--font);
       transition: all 0.2s;
     }
     .lang-pill.active {
@@ -103,7 +112,6 @@
     /* ── Main Container ── */
     .container {
       width: 100%;
-      max-width: 540px;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -560,6 +568,8 @@
 </head>
 <body>
 
+  <div class="app-wrapper">
+
   <!-- Top Bar -->
   <div class="topbar">
     <button class="back-btn" onclick="goBack()" title="Back">←</button>
@@ -790,6 +800,8 @@
       </button>
     </div>
   </div>
+
+  </div> <!-- End App Wrapper -->
 
   <div id="toast"></div>
 
@@ -1327,5 +1339,6 @@
     }
 
     initPortal();
+  </script>
 </body>
 </html>

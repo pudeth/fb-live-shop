@@ -12,11 +12,14 @@
       --bg: #070b14;
       --surface: #0f172a;
       --surface2: #1e293b;
+      --surface3: #334155;
       --primary: #2563eb;
+      --primary-hover: #1d4ed8;
       --primary-glow: rgba(37,99,235,0.4);
       --green: #10b981;
       --green-glow: rgba(16,185,129,0.3);
       --yellow: #f59e0b;
+      --purple: #8b5cf6;
       --red: #ef4444;
       --text: #f8fafc;
       --text-muted: #94a3b8;
@@ -35,17 +38,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-bottom: 50px;
+      padding-bottom: 70px;
     }
+
+    /* ── Top Navigation ── */
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 50;
+      z-index: 100;
       width: 100%;
       max-width: 540px;
-      background: rgba(15,23,42,0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(15,23,42,0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border);
       padding: 12px 16px;
       display: flex;
@@ -61,16 +66,18 @@
       font-size: 16px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
     }
+    .back-btn:active { transform: scale(0.92); }
     .topbar-title {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
-      letter-spacing: .02em;
+      letter-spacing: .01em;
     }
     .lang-switch-group {
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border2);
       border-radius: 16px;
@@ -80,14 +87,20 @@
       border: none;
       background: transparent;
       font-size: 12px;
-      padding: 3px 6px;
+      padding: 4px 7px;
       border-radius: 12px;
       cursor: pointer;
+      color: var(--text-muted);
+      font-weight: 700;
+      transition: all 0.2s;
     }
     .lang-pill.active {
       background: var(--primary);
+      color: #fff;
       box-shadow: 0 2px 6px var(--primary-glow);
     }
+
+    /* ── Main Container ── */
     .container {
       width: 100%;
       max-width: 540px;
@@ -96,148 +109,102 @@
       flex-direction: column;
       gap: 14px;
     }
-    .tab-bar {
+
+    /* ── Segmented Control / Main Tabs ── */
+    .segment-bar {
       display: flex;
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 4px;
       gap: 4px;
     }
-    .tab-btn {
+    .segment-btn {
       flex: 1;
-      padding: 10px;
+      padding: 11px 8px;
       border: none;
       background: transparent;
       color: var(--text-muted);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       font-family: var(--font);
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
-    .tab-btn.active {
+    .segment-btn.active {
       background: var(--primary);
       color: #fff;
-      box-shadow: 0 3px 12px var(--primary-glow);
+      box-shadow: 0 4px 14px var(--primary-glow);
     }
+
+    /* ── Cards ── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 18px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
     }
-    .order-badge-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 800;
-    }
-    .status-pending   { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-    .status-processing{ background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-    .status-shipping  { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
-    .status-completed { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-    
-    /* Timeline */
-    .timeline {
-      position: relative;
-      margin: 16px 0 10px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .timeline::before {
-      content: '';
-      position: absolute;
-      top: 10px;
-      bottom: 10px;
-      left: 15px;
-      width: 2px;
-      background: var(--border2);
-    }
-    .tl-step {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      position: relative;
-      z-index: 1;
-    }
-    .tl-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--surface2);
-      border: 2px solid var(--border2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      transition: all 0.3s;
-    }
-    .tl-step.done .tl-icon {
-      background: var(--green);
-      border-color: #34d399;
-      box-shadow: 0 0 14px var(--green-glow);
-    }
-    .tl-info { flex: 1; }
-    .tl-title { font-size: 14px; font-weight: 800; color: var(--text-dim); }
-    .tl-step.done .tl-title { color: var(--text); }
-    .tl-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .tl-time { font-size: 11px; color: #38bdf8; margin-top: 2px; font-weight: 600; }
 
-    /* Product Item */
-    .item-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .item-row:last-child { border-bottom: none; }
-    .item-img {
-      width: 54px;
-      height: 54px;
-      border-radius: 10px;
-      object-fit: cover;
-      background: var(--surface2);
-    }
-    .item-info { flex: 1; }
-    .item-name { font-size: 14px; font-weight: 700; }
-    .item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-    .item-price { font-size: 15px; font-weight: 800; color: #38bdf8; }
-
+    /* ── Form Inputs ── */
     .form-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
-    .form-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+    .form-label {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 16px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
     .form-input {
-      padding: 12px 14px;
+      width: 100%;
+      padding: 13px 14px 13px 42px;
       border-radius: 12px;
       background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border2);
+      border: 1.5px solid var(--border2);
       color: var(--text);
       font-size: 14px;
       font-family: var(--font);
       outline: none;
+      transition: all 0.2s;
     }
-    .form-input:focus { border-color: var(--primary); }
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.25);
+    }
+    .toggle-pw-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* ── Buttons ── */
     .btn {
       width: 100%;
       padding: 14px;
@@ -259,87 +226,451 @@
       box-shadow: 0 4px 18px var(--primary-glow);
     }
     .btn-primary:active { transform: scale(0.98); }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid rgba(255,255,255,0.15);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 20px auto;
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 18px var(--green-glow);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-outline {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border2);
+      color: var(--text);
+    }
+
+    /* ── Customer Profile Header Bar (When Logged In) ── */
+    .profile-hero-card {
+      background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(16,185,129,0.14));
+      border: 1.5px solid rgba(96,165,250,0.35);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .profile-avatar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .profile-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .profile-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .profile-phone {
+      font-size: 12px;
+      color: #93c5fd;
+      margin-top: 2px;
+    }
+    .profile-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .icon-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .icon-btn:active { transform: scale(0.95); }
+
+    /* ── Order Filter Chips ── */
+    .filter-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .filter-scroll::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      padding: 7px 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-chip.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* ── Order Card Component ── */
+    .order-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .order-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .order-num-text {
+      font-size: 13px;
+      font-weight: 800;
+      color: #38bdf8;
+      font-family: monospace, var(--font);
+      cursor: pointer;
+    }
+    .order-date-text {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .status-pending   { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .status-processing{ background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .status-shipping  { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .status-completed { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .status-cancelled { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+    /* Timeline Component */
+    .timeline {
+      position: relative;
+      margin: 10px 0 6px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 13px;
+      width: 2px;
+      background: var(--border2);
+    }
+    .tl-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .tl-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 2px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .tl-step.done .tl-icon {
+      background: var(--green);
+      border-color: #34d399;
+      box-shadow: 0 0 12px var(--green-glow);
+    }
+    .tl-info { flex: 1; }
+    .tl-title { font-size: 13px; font-weight: 800; color: var(--text-dim); }
+    .tl-step.done .tl-title { color: var(--text); }
+    .tl-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .tl-time { font-size: 10px; color: #38bdf8; margin-top: 2px; font-weight: 700; }
+
+    /* Items rows */
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-info { flex: 1; }
+    .item-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .item-price { font-size: 14px; font-weight: 800; color: #38bdf8; }
+
+    .order-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+    .order-total-label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .order-total-val { font-size: 16px; font-weight: 900; color: var(--green); }
+
+    /* Toast */
     #toast {
       position: fixed;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       background: rgba(15,23,42,0.95);
-      border: 1px solid var(--border2);
+      border: 1.5px solid var(--border2);
       color: #fff;
       padding: 10px 20px;
       border-radius: 30px;
       font-size: 13px;
       font-weight: 700;
       opacity: 0;
-      transition: all 0.25s;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
       pointer-events: none;
-      z-index: 999;
+      z-index: 9999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .spinner {
+      width: 26px; height: 26px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 30px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
+  <!-- Top Bar -->
   <div class="topbar">
-    <button class="back-btn" onclick="history.back()">←</button>
-    <div class="topbar-title" id="page-title">Order Status</div>
+    <button class="back-btn" onclick="goBack()" title="Back">←</button>
+    <div class="topbar-title" id="txt-header-title">Customer Portal</div>
     <div class="lang-switch-group">
-      <button class="lang-pill" id="lp-en" onclick="setLang('en')">🇺🇸</button>
-      <button class="lang-pill" id="lp-km" onclick="setLang('km')">🇰🇭</button>
-      <button class="lang-pill" id="lp-zh" onclick="setLang('zh')">🇨🇳</button>
+      <button class="lang-pill" id="lp-en" onclick="setPortalLang('en')">EN</button>
+      <button class="lang-pill" id="lp-km" onclick="setPortalLang('km')">ខ្មែរ</button>
+      <button class="lang-pill" id="lp-zh" onclick="setPortalLang('zh')">中文</button>
     </div>
   </div>
 
   <div class="container">
 
-    <div class="tab-bar">
-      <button class="tab-btn active" id="tab-btn-track" onclick="switchTab('track')">🔍 Track by Order #</button>
-      <button class="tab-btn" id="tab-btn-login" onclick="switchTab('login')">👤 Customer Login</button>
+    <!-- Logged-in Customer Hero Card (Hidden until logged in) -->
+    <div class="profile-hero-card" id="user-profile-hero" style="display:none">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar" id="hero-avatar">👤</div>
+        <div>
+          <div class="profile-name" id="hero-name">Customer Name</div>
+          <div class="profile-phone" id="hero-phone">012 345 678</div>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="icon-btn" onclick="openProfileTab()" title="Edit Profile">
+          <span>⚙️</span> <span id="txt-btn-profile">Profile</span>
+        </button>
+        <button class="icon-btn" onclick="logoutCustomer()" title="Log Out" style="color:#f87171">
+          <span>🚪</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Tab 1: Track by Order # -->
-    <div id="view-track">
-      <div class="card" id="search-card" style="margin-bottom:14px">
-        <div class="form-group">
-          <label class="form-label">Order Number</label>
-          <input class="form-input" id="inp-order-num" placeholder="e.g. ORD-1724..." />
+    <!-- Navigation Segments -->
+    <div class="segment-bar" id="portal-nav-bar">
+      <button class="segment-btn active" id="seg-btn-orders" onclick="switchPortalView('orders')">
+        <span>📦</span> <span id="txt-tab-orders">My Orders</span>
+      </button>
+      <button class="segment-btn" id="seg-btn-profile" onclick="switchPortalView('profile')">
+        <span>👤</span> <span id="txt-tab-profile">Edit Profile</span>
+      </button>
+      <button class="segment-btn" id="seg-btn-track" onclick="switchPortalView('track')">
+        <span>🔍</span> <span id="txt-tab-track">Track #</span>
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 1: ORDERS & DASHBOARD (Logged-In) OR LOGIN SCREEN (Logged-Out)    -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <div id="sec-orders-wrap">
+      
+      <!-- Sub-view A: Customer Login Box (if NOT logged in) -->
+      <div id="box-login-prompt">
+        <div class="card">
+          <div style="text-align:center;margin-bottom:16px">
+            <div style="width:58px;height:58px;border-radius:50%;background:rgba(37,99,235,0.15);border:1.5px solid rgba(56,189,248,0.4);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;box-shadow:0 0 20px rgba(37,99,235,0.3)">🔐</div>
+            <h2 style="font-size:18px;font-weight:900" id="txt-login-title">Customer Sign In</h2>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:4px" id="txt-login-sub">Enter your phone number & 6-digit PIN to view all orders</p>
+          </div>
+
+          <form onsubmit="handleCustomerLogin(event)">
+            <div class="form-group">
+              <label class="form-label" id="txt-lbl-phone">Phone Number / Username</label>
+              <div class="input-wrap">
+                <span class="input-icon">📱</span>
+                <input class="form-input" id="inp-login-phone" placeholder="e.g. 012 345 678" inputmode="tel" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" id="txt-lbl-pin">6-Digit PIN Password</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔑</span>
+                <input class="form-input" id="inp-login-pin" type="password" placeholder="Enter 6-digit PIN" required />
+                <button type="button" class="toggle-pw-btn" onclick="togglePasswordVisibility('inp-login-pin', this)">👁️</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btn-login-submit" style="margin-top:6px">
+              <span>🔓</span> <span id="txt-btn-signin">Sign In & View Orders</span>
+            </button>
+          </form>
+
+          <div style="margin-top:14px;background:rgba(255,255,255,0.03);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--text-muted);text-align:center">
+            💡 <span id="txt-login-tip">Forgot your PIN? Contact the live host/admin to copy or reset your PIN.</span>
+          </div>
         </div>
-        <button class="btn btn-primary" onclick="searchByOrderNumber()">🔎 Search Order</button>
       </div>
 
-      <div id="order-result"></div>
+      <!-- Sub-view B: Logged-in Orders List Dashboard -->
+      <div id="box-orders-list" style="display:none">
+        
+        <!-- Filter chips -->
+        <div class="filter-scroll" style="margin-bottom:12px">
+          <button class="filter-chip active" onclick="filterOrderList('all')">All (<span id="cnt-all">0</span>)</button>
+          <button class="filter-chip" onclick="filterOrderList('pending')">⏳ Pending (<span id="cnt-pending">0</span>)</button>
+          <button class="filter-chip" onclick="filterOrderList('processing')">📦 Processing (<span id="cnt-processing">0</span>)</button>
+          <button class="filter-chip" onclick="filterOrderList('shipping')">🚚 Shipping (<span id="cnt-shipping">0</span>)</button>
+          <button class="filter-chip" onclick="filterOrderList('completed')">✅ Delivered (<span id="cnt-completed">0</span>)</button>
+        </div>
+
+        <div id="orders-container" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+
     </div>
 
-    <!-- Tab 2: Login to view all orders -->
-    <div id="view-login" style="display:none">
-      <div class="card" id="login-card">
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 2: EDIT PROFILE (Feature 3)                                       -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <div id="sec-profile-wrap" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(16,185,129,0.15);border:1.5px solid #34d399;display:flex;align-items:center;justify-content:center;font-size:20px">⚙️</div>
+          <div>
+            <h2 style="font-size:17px;font-weight:900" id="txt-prof-title">Edit My Profile</h2>
+            <p style="font-size:12px;color:var(--text-muted)" id="txt-prof-sub">Update your delivery address & login PIN</p>
+          </div>
+        </div>
+
+        <form onsubmit="handleSaveProfile(event)">
+          <div class="form-group">
+            <label class="form-label" id="txt-lbl-fullname">Full Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input class="form-input" id="prof-name" placeholder="Your full name" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="txt-lbl-profphone">Phone Number</label>
+            <div class="input-wrap">
+              <span class="input-icon">📱</span>
+              <input class="form-input" id="prof-phone" placeholder="012 345 678" inputmode="tel" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="txt-lbl-profemail">Email (Optional)</label>
+            <div class="input-wrap">
+              <span class="input-icon">✉️</span>
+              <input class="form-input" id="prof-email" type="email" placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="txt-lbl-profaddr">Default Delivery Address</label>
+            <div class="input-wrap">
+              <span class="input-icon">📍</span>
+              <input class="form-input" id="prof-address" placeholder="House #, Street, City / Province" />
+            </div>
+          </div>
+
+          <!-- Change PIN Card -->
+          <div style="background:rgba(37,99,235,0.08);border:1.5px solid rgba(56,189,248,0.3);border-radius:14px;padding:14px;margin:18px 0 14px">
+            <div style="font-size:12px;font-weight:800;color:#38bdf8;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+              <span>🔑</span> <span id="txt-lbl-changepin">Change 6-Digit Login PIN</span>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input class="form-input" id="prof-new-pin" type="password" placeholder="Leave blank to keep current PIN" maxlength="12" />
+                <button type="button" class="toggle-pw-btn" onclick="togglePasswordVisibility('prof-new-pin', this)">👁️</button>
+              </div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:4px" id="txt-pin-hint">Enter 4-6 numbers if you wish to change your PIN</div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success" id="btn-save-profile">
+            <span>💾</span> <span id="txt-btn-saveprof">Save Profile Changes</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- VIEW 3: SINGLE ORDER TRACKER BY ORDER #                                 -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <div id="sec-single-track-wrap" style="display:none">
+      <div class="card" style="margin-bottom:14px">
         <div style="text-align:center;margin-bottom:14px">
-          <div style="font-size:42px;margin-bottom:6px">🔐</div>
-          <h2 style="font-size:18px;font-weight:900">Customer Login</h2>
-          <p style="font-size:13px;color:var(--text-muted)">Log in with your phone number and PIN password</p>
+          <div style="font-size:32px;margin-bottom:4px">🔍</div>
+          <h2 style="font-size:17px;font-weight:900" id="txt-quick-track-title">Track by Order #</h2>
+          <p style="font-size:12px;color:var(--text-muted)" id="txt-quick-track-sub">Check live delivery progress without logging in</p>
         </div>
+
         <div class="form-group">
-          <label class="form-label">Phone Number / Username</label>
-          <input class="form-input" id="inp-phone" placeholder="e.g. 012 345 678" inputmode="tel" />
+          <div class="input-wrap">
+            <span class="input-icon">📋</span>
+            <input class="form-input" id="inp-single-ord" placeholder="e.g. ORD-1787..." />
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Password / 6-Digit PIN</label>
-          <input class="form-input" id="inp-password" type="password" placeholder="6-digit PIN" />
-        </div>
-        <button class="btn btn-primary" onclick="loginCustomer()" style="margin-top:6px">🔓 Log In & View Orders</button>
+        <button class="btn btn-primary" onclick="searchSingleOrder()">
+          <span>🔎</span> <span id="txt-btn-searchord">Search Order Status</span>
+        </button>
       </div>
 
-      <div id="customer-orders-result" style="margin-top:14px"></div>
+      <div id="single-order-result"></div>
     </div>
 
   </div>
@@ -350,87 +681,173 @@
   <script>
     const API = window.location.origin + '/api';
     let curLang = localStorage.getItem('app_lang') || 'en';
+    let currentUser = null;
+    let cachedOrders = [];
+    let currentFilter = 'all';
 
-    function setLang(lang) {
+    const I18N_PORTAL = {
+      en: {
+        title: 'Customer Portal',
+        ordersTab: 'My Orders',
+        profileTab: 'Edit Profile',
+        trackTab: 'Track #',
+        loginTitle: 'Customer Sign In',
+        loginSub: 'Enter your phone number & 6-digit PIN to view all orders',
+        phone: 'Phone Number / Username',
+        pin: '6-Digit PIN Password',
+        signInBtn: 'Sign In & View Orders',
+        loginTip: 'Forgot your PIN? Contact the live host/admin to copy or reset your PIN.',
+        profTitle: 'Edit My Profile',
+        profSub: 'Update your delivery address & login PIN',
+        fullName: 'Full Name',
+        profPhone: 'Phone Number',
+        profEmail: 'Email (Optional)',
+        profAddr: 'Default Delivery Address',
+        changePin: 'Change 6-Digit Login PIN',
+        pinHint: 'Enter 4-6 numbers if you wish to change your PIN',
+        saveProfBtn: 'Save Profile Changes',
+        quickTrackTitle: 'Track by Order #',
+        quickTrackSub: 'Check live delivery progress without logging in',
+        searchOrdBtn: 'Search Order Status'
+      },
+      km: {
+        title: 'គណនីអតិថិជន',
+        ordersTab: 'ការបញ្ជាទិញរបស់ខ្ញុំ',
+        profileTab: 'កែប្រែព័ត៌មាន',
+        trackTab: 'ស្វែងរកលេខកូដ #',
+        loginTitle: 'ចូលគណនីអតិថិជន',
+        loginSub: 'បញ្ចូលលេខទូរស័ព្ទ និងលេខកូដសម្ងាត់ ៦ ខ្ទង់ដើម្បីមើលការបញ្ជាទិញ',
+        phone: 'លេខទូរស័ព្ទ / ឈ្មោះគណនី',
+        pin: 'លេខកូដសម្ងាត់ ៦ ខ្ទង់ (PIN)',
+        signInBtn: 'ចូលគណនី & មើលការបញ្ជាទិញ',
+        loginTip: 'ភ្លេចលេខ PIN? សូមទាក់ទងអ្នកលក់ដើម្បីសុំលេខ PIN ថ្មី។',
+        profTitle: 'កែប្រែព័ត៌មានផ្ទាល់ខ្លួន',
+        profSub: 'ផ្លាស់ប្តូរអាសយដ្ឋានដឹកជញ្ជូន និងលេខកូដសម្ងាត់',
+        fullName: 'ឈ្មោះពេញ',
+        profPhone: 'លេខទូរស័ព្ទ',
+        profEmail: 'អ៊ីមែល (ស្រេចចិត្ត)',
+        profAddr: 'អាសយដ្ឋានដឹកជញ្ជូនលំនាំដើម',
+        changePin: 'ប្តូរលេខកូដសម្ងាត់ ៦ ខ្ទង់ (PIN)',
+        pinHint: 'បញ្ចូលលេខ ៤ ទៅ ៦ ខ្ទង់ប្រសិនបើចង់ប្តូរលេខ PIN',
+        saveProfBtn: 'រក្សាទុកការកែប្រែ',
+        quickTrackTitle: 'ស្វែងរកតាមលេខកូដបញ្ជាទិញ',
+        quickTrackSub: 'ពិនិត្យមើលស្ថានភាពដឹកជញ្ជូនរហ័ស',
+        searchOrdBtn: 'ស្វែងរកស្ថានភាព'
+      },
+      zh: {
+        title: '客户中心',
+        ordersTab: '我的订单',
+        profileTab: '修改个人资料',
+        trackTab: '单号查询',
+        loginTitle: '客户登录',
+        loginSub: '输入手机号码和 6 位密码查看所有订单',
+        phone: '手机号码 / 用户名',
+        pin: '6 位数字密码 (PIN)',
+        signInBtn: '登录并查看订单',
+        loginTip: '忘记密码？请联系主播/管理员重置密码。',
+        profTitle: '修改个人资料',
+        profSub: '更新收货地址及登录密码',
+        fullName: '收货人姓名',
+        profPhone: '联系手机',
+        profEmail: '电子邮箱 (选填)',
+        profAddr: '默认收货详细地址',
+        changePin: '修改 6 位登录密码 (PIN)',
+        pinHint: '如需修改，请输入 4-6 位数字密码',
+        saveProfBtn: '保存修改',
+        quickTrackTitle: '按订单号快速查询',
+        quickTrackSub: '无需登录即可查看实时配送状态',
+        searchOrdBtn: '立即查询'
+      }
+    };
+
+    function setPortalLang(lang) {
       curLang = lang;
       localStorage.setItem('app_lang', lang);
       ['en','km','zh'].forEach(l => {
-        const b = document.getElementById('lp-' + l);
-        if (b) b.classList.toggle('active', l === curLang);
+        const el = document.getElementById('lp-' + l);
+        if (el) el.classList.toggle('active', l === curLang);
       });
-      document.getElementById('page-title').textContent = lang === 'km' ? 'ស្ថានភាពការបញ្ជាទិញ' : (lang === 'zh' ? '订单状态查询' : 'Order Status');
+      const t = I18N_PORTAL[lang] || I18N_PORTAL.en;
+      document.getElementById('txt-header-title').textContent = t.title;
+      document.getElementById('txt-tab-orders').textContent = t.ordersTab;
+      document.getElementById('txt-tab-profile').textContent = t.profileTab;
+      document.getElementById('txt-tab-track').textContent = t.trackTab;
+      document.getElementById('txt-login-title').textContent = t.loginTitle;
+      document.getElementById('txt-login-sub').textContent = t.loginSub;
+      document.getElementById('txt-lbl-phone').textContent = t.phone;
+      document.getElementById('txt-lbl-pin').textContent = t.pin;
+      document.getElementById('txt-btn-signin').textContent = t.signInBtn;
+      document.getElementById('txt-login-tip').textContent = t.loginTip;
+      document.getElementById('txt-prof-title').textContent = t.profTitle;
+      document.getElementById('txt-prof-sub').textContent = t.profSub;
+      document.getElementById('txt-lbl-fullname').textContent = t.fullName;
+      document.getElementById('txt-lbl-profphone').textContent = t.profPhone;
+      document.getElementById('txt-lbl-profemail').textContent = t.profEmail;
+      document.getElementById('txt-lbl-profaddr').textContent = t.profAddr;
+      document.getElementById('txt-lbl-changepin').textContent = t.changePin;
+      document.getElementById('txt-pin-hint').textContent = t.pinHint;
+      document.getElementById('txt-btn-saveprof').textContent = t.saveProfBtn;
+      document.getElementById('txt-quick-track-title').textContent = t.quickTrackTitle;
+      document.getElementById('txt-quick-track-sub').textContent = t.quickTrackSub;
+      document.getElementById('txt-btn-searchord').textContent = t.searchOrdBtn;
     }
-    setLang(curLang);
 
     function toast(msg) {
       const el = document.getElementById('toast');
       el.textContent = msg;
       el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 2500);
+      setTimeout(() => el.classList.remove('show'), 2600);
     }
 
-    function switchTab(tab) {
-      document.getElementById('tab-btn-track').classList.toggle('active', tab === 'track');
-      document.getElementById('tab-btn-login').classList.toggle('active', tab === 'login');
-      document.getElementById('view-track').style.display = tab === 'track' ? 'block' : 'none';
-      document.getElementById('view-login').style.display = tab === 'login' ? 'block' : 'none';
-    }
-
-    // Auto-search or tab switch from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const qOrder = urlParams.get('order');
-    const qTab = urlParams.get('tab');
-    if (qTab === 'login') switchTab('login');
-
-    const savedPhone = localStorage.getItem('customer_phone');
-    if (savedPhone) {
-      const pInp = document.getElementById('inp-phone');
-      if (pInp && !pInp.value) pInp.value = savedPhone;
-    }
-
-    if (qOrder) {
-      document.getElementById('inp-order-num').value = qOrder;
-      searchByOrderNumber(qOrder);
-    }
-
-    async function searchByOrderNumber(orderNum) {
-      const num = (orderNum || document.getElementById('inp-order-num').value).trim();
-      if (!num) return toast('Please enter an order number');
-
-      const resEl = document.getElementById('order-result');
-      resEl.innerHTML = '<div class="spinner"></div>';
-
-      try {
-        const res = await fetch(`${API}/orders/track`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_number: num })
-        }).then(r => r.json());
-
-        if (res?.success && res.data?.order) {
-          renderOrderCard(res.data.order, res.data.timeline, resEl);
-        } else {
-          resEl.innerHTML = `
-            <div class="card" style="text-align:center;padding:24px">
-              <div style="font-size:36px;margin-bottom:8px">📦</div>
-              <h3 style="font-size:16px;font-weight:800">Order Not Found</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin-top:4px">Could not find order "${num}". Please check the order number and try again.</p>
-            </div>`;
-        }
-      } catch (err) {
-        resEl.innerHTML = `<div class="card" style="text-align:center;color:#ef4444">Connection error. Please try again.</div>`;
+    function togglePasswordVisibility(inputId, btn) {
+      const el = document.getElementById(inputId);
+      if (el.type === 'password') {
+        el.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        el.type = 'password';
+        btn.textContent = '👁️';
       }
     }
 
-    async function loginCustomer() {
-      const phone = document.getElementById('inp-phone').value.trim();
-      const password = document.getElementById('inp-password').value.trim();
-      if (!phone || !password) return toast('Please enter phone and password');
+    function goBack() {
+      if (history.length > 1) history.back();
+      else window.location.href = '/customer/product.html';
+    }
 
-      localStorage.setItem('customer_phone', phone);
+    /* ─── View Switching ─── */
+    function switchPortalView(view) {
+      document.getElementById('seg-btn-orders').classList.toggle('active', view === 'orders');
+      document.getElementById('seg-btn-profile').classList.toggle('active', view === 'profile');
+      document.getElementById('seg-btn-track').classList.toggle('active', view === 'track');
 
-      const resEl = document.getElementById('customer-orders-result');
-      resEl.innerHTML = '<div class="spinner"></div>';
+      document.getElementById('sec-orders-wrap').style.display = view === 'orders' ? 'block' : 'none';
+      document.getElementById('sec-profile-wrap').style.display = view === 'profile' ? 'block' : 'none';
+      document.getElementById('sec-single-track-wrap').style.display = view === 'track' ? 'block' : 'none';
+
+      if (view === 'profile') {
+        if (!currentUser) {
+          toast('Please sign in to edit your profile');
+          switchPortalView('orders');
+        } else {
+          populateProfileFields(currentUser);
+        }
+      }
+    }
+
+    function openProfileTab() {
+      switchPortalView('profile');
+    }
+
+    /* ─── Authentication & Profile ─── */
+    async function handleCustomerLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('inp-login-phone').value.trim();
+      const password = document.getElementById('inp-login-pin').value.trim();
+      if (!phone || !password) return toast('Please enter phone and PIN');
+
+      const btn = document.getElementById('btn-login-submit');
+      btn.disabled = true;
 
       try {
         const res = await fetch(`${API}/orders/track`, {
@@ -439,34 +856,141 @@
           body: JSON.stringify({ phone, password })
         }).then(r => r.json());
 
-        if (res?.success && res.data?.orders) {
-          const orders = res.data.orders;
-          if (orders.length === 0) {
-            resEl.innerHTML = `
-              <div class="card" style="text-align:center;padding:24px">
-                <div style="font-size:36px;margin-bottom:8px">🛍️</div>
-                <h3 style="font-size:16px;font-weight:800">No Orders Yet</h3>
-                <p style="font-size:13px;color:var(--text-muted)">You have not placed any orders with this phone number yet.</p>
-              </div>`;
-            return;
+        if (res?.success && res.data) {
+          currentUser = res.data.user;
+          cachedOrders = res.data.orders || [];
+          if (res.data.token) {
+            localStorage.setItem('customer_token', res.data.token);
+            localStorage.setItem('customer_user', JSON.stringify(currentUser));
           }
-          resEl.innerHTML = `<div style="font-size:14px;font-weight:800;margin-bottom:8px">Found ${orders.length} Order(s) for ${res.data.user.full_name}:</div>` +
-            orders.map(o => getOrderCardHtml(o, o.timeline)).join('');
+          localStorage.setItem('customer_phone', phone);
+          renderCustomerLoggedInState(currentUser, cachedOrders);
+          toast(`👋 Welcome back, ${currentUser.full_name || 'Customer'}!`);
         } else {
-          resEl.innerHTML = `
-            <div class="card" style="text-align:center;padding:24px;border-color:rgba(239,68,68,0.4)">
-              <div style="font-size:36px;margin-bottom:8px">❌</div>
-              <h3 style="font-size:16px;font-weight:800;color:#ef4444">Login Failed</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin-top:4px">${res?.message || 'Invalid phone or PIN'}</p>
-            </div>`;
+          toast(res?.message || 'Invalid phone or PIN');
         }
       } catch (err) {
-        resEl.innerHTML = `<div class="card" style="text-align:center;color:#ef4444">Connection error. Please try again.</div>`;
+        toast('Connection error. Please try again.');
+      } finally {
+        btn.disabled = false;
       }
     }
 
-    function renderOrderCard(order, timeline, container) {
-      container.innerHTML = getOrderCardHtml(order, timeline);
+    function renderCustomerLoggedInState(user, orders) {
+      document.getElementById('box-login-prompt').style.display = 'none';
+      document.getElementById('box-orders-list').style.display = 'block';
+      document.getElementById('user-profile-hero').style.display = 'flex';
+
+      const initial = (user.full_name || user.username || 'C')[0].toUpperCase();
+      document.getElementById('hero-avatar').textContent = initial;
+      document.getElementById('hero-name').textContent = user.full_name || user.username;
+      document.getElementById('hero-phone').textContent = user.phone || user.username;
+
+      renderOrdersList(orders);
+    }
+
+    function logoutCustomer() {
+      if (!confirm('Log out from your customer account?')) return;
+      currentUser = null;
+      cachedOrders = [];
+      localStorage.removeItem('customer_token');
+      localStorage.removeItem('customer_user');
+      document.getElementById('user-profile-hero').style.display = 'none';
+      document.getElementById('box-orders-list').style.display = 'none';
+      document.getElementById('box-login-prompt').style.display = 'block';
+      toast('Logged out successfully');
+      switchPortalView('orders');
+    }
+
+    function populateProfileFields(user) {
+      document.getElementById('prof-name').value = user.full_name || '';
+      document.getElementById('prof-phone').value = user.phone || user.username || '';
+      document.getElementById('prof-email').value = user.email || '';
+      document.getElementById('prof-address').value = user.address || '';
+      document.getElementById('prof-new-pin').value = '';
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('customer_token');
+      if (!token) return toast('Please sign in first');
+
+      const payload = {
+        full_name: document.getElementById('prof-name').value.trim(),
+        phone: document.getElementById('prof-phone').value.trim(),
+        email: document.getElementById('prof-email').value.trim() || null,
+        address: document.getElementById('prof-address').value.trim() || null,
+      };
+
+      const newPin = document.getElementById('prof-new-pin').value.trim();
+      if (newPin) {
+        if (newPin.length < 4) return toast('PIN must be at least 4 digits');
+        payload.pin = newPin;
+      }
+
+      const btn = document.getElementById('btn-save-profile');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        }).then(r => r.json());
+
+        if (res?.success && res.data) {
+          currentUser = res.data;
+          localStorage.setItem('customer_user', JSON.stringify(currentUser));
+          renderCustomerLoggedInState(currentUser, cachedOrders);
+          toast('✅ Profile & Delivery Address saved!');
+          switchPortalView('orders');
+        } else {
+          toast(res?.message || 'Failed to update profile');
+        }
+      } catch (err) {
+        toast('Connection error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    /* ─── Orders List Rendering ─── */
+    function filterOrderList(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-chip').forEach(c => {
+        c.classList.toggle('active', c.getAttribute('onclick').includes(status));
+      });
+      const filtered = status === 'all' ? cachedOrders : cachedOrders.filter(o => o.status === status);
+      renderOrdersCards(filtered);
+    }
+
+    function renderOrdersList(orders) {
+      // Update count badges
+      document.getElementById('cnt-all').textContent = orders.length;
+      document.getElementById('cnt-pending').textContent = orders.filter(o => o.status === 'pending').length;
+      document.getElementById('cnt-processing').textContent = orders.filter(o => o.status === 'processing').length;
+      document.getElementById('cnt-shipping').textContent = orders.filter(o => o.status === 'shipping').length;
+      document.getElementById('cnt-completed').textContent = orders.filter(o => o.status === 'completed').length;
+
+      filterOrderList(currentFilter);
+    }
+
+    function renderOrdersCards(orders) {
+      const container = document.getElementById('orders-container');
+      if (!orders || orders.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center;padding:32px">
+            <div style="font-size:42px;margin-bottom:8px">🛍️</div>
+            <h3 style="font-size:16px;font-weight:800">No Orders Found</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:4px">No orders in this category yet.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = orders.map(o => getOrderCardHtml(o, o.timeline)).join('');
     }
 
     function getOrderCardHtml(order, timeline = []) {
@@ -475,7 +999,7 @@
         processing: { cls: 'status-processing', text: '📦 Processing & Packed' },
         shipping:   { cls: 'status-shipping', text: '🚚 Out for Delivery' },
         completed:  { cls: 'status-completed', text: '✅ Delivered' },
-        cancelled:  { cls: 'status-pending', text: '❌ Cancelled' },
+        cancelled:  { cls: 'status-cancelled', text: '❌ Cancelled' },
       };
       const st = statusMap[order.status] || { cls: 'status-pending', text: order.status };
 
@@ -483,7 +1007,7 @@
         <div class="item-row">
           <div class="item-info">
             <div class="item-name">${it.product_name}</div>
-            <div class="item-meta">Qty: ${it.quantity} &nbsp;·&nbsp; Unit: $${Number(it.price).toFixed(2)}</div>
+            <div class="item-meta">Qty: ${it.quantity} &nbsp;·&nbsp; Price: $${Number(it.price).toFixed(2)}</div>
           </div>
           <div class="item-price">$${Number(it.subtotal).toFixed(2)}</div>
         </div>
@@ -495,40 +1019,134 @@
           <div class="tl-info">
             <div class="tl-title">${step.title}</div>
             <div class="tl-desc">${step.desc}</div>
-            ${step.time && step.done ? `<div class="tl-time">${new Date(step.time).toLocaleString()}</div>` : ''}
+            ${step.time && step.done ? `<div class="tl-time">${new Date(step.time).toLocaleDateString()} ${new Date(step.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>` : ''}
           </div>
         </div>
       `).join('');
 
       return `
-        <div class="card" style="margin-bottom:14px">
-          <div class="order-badge-row">
+        <div class="order-card">
+          <div class="order-card-header">
             <div>
-              <div style="font-size:11px;color:var(--text-dim);font-weight:700">ORDER #</div>
-              <div style="font-size:14px;font-weight:900;color:#38bdf8;font-family:monospace">${order.order_number}</div>
+              <div class="order-num-text" onclick="copyOrderNum('${order.order_number}')" title="Tap to Copy">
+                ${order.order_number} 📋
+              </div>
+              <div class="order-date-text">Placed ${new Date(order.created_at).toLocaleDateString()}</div>
             </div>
             <span class="status-pill ${st.cls}">${st.text}</span>
           </div>
 
-          <div style="font-size:13px;font-weight:800;margin-bottom:10px;color:var(--text-muted)">📈 DELIVERY TIMELINE</div>
+          <!-- Timeline -->
+          <div style="font-size:12px;font-weight:800;color:var(--text-muted)">📈 DELIVERY TIMELINE</div>
           <div class="timeline">${tlHtml}</div>
 
-          <div style="font-size:13px;font-weight:800;margin:16px 0 6px;color:var(--text-muted)">🛍️ ORDERED ITEMS</div>
+          <!-- Items -->
+          <div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-top:6px">🛍️ ORDER ITEMS</div>
           <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:0 12px">${itemsHtml}</div>
 
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-            <span style="font-size:14px;font-weight:800">Total Price:</span>
-            <span style="font-size:18px;font-weight:900;color:var(--green)">$${Number(order.total_amount).toFixed(2)}</span>
+          <!-- Footer -->
+          <div class="order-footer-row">
+            <span class="order-total-label">Total Amount:</span>
+            <span class="order-total-val">$${Number(order.total_amount).toFixed(2)}</span>
           </div>
 
-          <div style="margin-top:10px;font-size:12px;color:var(--text-muted);background:rgba(255,255,255,0.02);padding:10px;border-radius:10px">
-            📍 <strong>Deliver To:</strong> ${order.customer_name} (${order.customer_phone})<br/>
+          <div style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;line-height:1.6">
+            📍 <strong>Deliver to:</strong> ${order.customer_name} (${order.customer_phone})<br/>
             🏠 <strong>Address:</strong> ${order.customer_address || 'N/A'}<br/>
             💳 <strong>Payment:</strong> ${(order.payment_method || 'cod').toUpperCase()} (${order.payment_status || 'unpaid'})
           </div>
         </div>
       `;
     }
+
+    async function copyOrderNum(num) {
+      try {
+        await navigator.clipboard.writeText(num);
+        toast('📋 Order number copied!');
+      } catch {
+        toast('Order: ' + num);
+      }
+    }
+
+    /* ─── Single Order Track ─── */
+    async function searchSingleOrder(orderNum) {
+      const num = (orderNum || document.getElementById('inp-single-ord').value).trim();
+      if (!num) return toast('Please enter an order number');
+
+      const resEl = document.getElementById('single-order-result');
+      resEl.innerHTML = '<div class="spinner"></div>';
+
+      try {
+        const res = await fetch(`${API}/orders/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_number: num })
+        }).then(r => r.json());
+
+        if (res?.success && res.data?.order) {
+          resEl.innerHTML = getOrderCardHtml(res.data.order, res.data.timeline);
+        } else {
+          resEl.innerHTML = `
+            <div class="card" style="text-align:center;padding:24px">
+              <div style="font-size:36px;margin-bottom:8px">📦</div>
+              <h3 style="font-size:15px;font-weight:800">Order Not Found</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:4px">Could not find order "${num}". Please verify the order number.</p>
+            </div>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<div class="card" style="text-align:center;color:#ef4444">Connection error.</div>`;
+      }
+    }
+
+    /* ─── Auto-Init ─── */
+    async function initPortal() {
+      setPortalLang(curLang);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const qOrder = urlParams.get('order');
+      const qTab   = urlParams.get('tab');
+
+      const savedPhone = localStorage.getItem('customer_phone');
+      if (savedPhone) {
+        const pInp = document.getElementById('inp-login-phone');
+        if (pInp) pInp.value = savedPhone;
+      }
+
+      // Check existing token
+      const token = localStorage.getItem('customer_token');
+      if (token) {
+        try {
+          const meRes = await fetch(`${API}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }).then(r => r.json());
+
+          if (meRes?.success && meRes.data) {
+            currentUser = meRes.data;
+            // Fetch customer orders
+            const ordRes = await fetch(`${API}/orders/track`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone: currentUser.phone || currentUser.username, password: currentUser.raw_pin || '' })
+            }).then(r => r.json()).catch(() => null);
+
+            cachedOrders = ordRes?.data?.orders || [];
+            renderCustomerLoggedInState(currentUser, cachedOrders);
+          }
+        } catch(e) {
+          console.warn('Auto-session resume failed:', e.message);
+        }
+      }
+
+      if (qOrder) {
+        switchPortalView('track');
+        document.getElementById('inp-single-ord').value = qOrder;
+        searchSingleOrder(qOrder);
+      } else if (qTab === 'profile') {
+        switchPortalView('profile');
+      }
+    }
+
+    initPortal();
   </script>
 </body>
 </html>

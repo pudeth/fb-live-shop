@@ -105,6 +105,65 @@ router.post('/register', validationRules.register, validate, async (req, res) =>
     }
 });
 
+// Get current user profile
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        const [users] = await pool.query(
+            'SELECT id, username, raw_pin, full_name, email, phone, address, role, status, created_at FROM users WHERE id = ?',
+            [req.user.id]
+        );
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.json({ success: true, data: users[0] });
+    } catch (err) {
+        console.error('Get me error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Update profile (name, phone, email, address, optional PIN)
+router.put('/profile', authenticate, async (req, res) => {
+    try {
+        const { full_name, phone, email, address, pin } = req.body;
+        const updates = [];
+        const params = [];
+
+        if (full_name !== undefined) { updates.push('full_name = ?'); params.push(full_name); }
+        if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
+        if (email !== undefined) { updates.push('email = ?'); params.push(email || null); }
+        if (address !== undefined) { updates.push('address = ?'); params.push(address || null); }
+
+        if (pin && pin.trim().length >= 4) {
+            const cleanPin = pin.trim();
+            const hashed = await bcrypt.hash(cleanPin, 10);
+            updates.push('password = ?'); params.push(hashed);
+            updates.push('raw_pin = ?'); params.push(cleanPin);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ success: false, message: 'No fields to update' });
+        }
+
+        params.push(req.user.id);
+        await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+
+        const [users] = await pool.query(
+            'SELECT id, username, raw_pin, full_name, email, phone, address, role, status FROM users WHERE id = ?',
+            [req.user.id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: users[0]
+        });
+    } catch (err) {
+        console.error('Update profile error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // Get all users (admin only)
 router.get('/users', authenticate, authorize('admin'), async (req, res) => {
     try {

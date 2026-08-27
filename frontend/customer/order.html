@@ -623,6 +623,162 @@
       line-height: 1.4;
     }
 
+    /* ─────────── 6-DIGIT PIN POPUP MODAL ─────────── */
+    .pin-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(7, 11, 20, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pin-modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .pin-modal-card {
+      background: #0f172a;
+      border: 1.5px solid rgba(96, 165, 250, 0.4);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      padding: 28px 20px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(37, 99, 235, 0.25);
+      transform: scale(0.85) translateY(20px);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pin-modal-backdrop.open .pin-modal-card {
+      transform: scale(1) translateY(0);
+    }
+    .pin-celebrate-badge {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(37, 99, 235, 0.2));
+      border: 2px solid #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 14px;
+      box-shadow: 0 0 24px rgba(52, 211, 153, 0.4);
+    }
+    .pin-modal-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .pin-modal-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+    .pin-box {
+      background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(16,185,129,0.12));
+      border: 1.5px solid rgba(56, 189, 248, 0.35);
+      border-radius: 16px;
+      padding: 16px 12px;
+      margin-bottom: 18px;
+    }
+    .pin-box-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #38bdf8;
+      margin-bottom: 10px;
+    }
+    .pin-digits-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .pin-digit-box {
+      width: 44px;
+      height: 52px;
+      border-radius: 12px;
+      background: #1e293b;
+      border: 2px solid #38bdf8;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+      font-family: monospace, var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
+    }
+    .pin-phone-row {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.05);
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+    .pin-phone-row strong {
+      color: #fff;
+      font-weight: 700;
+    }
+    .pin-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .pin-btn-track {
+      padding: 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      font-family: var(--font);
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(16,185,129,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pin-btn-copy {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pin-btn-receipt {
+      padding: 10px;
+      border-radius: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+    }
+
     /* ─────────── TOAST ─────────── */
     #toast {
       position: fixed;
@@ -1282,6 +1438,62 @@
           </div>
 
         </div>`;
+
+      // Auto-trigger the 6-Digit PIN Popup Modal
+      if (password) {
+        setTimeout(() => {
+          showPinModal(data.order_number, username, password);
+        }, 300);
+      }
+    }
+
+    /* ─── 6-Digit PIN Modal Logic ─── */
+    let currentOrderNum = '';
+    let currentPinUsername = '';
+    let currentPinCode = '';
+
+    function showPinModal(orderNum, username, pin) {
+      currentOrderNum = orderNum;
+      currentPinUsername = username;
+      currentPinCode = pin;
+
+      const phoneEl = document.getElementById('pin-modal-phone');
+      if (phoneEl) phoneEl.textContent = username;
+
+      const digitsContainer = document.getElementById('pin-digits-container');
+      if (digitsContainer) {
+        const digits = String(pin || '').split('');
+        digitsContainer.innerHTML = digits.map(d => `<span class="pin-digit-box">${d}</span>`).join('');
+      }
+
+      const modal = document.getElementById('pin-popup-modal');
+      if (modal) {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closePinModal() {
+      const modal = document.getElementById('pin-popup-modal');
+      if (modal) modal.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function goToTrackOrder() {
+      closePinModal();
+      window.location.href = `/customer/track.html?order=${encodeURIComponent(currentOrderNum)}`;
+    }
+
+    async function copyModalPin() {
+      const text = `Shop Login:\n👤 Phone / Username: ${currentPinUsername}\n🔑 6-Digit PIN: ${currentPinCode}`;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      toast('📋 PIN & Login info copied!');
     }
 
     async function copyCreds(u, p) {
@@ -1341,5 +1553,37 @@
 
     init();
   </script>
+
+  <!-- 6-Digit PIN Popup Modal -->
+  <div class="pin-modal-backdrop" id="pin-popup-modal">
+    <div class="pin-modal-card">
+      <div class="pin-celebrate-badge">🎉</div>
+      <h2 class="pin-modal-title">Order Confirmed!</h2>
+      <p class="pin-modal-sub">Your 6-digit PIN has been auto-generated. Use this PIN to log in and track your order status anytime!</p>
+
+      <div class="pin-box">
+        <div class="pin-box-label">🔑 YOUR 6-DIGIT LOGIN PIN</div>
+        <div class="pin-digits-row" id="pin-digits-container">
+          <!-- Populated by JS -->
+        </div>
+        <div class="pin-phone-row">
+          👤 Phone / Username: <strong id="pin-modal-phone">012 345 678</strong>
+        </div>
+      </div>
+
+      <div class="pin-actions">
+        <button class="pin-btn-track" onclick="goToTrackOrder()">
+          🚚 Track Order Status Now
+        </button>
+        <button class="pin-btn-copy" onclick="copyModalPin()">
+          📋 Copy PIN & Phone
+        </button>
+        <button class="pin-btn-receipt" onclick="closePinModal()">
+          ✕ Close & View Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

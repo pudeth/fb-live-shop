@@ -14,8 +14,14 @@ router.get('/', authenticate, authorize('admin', 'cashier'), async (req, res) =>
         const params = [];
 
         if (status) {
-            query += ' AND status = ?';
-            params.push(status);
+            if (status === 'shipped' || status === 'shipping') {
+                query += ' AND (status = "shipped" OR status = "shipping")';
+            } else if (status === 'delivered' || status === 'completed') {
+                query += ' AND (status = "delivered" OR status = "completed")';
+            } else {
+                query += ' AND status = ?';
+                params.push(status);
+            }
         }
 
         if (payment_status) {
@@ -437,15 +443,59 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
 
 // Helper to compute order progress steps
 function getOrderTimeline(order) {
-    const isCompleted = order.status === 'completed';
-    const isShipping = ['shipping', 'completed'].includes(order.status);
-    const isProcessing = ['processing', 'shipping', 'completed'].includes(order.status) || order.payment_status === 'paid';
+    const s = (order.status || 'pending').toLowerCase();
+    
+    // 5-Step Order Lifecycle:
+    // 1. placed (pending) -> 2. confirmed -> 3. processing -> 4. shipping/shipped -> 5. delivered/completed
+    if (s === 'cancelled') {
+        return [
+            { key: 'placed', title: 'Order Placed', desc: 'Order received & confirmed', icon: '📝', done: true, time: order.created_at },
+            { key: 'cancelled', title: 'Order Cancelled', desc: 'This order was cancelled', icon: '❌', done: true, is_cancelled: true, time: order.updated_at || order.created_at }
+        ];
+    }
+
+    const isConfirmed = ['confirmed', 'processing', 'shipped', 'shipping', 'delivered', 'completed'].includes(s);
+    const isProcessing = ['processing', 'shipped', 'shipping', 'delivered', 'completed'].includes(s);
+    const isShipping = ['shipped', 'shipping', 'delivered', 'completed'].includes(s);
+    const isDelivered = ['delivered', 'completed'].includes(s);
 
     return [
-        { key: 'placed', title: 'Order Placed', desc: 'Order received & confirmed', icon: '📝', done: true, time: order.created_at },
-        { key: 'processing', title: 'Processing & Packed', desc: 'Item prepared by shop', icon: '📦', done: isProcessing },
-        { key: 'shipping', title: 'Out for Delivery', desc: 'Package with courier rider', icon: '🚚', done: isShipping },
-        { key: 'completed', title: 'Delivered', desc: 'Order successfully received', icon: '✅', done: isCompleted }
+        { 
+            key: 'placed', 
+            title: '1. Order Placed', 
+            desc: 'Order received & recorded', 
+            icon: '📝', 
+            done: true, 
+            time: order.created_at 
+        },
+        { 
+            key: 'confirmed', 
+            title: '2. Confirmed by Shop', 
+            desc: isConfirmed ? 'Order reviewed & confirmed by seller' : 'Waiting for shop confirmation', 
+            icon: '📋', 
+            done: isConfirmed 
+        },
+        { 
+            key: 'processing', 
+            title: '3. Processing & Packed', 
+            desc: isProcessing ? 'Item packed & ready for courier' : 'Preparing items in warehouse', 
+            icon: '📦', 
+            done: isProcessing 
+        },
+        { 
+            key: 'shipping', 
+            title: '4. Out for Delivery', 
+            desc: isShipping ? 'Package dispatched with delivery rider' : 'Awaiting courier pickup', 
+            icon: '🚚', 
+            done: isShipping 
+        },
+        { 
+            key: 'completed', 
+            title: '5. Delivered', 
+            desc: isDelivered ? 'Order successfully delivered to customer' : 'Awaiting delivery completion', 
+            icon: '✅', 
+            done: isDelivered 
+        }
     ];
 }
 
@@ -558,7 +608,7 @@ router.patch('/:id/status', authenticate, authorize('admin', 'cashier'), async (
         const { id } = req.params;
         const { status } = req.body;
 
-        const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+        const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'shipping', 'delivered', 'completed', 'cancelled'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ 
                 success: false, 

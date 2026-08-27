@@ -256,10 +256,17 @@
       <hr class="divider" />
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
         <div>
-          <label class="form-label">Update Order Status</label>
-          <select class="form-control form-control-sm" id="update-status-sel">
-            ${['pending','confirmed','processing','shipped','delivered','cancelled'].map(s =>
-              `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+          <label class="form-label" style="font-weight:700">Update Order Status</label>
+          <select class="form-control form-control-sm" id="update-status-sel" style="font-weight:700">
+            ${[
+              { val: 'pending', label: '⏳ 1. Pending Confirmation' },
+              { val: 'confirmed', label: '📋 2. Confirmed by Shop' },
+              { val: 'processing', label: '📦 3. Processing & Packed' },
+              { val: 'shipped', label: '🚚 4. Out for Delivery (Shipped)' },
+              { val: 'delivered', label: '✅ 5. Delivered / Completed' },
+              { val: 'cancelled', label: '❌ Cancelled' },
+            ].map(s =>
+              `<option value="${s.val}" ${o.status === s.val || (s.val === 'shipped' && o.status === 'shipping') || (s.val === 'delivered' && o.status === 'completed') ? 'selected' : ''}>${s.label}</option>`).join('')}
           </select>
         </div>
         <div>

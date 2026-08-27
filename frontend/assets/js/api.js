@@ -268,14 +268,16 @@ const fmt = {
   date:     (v) => new Date(v).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
   datetime: (v) => new Date(v).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
   statusBadge(status) {
+    const s = (status || '').toLowerCase();
     const map = {
       active:     'badge-success', inactive:  'badge-gray',  out_of_stock: 'badge-warning',
       pending:    'badge-warning', confirmed: 'badge-info',  processing: 'badge-primary',
-      shipped:    'badge-info',    delivered: 'badge-success', cancelled: 'badge-danger',
+      shipping:   'badge-info',    shipped:    'badge-info',
+      completed:  'badge-success', delivered: 'badge-success', cancelled: 'badge-danger',
       paid:       'badge-success', unpaid:    'badge-danger', partial:   'badge-warning',
       ended:      'badge-gray',    paused:    'badge-warning',
     };
-    return `<span class="badge ${map[status] || 'badge-gray'}">${status}</span>`;
+    return `<span class="badge ${map[s] || 'badge-gray'}">${status}</span>`;
   },
   imgUrl: (path) => {
     if (!path) return null;

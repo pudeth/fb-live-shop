@@ -1548,23 +1548,43 @@
       }
     }
 
+    /* ─── Status Helper ─── */
+    function getCustomerStatusInfo(status) {
+      const s = (status || 'pending').toLowerCase();
+      if (s === 'confirmed')  return { cls: 'status-processing', text: '📋 Confirmed by Shop' };
+      if (s === 'processing') return { cls: 'status-processing', text: '📦 Processing & Packed' };
+      if (s === 'shipped' || s === 'shipping') return { cls: 'status-shipping', text: '🚚 Out for Delivery' };
+      if (s === 'delivered' || s === 'completed') return { cls: 'status-completed', text: '✅ Delivered' };
+      if (s === 'cancelled') return { cls: 'status-cancelled', text: '❌ Cancelled' };
+      return { cls: 'status-pending', text: '⏳ Pending Confirmation' };
+    }
+
     /* ─── Orders List Rendering ─── */
     function filterOrderList(status) {
       currentFilter = status;
       document.querySelectorAll('.filter-chip').forEach(c => {
         c.classList.toggle('active', c.getAttribute('onclick').includes(status));
       });
-      const filtered = status === 'all' ? cachedOrders : cachedOrders.filter(o => o.status === status);
+      let filtered = cachedOrders;
+      if (status === 'pending') {
+        filtered = cachedOrders.filter(o => ['pending', 'confirmed'].includes((o.status || '').toLowerCase()));
+      } else if (status === 'processing') {
+        filtered = cachedOrders.filter(o => (o.status || '').toLowerCase() === 'processing');
+      } else if (status === 'shipping') {
+        filtered = cachedOrders.filter(o => ['shipping', 'shipped'].includes((o.status || '').toLowerCase()));
+      } else if (status === 'completed') {
+        filtered = cachedOrders.filter(o => ['completed', 'delivered'].includes((o.status || '').toLowerCase()));
+      }
       renderOrdersCards(filtered);
     }
 
     function renderOrdersList(orders) {
       // Update count badges
       document.getElementById('cnt-all').textContent = orders.length;
-      document.getElementById('cnt-pending').textContent = orders.filter(o => o.status === 'pending').length;
-      document.getElementById('cnt-processing').textContent = orders.filter(o => o.status === 'processing').length;
-      document.getElementById('cnt-shipping').textContent = orders.filter(o => o.status === 'shipping').length;
-      document.getElementById('cnt-completed').textContent = orders.filter(o => o.status === 'completed').length;
+      document.getElementById('cnt-pending').textContent = orders.filter(o => ['pending', 'confirmed'].includes((o.status || '').toLowerCase())).length;
+      document.getElementById('cnt-processing').textContent = orders.filter(o => (o.status || '').toLowerCase() === 'processing').length;
+      document.getElementById('cnt-shipping').textContent = orders.filter(o => ['shipping', 'shipped'].includes((o.status || '').toLowerCase())).length;
+      document.getElementById('cnt-completed').textContent = orders.filter(o => ['completed', 'delivered'].includes((o.status || '').toLowerCase())).length;
 
       filterOrderList(currentFilter);
     }
@@ -1585,14 +1605,7 @@
     }
 
     function getOrderCardHtml(order, idx) {
-      const statusMap = {
-        pending:    { cls: 'status-pending', text: '⏳ Pending' },
-        processing: { cls: 'status-processing', text: '📦 Processing' },
-        shipping:   { cls: 'status-shipping', text: '🚚 Shipping' },
-        completed:  { cls: 'status-completed', text: '✅ Delivered' },
-        cancelled:  { cls: 'status-cancelled', text: '❌ Cancelled' },
-      };
-      const st = statusMap[order.status] || { cls: 'status-pending', text: order.status };
+      const st = getCustomerStatusInfo(order.status);
       const t = I18N_PORTAL[curLang] || I18N_PORTAL.en;
 
       const itemsHtml = (order.items || []).map(it => `
@@ -1661,14 +1674,7 @@
       if (!order) return;
 
       const t = I18N_PORTAL[curLang] || I18N_PORTAL.en;
-      const statusMap = {
-        pending:    { cls: 'status-pending', text: '⏳ Pending Confirmation' },
-        processing: { cls: 'status-processing', text: '📦 Processing & Packed' },
-        shipping:   { cls: 'status-shipping', text: '🚚 Out for Delivery' },
-        completed:  { cls: 'status-completed', text: '✅ Delivered' },
-        cancelled:  { cls: 'status-cancelled', text: '❌ Cancelled' },
-      };
-      const st = statusMap[order.status] || { cls: 'status-pending', text: order.status };
+      const st = getCustomerStatusInfo(order.status);
 
       document.getElementById('orm-num').textContent = order.order_number;
       document.getElementById('orm-date').textContent = 'Placed on ' + new Date(order.created_at).toLocaleDateString() + ' ' + new Date(order.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
@@ -1741,21 +1747,25 @@
       }
       if (!order) return;
 
-      const timeline = order.timeline || [
-        { key: 'placed', title: 'Order Placed', desc: 'Order received & confirmed', icon: '📝', done: true, time: order.created_at },
-        { key: 'processing', title: 'Processing & Packed', desc: 'Item prepared by shop', icon: '📦', done: ['processing','shipping','completed'].includes(order.status) },
-        { key: 'shipping', title: 'Out for Delivery', desc: 'Package with courier rider', icon: '🚚', done: ['shipping','completed'].includes(order.status) },
-        { key: 'completed', title: 'Delivered', desc: 'Order successfully received', icon: '✅', done: order.status === 'completed' }
-      ];
+      const s = (order.status || 'pending').toLowerCase();
+      const isConfirmed = ['confirmed', 'processing', 'shipped', 'shipping', 'delivered', 'completed'].includes(s);
+      const isProcessing = ['processing', 'shipped', 'shipping', 'delivered', 'completed'].includes(s);
+      const isShipping = ['shipped', 'shipping', 'delivered', 'completed'].includes(s);
+      const isDelivered = ['delivered', 'completed'].includes(s);
+      const isCancelled = s === 'cancelled';
 
-      const statusMap = {
-        pending:    { cls: 'status-pending', text: '⏳ Pending Confirmation' },
-        processing: { cls: 'status-processing', text: '📦 Processing & Packed' },
-        shipping:   { cls: 'status-shipping', text: '🚚 Out for Delivery' },
-        completed:  { cls: 'status-completed', text: '✅ Delivered' },
-        cancelled:  { cls: 'status-cancelled', text: '❌ Cancelled' },
-      };
-      const st = statusMap[order.status] || { cls: 'status-pending', text: order.status };
+      const timeline = isCancelled ? [
+        { title: 'Order Placed', desc: 'Order received & confirmed', icon: '📝', done: true, time: order.created_at },
+        { title: 'Order Cancelled', desc: 'This order was cancelled by shop', icon: '❌', done: true, is_cancelled: true, time: order.updated_at || order.created_at }
+      ] : (order.timeline || [
+        { title: '1. Order Placed', desc: 'Order received & recorded', icon: '📝', done: true, time: order.created_at },
+        { title: '2. Confirmed by Shop', desc: isConfirmed ? 'Order reviewed & confirmed by seller' : 'Waiting for shop confirmation', icon: '📋', done: isConfirmed },
+        { title: '3. Processing & Packed', desc: isProcessing ? 'Item packed & ready for courier' : 'Preparing items in warehouse', icon: '📦', done: isProcessing },
+        { title: '4. Out for Delivery', desc: isShipping ? 'Package dispatched with delivery rider' : 'Awaiting courier pickup', icon: '🚚', done: isShipping },
+        { title: '5. Delivered', desc: isDelivered ? 'Order successfully delivered to customer' : 'Awaiting delivery completion', icon: '✅', done: isDelivered }
+      ]);
+
+      const st = getCustomerStatusInfo(order.status);
 
       document.getElementById('modal-order-num').textContent = order.order_number;
       const stBadge = document.getElementById('modal-status-badge');
@@ -1763,8 +1773,8 @@
       stBadge.textContent = st.text;
 
       const tlHtml = timeline.map(step => `
-        <div class="tl-step ${step.done ? 'done' : ''}">
-          <div class="tl-icon">${step.done ? '✓' : step.icon}</div>
+        <div class="tl-step ${step.done ? 'done' : ''} ${step.is_cancelled ? 'cancelled' : ''}">
+          <div class="tl-icon">${step.is_cancelled ? '✕' : (step.done ? '✓' : step.icon)}</div>
           <div class="tl-info">
             <div class="tl-title">${step.title}</div>
             <div class="tl-desc">${step.desc}</div>

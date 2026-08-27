@@ -314,7 +314,11 @@ async function autoMigrate() {
                 }
             }
         }
-        console.log(`✅ Auto-migration: ${ok} statements run, ${skipped} skipped.`);
+        // Ensure products table has images JSON column
+        try {
+            await pool.execute(`ALTER TABLE products ADD COLUMN images JSON DEFAULT NULL`);
+            console.log('✅ Added images column to products');
+        } catch(e) { /* column exists */ }
 
         // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
         try {

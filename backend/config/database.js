@@ -1,8 +1,10 @@
+const path = require('path');
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // PlanetScale and most cloud MySQL providers require SSL in production
 const isProduction = process.env.NODE_ENV === 'production';
+const isCloud = !!(process.env.DATABASE_URL || (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1'));
 
 const poolConfig = {
     host:     process.env.DB_HOST     || 'localhost',
@@ -19,7 +21,7 @@ const poolConfig = {
 };
 
 // Enable SSL for cloud databases (PlanetScale, Render MySQL, etc.)
-if (isProduction) {
+if (isProduction && isCloud) {
     // Aiven uses a self-signed CA — disable strict verification
     // (connection is still encrypted, just not CA-verified)
     poolConfig.ssl = { rejectUnauthorized: false };

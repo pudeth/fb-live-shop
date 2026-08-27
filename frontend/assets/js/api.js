@@ -51,6 +51,7 @@ const api = {
   updateProduct:    (id, data)    => api.put(`/products/${id}`, data),
   deleteProduct:    (id)          => api.delete(`/products/${id}`),
   uploadImage:      (formData)    => api.upload('/products/upload-image', formData),
+  uploadImages:     (formData)    => api.upload('/products/upload-images', formData),
 
   /* --- Orders --- */
   getOrders:        (params = '') => api.get(`/orders${params}`),
@@ -166,7 +167,11 @@ const fmt = {
     };
     return `<span class="badge ${map[status] || 'badge-gray'}">${status}</span>`;
   },
-  imgUrl: (path) => path ? `${window.location.origin}${path}` : null,
+  imgUrl: (path) => {
+    if (!path) return null;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+    return `${window.location.origin}${path.startsWith('/') ? path : '/' + path}`;
+  },
 };
 
 /* ===== CURRENCY TOGGLE ===== */

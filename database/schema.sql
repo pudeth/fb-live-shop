@@ -28,6 +28,7 @@ CREATE TABLE products (
     stock INT NOT NULL DEFAULT 0,
     category_id INT,
     image VARCHAR(255),
+    images JSON COMMENT 'Store array of 1-10 image URLs as JSON',
     options JSON COMMENT 'Store colors, sizes, etc. as JSON',
     status ENUM('active', 'inactive', 'out_of_stock') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

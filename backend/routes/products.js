@@ -35,11 +35,10 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5 MB max
 });
 
-// POST /api/products/upload-image — upload a product image (admin only)
+// POST /api/products/upload-image — upload a single product image (admin only)
 router.post('/upload-image', authenticate, authorize('admin'), (req, res) => {
     upload.single('image')(req, res, (err) => {
         if (err) {
-            // Multer errors (file type, size, etc.)
             return res.status(400).json({ success: false, message: err.message });
         }
         if (!req.file) {
@@ -49,6 +48,34 @@ router.post('/upload-image', authenticate, authorize('admin'), (req, res) => {
         res.json({ success: true, imageUrl });
     });
 });
+
+// POST /api/products/upload-images — upload multiple product images (admin only, up to 10)
+router.post('/upload-images', authenticate, authorize('admin'), (req, res) => {
+    upload.array('images', 10)(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: err.message });
+        }
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'No image files provided' });
+        }
+        const imageUrls = req.files.map(f => '/uploads/' + f.filename);
+        res.json({ success: true, imageUrls });
+    });
+});
+
+// Helper to sanitize product object (parsing options and images JSON)
+function formatProduct(p) {
+    if (p.options && typeof p.options === 'string') {
+        try { p.options = JSON.parse(p.options); } catch (e) { p.options = null; }
+    }
+    if (p.images && typeof p.images === 'string') {
+        try { p.images = JSON.parse(p.images); } catch (e) { p.images = []; }
+    }
+    if (!Array.isArray(p.images) || p.images.length === 0) {
+        p.images = p.image ? [p.image] : [];
+    }
+    return p;
+}
 
 // Get all products (public)
 router.get('/', async (req, res) => {
@@ -79,21 +106,11 @@ router.get('/', async (req, res) => {
         query += ' ORDER BY p.created_at DESC';
 
         const [products] = await pool.query(query, params);
-
-        // Parse JSON options
-        products.forEach(product => {
-            if (product.options && typeof product.options === 'string') {
-                try {
-                    product.options = JSON.parse(product.options);
-                } catch (e) {
-                    console.error('Error parsing product options:', e);
-                }
-            }
-        });
+        const formatted = products.map(formatProduct);
 
         res.json({
             success: true,
-            data: products
+            data: formatted
         });
     } catch (error) {
         console.error('Get products error:', error);
@@ -125,14 +142,7 @@ router.get('/:identifier', async (req, res) => {
             });
         }
 
-        const product = products[0];
-        if (product.options && typeof product.options === 'string') {
-            try {
-                product.options = JSON.parse(product.options);
-            } catch (e) {
-                console.error('Error parsing product options:', e);
-            }
-        }
+        const product = formatProduct(products[0]);
 
         res.json({
             success: true,
@@ -164,14 +174,7 @@ router.get('/barcode/:barcode', authenticate, authorize('admin', 'cashier'), asy
             });
         }
 
-        const product = products[0];
-        if (product.options && typeof product.options === 'string') {
-            try {
-                product.options = JSON.parse(product.options);
-            } catch (e) {
-                console.error('Error parsing product options:', e);
-            }
-        }
+        const product = formatProduct(products[0]);
 
         res.json({
             success: true,
@@ -189,11 +192,15 @@ router.get('/barcode/:barcode', authenticate, authorize('admin', 'cashier'), asy
 // Create product (admin only)
 router.post('/', authenticate, authorize('admin'), validationRules.createProduct, validate, async (req, res) => {
     try {
-        const { product_code, barcode, name, description, price, stock, category_id, image, options, status } = req.body;
+        const { product_code, barcode, name, description, price, stock, category_id, image, images, options, status } = req.body;
+
+        const imgs = Array.isArray(images) ? images.filter(Boolean) : (image ? [image] : []);
+        const mainImg = image || (imgs.length > 0 ? imgs[0] : null);
+        const imagesJson = imgs.length > 0 ? JSON.stringify(imgs) : (mainImg ? JSON.stringify([mainImg]) : null);
 
         const [result] = await pool.query(
-            'INSERT INTO products (product_code, barcode, name, description, price, stock, category_id, image, options, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [product_code, barcode || null, name, description || null, price, stock, category_id || null, image || null, options ? JSON.stringify(options) : null, status || 'active']
+            'INSERT INTO products (product_code, barcode, name, description, price, stock, category_id, image, images, options, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [product_code, barcode || null, name, description || null, price, stock, category_id || null, mainImg || null, imagesJson, options ? JSON.stringify(options) : null, status || 'active']
         );
 
         res.status(201).json({
@@ -220,7 +227,7 @@ router.post('/', authenticate, authorize('admin'), validationRules.createProduct
 router.put('/:id', authenticate, authorize('admin'), validationRules.updateProduct, validate, async (req, res) => {
     try {
         const { id } = req.params;
-        const { product_code, barcode, name, description, price, stock, category_id, image, options, status } = req.body;
+        const { product_code, barcode, name, description, price, stock, category_id, image, images, options, status } = req.body;
 
         const updateFields = [];
         const params = [];
@@ -253,9 +260,18 @@ router.put('/:id', authenticate, authorize('admin'), validationRules.updateProdu
             updateFields.push('category_id = ?');
             params.push(category_id);
         }
+        if (images !== undefined) {
+            const imgs = Array.isArray(images) ? images.filter(Boolean) : [];
+            updateFields.push('images = ?');
+            params.push(imgs.length > 0 ? JSON.stringify(imgs) : null);
+            if (image === undefined) {
+                updateFields.push('image = ?');
+                params.push(imgs.length > 0 ? imgs[0] : null);
+            }
+        }
         if (image !== undefined) {
             updateFields.push('image = ?');
-            params.push(image);
+            params.push(image || null);
         }
         if (options !== undefined) {
             updateFields.push('options = ?');

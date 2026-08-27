@@ -102,17 +102,46 @@
     <div class="modal-body">
       <div id="product-form-error" class="alert alert-error" style="display:none;padding:10px 14px;border-radius:8px;background:var(--danger-bg);color:#991b1b;margin-bottom:14px;font-size:13px"></div>
 
-      <!-- Image upload -->
-      <div style="text-align:center;margin-bottom:20px">
-        <div id="image-preview-wrap" style="display:inline-block;position:relative;cursor:pointer" onclick="document.getElementById('img-file').click()">
-          <div id="image-preview" style="width:110px;height:110px;border-radius:14px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:36px;border:2px dashed var(--gray-300);overflow:hidden;transition:border-color .2s">
-            <span id="img-placeholder">📦</span>
-            <img id="img-preview-el" style="width:100%;height:100%;object-fit:cover;display:none" alt="" />
+      <!-- Image upload section (Main + Sub-images 1-10) -->
+      <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:14px;padding:16px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-weight:700;font-size:14px;color:var(--gray-900)">📸 Product Images</span>
+            <span id="img-total-count" style="font-size:12px;color:var(--gray-500);margin-left:6px">(Main + up to 10 Sub-images)</span>
           </div>
-          <div style="margin-top:6px;font-size:12px;color:var(--gray-500)">Click to upload image</div>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="promptAddImageUrl()" style="font-size:12px;padding:4px 10px">🔗 Add by URL</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('sub-img-files').click()" id="btn-add-sub-imgs" style="font-size:12px;padding:4px 12px">＋ Add Images</button>
+          </div>
         </div>
-        <input type="file" id="img-file" accept="image/*" style="display:none" onchange="handleImageUpload()" />
-        <input type="hidden" id="f-image" />
+
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <!-- Main Image Box -->
+          <div style="text-align:center;flex-shrink:0">
+            <div id="main-image-wrap" style="position:relative;cursor:pointer;width:105px;height:105px;border-radius:12px;background:#fff;border:2px dashed var(--primary);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:all .2s" onclick="document.getElementById('main-img-file').click()" title="Click to upload/change Main cover image">
+              <div id="main-placeholder" style="display:flex;flex-direction:column;align-items:center;color:var(--primary)">
+                <span style="font-size:26px">📷</span>
+                <span style="font-size:11px;font-weight:700;margin-top:2px">Main Image</span>
+              </div>
+              <img id="main-preview-img" style="width:100%;height:100%;object-fit:cover;display:none" alt="Main" />
+              <button type="button" id="btn-del-main" onclick="event.stopPropagation();removeMainImage()" style="display:none;position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:22px;padding:0" title="Remove Main image">✕</button>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--primary);margin-top:5px">⭐ Cover / Main</div>
+          </div>
+
+          <!-- Vertical Divider -->
+          <div style="width:1px;height:105px;background:var(--gray-200);margin:0 2px"></div>
+
+          <!-- Sub-Images List -->
+          <div style="flex:1;min-width:200px">
+            <div id="sub-images-grid" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;min-height:105px">
+              <!-- Dynamically populated sub-images -->
+            </div>
+          </div>
+        </div>
+
+        <input type="file" id="main-img-file" accept="image/*" style="display:none" onchange="handleMainImageUpload()" />
+        <input type="file" id="sub-img-files" accept="image/*" multiple style="display:none" onchange="handleSubImagesUpload()" />
       </div>
 
       <div class="form-row">
@@ -253,8 +282,11 @@
       return;
     }
     body.innerHTML = products.map(p => {
+      const imgCount = Array.isArray(p.images) && p.images.length > 1
+        ? `<span style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.75);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.02em">🖼️ ${p.images.length}</span>`
+        : '';
       const imgEl = p.image
-        ? `<img src="${fmt.imgUrl(p.image)}" class="product-img" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="product-thumb" style="display:none">📦</div>`
+        ? `<div style="position:relative;display:inline-block;width:44px;height:44px"><img src="${fmt.imgUrl(p.image)}" class="product-img" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="product-thumb" style="display:none">📦</div>${imgCount}</div>`
         : `<div class="product-thumb" style="display:flex;align-items:center;justify-content:center">📦</div>`;
       return `<tr>
         <td>${imgEl}</td>
@@ -299,6 +331,149 @@
     document.getElementById('f-barcode').value = [...digits, check].join('');
   }
 
+  // ── Product Images State (Main + Sub-images 1-10) ──
+  let mainImage = '';
+  let subImages = []; // max 10 URLs
+
+  function renderImageSection() {
+    const mainPrev    = document.getElementById('main-preview-img');
+    const mainHolder  = document.getElementById('main-placeholder');
+    const delMainBtn  = document.getElementById('btn-del-main');
+    const totalCountEl= document.getElementById('img-total-count');
+    const addBtn      = document.getElementById('btn-add-sub-imgs');
+
+    if (mainImage) {
+      mainPrev.src = fmt.imgUrl(mainImage);
+      mainPrev.style.display = 'block';
+      mainHolder.style.display = 'none';
+      delMainBtn.style.display = 'block';
+    } else {
+      mainPrev.style.display = 'none';
+      mainHolder.style.display = 'flex';
+      delMainBtn.style.display = 'none';
+    }
+
+    if (totalCountEl) {
+      totalCountEl.textContent = `(${subImages.length}/10 sub-images)`;
+    }
+    if (addBtn) {
+      addBtn.disabled = subImages.length >= 10;
+    }
+
+    const grid = document.getElementById('sub-images-grid');
+    if (!grid) return;
+
+    let html = subImages.map((url, idx) => `
+      <div style="position:relative;width:80px;height:80px;border-radius:10px;background:#fff;border:1px solid var(--gray-300);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);flex-shrink:0">
+        <img src="${fmt.imgUrl(url)}" style="width:100%;height:100%;object-fit:cover" alt="Sub ${idx+1}" />
+        <span style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px">#${idx+1}</span>
+        <button type="button" onclick="setAsMain(${idx})" style="position:absolute;top:3px;left:3px;background:rgba(255,255,255,.9);color:#eab308;border:none;border-radius:4px;padding:1px 4px;font-size:10px;cursor:pointer;font-weight:700" title="Set as Main Cover">⭐</button>
+        <button type="button" onclick="removeSubImage(${idx})" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.9);color:#fff;border:none;cursor:pointer;font-size:10px;line-height:18px;padding:0" title="Remove">✕</button>
+      </div>
+    `).join('');
+
+    if (subImages.length < 10) {
+      html += `
+        <div onclick="document.getElementById('sub-img-files').click()" style="cursor:pointer;width:80px;height:80px;border-radius:10px;background:#fff;border:2px dashed var(--gray-300);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gray-400);flex-shrink:0;transition:border-color .15s" title="Add sub-images">
+          <span style="font-size:20px;line-height:1">＋</span>
+          <span style="font-size:10px;font-weight:600;margin-top:2px">Add Sub</span>
+        </div>
+      `;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  async function handleMainImageUpload() {
+    const file = document.getElementById('main-img-file').files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    showToast('Uploading main image...', 'info', 2000);
+    const res = await api.uploadImage(formData);
+    if (res?.success) {
+      mainImage = res.imageUrl;
+      renderImageSection();
+      showToast('Main image updated ⭐', 'success');
+    } else {
+      showToast(res?.message || 'Upload failed', 'error');
+    }
+    document.getElementById('main-img-file').value = '';
+  }
+
+  async function handleSubImagesUpload() {
+    const files = Array.from(document.getElementById('sub-img-files').files || []);
+    if (!files.length) return;
+    const remaining = 10 - subImages.length;
+    if (remaining <= 0) {
+      showToast('Maximum 10 sub-images allowed', 'warning');
+      return;
+    }
+    const toUpload = files.slice(0, remaining);
+    const formData = new FormData();
+    toUpload.forEach(f => formData.append('images', f));
+
+    showToast(`Uploading ${toUpload.length} image(s)...`, 'info', 2500);
+    const res = await api.uploadImages(formData);
+    if (res?.success && Array.isArray(res.imageUrls)) {
+      subImages.push(...res.imageUrls);
+      if (!mainImage && subImages.length > 0) {
+        mainImage = subImages.shift();
+      }
+      renderImageSection();
+      showToast(`Uploaded ${res.imageUrls.length} image(s)!`, 'success');
+    } else {
+      showToast(res?.message || 'Upload failed', 'error');
+    }
+    document.getElementById('sub-img-files').value = '';
+  }
+
+  function removeMainImage() {
+    if (subImages.length > 0) {
+      mainImage = subImages.shift();
+    } else {
+      mainImage = '';
+    }
+    renderImageSection();
+  }
+
+  function removeSubImage(index) {
+    if (index >= 0 && index < subImages.length) {
+      subImages.splice(index, 1);
+      renderImageSection();
+    }
+  }
+
+  function setAsMain(index) {
+    if (index >= 0 && index < subImages.length) {
+      const oldMain = mainImage;
+      mainImage = subImages[index];
+      if (oldMain) {
+        subImages[index] = oldMain;
+      } else {
+        subImages.splice(index, 1);
+      }
+      renderImageSection();
+      showToast('Cover image updated ⭐', 'info');
+    }
+  }
+
+  function promptAddImageUrl() {
+    const url = prompt('Enter image URL (e.g. https://...):');
+    if (!url || !url.trim()) return;
+    const trimmed = url.trim();
+    if (!mainImage) {
+      mainImage = trimmed;
+    } else if (subImages.length < 10) {
+      subImages.push(trimmed);
+    } else {
+      showToast('Limit of 10 sub-images reached', 'warning');
+      return;
+    }
+    renderImageSection();
+    showToast('Image URL added', 'success');
+  }
+
   function openAddModal() {
     editingId = null;
     clearForm();
@@ -326,12 +501,18 @@
     document.getElementById('f-stock').value   = p.stock ?? '';
     document.getElementById('f-status').value  = p.status || 'active';
     document.getElementById('f-category').value= p.category_id || '';
-    document.getElementById('f-image').value   = p.image || '';
-    if (p.image) {
-      document.getElementById('img-preview-el').src = fmt.imgUrl(p.image);
-      document.getElementById('img-preview-el').style.display = 'block';
-      document.getElementById('img-placeholder').style.display = 'none';
+    
+    // Set Main & Sub-images
+    mainImage = p.image || '';
+    const rawImages = Array.isArray(p.images) ? p.images.filter(Boolean) : (p.image ? [p.image] : []);
+    if (rawImages.length > 0) {
+      if (!mainImage) mainImage = rawImages[0];
+      subImages = rawImages.filter((img, i) => i !== 0 || img !== mainImage).slice(0, 10);
+    } else {
+      subImages = [];
     }
+    renderImageSection();
+
     if (p.options && typeof p.options === 'object') {
       Object.entries(p.options).forEach(([key, vals]) => addOptionRow(key, Array.isArray(vals) ? vals.join(', ') : vals));
     }
@@ -345,13 +526,14 @@
   }
 
   function clearForm() {
-    ['f-code','f-barcode','f-name','f-desc','f-price','f-stock','f-image'].forEach(id => document.getElementById(id).value = '');
+    ['f-code','f-barcode','f-name','f-desc','f-price','f-stock'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-status').value = 'active';
     document.getElementById('f-category').value = '';
     document.getElementById('options-container').innerHTML = '';
-    document.getElementById('img-preview-el').style.display = 'none';
-    document.getElementById('img-placeholder').style.display = 'block';
     document.getElementById('product-form-error').style.display = 'none';
+    mainImage = '';
+    subImages = [];
+    renderImageSection();
   }
 
   function addOptionRow(key = '', vals = '') {
@@ -362,24 +544,6 @@
       <input class="form-control form-control-sm opt-vals" placeholder="e.g. Red, Blue, Green" value="${vals}" style="flex:1" />
       <button type="button" class="btn btn-ghost btn-icon-sm" onclick="this.parentElement.remove()" style="flex-shrink:0">✕</button>`;
     document.getElementById('options-container').appendChild(row);
-  }
-
-  async function handleImageUpload() {
-    const file = document.getElementById('img-file').files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('image', file);
-    showToast('Uploading image...', 'info', 2000);
-    const res = await api.uploadImage(formData);
-    if (res?.success) {
-      document.getElementById('f-image').value = res.imageUrl;
-      document.getElementById('img-preview-el').src = fmt.imgUrl(res.imageUrl);
-      document.getElementById('img-preview-el').style.display = 'block';
-      document.getElementById('img-placeholder').style.display = 'none';
-      showToast('Image uploaded', 'success');
-    } else {
-      showToast(res?.message || 'Upload failed', 'error');
-    }
   }
 
   function buildOptions() {
@@ -396,6 +560,7 @@
   async function saveProduct() {
     const errDiv = document.getElementById('product-form-error');
     errDiv.style.display = 'none';
+    const allImages = mainImage ? [mainImage, ...subImages] : [...subImages];
     const payload = {
       product_code: document.getElementById('f-code').value.trim(),
       barcode:      document.getElementById('f-barcode').value.trim() || undefined,
@@ -405,7 +570,8 @@
       stock:        parseInt(document.getElementById('f-stock').value),
       status:       document.getElementById('f-status').value,
       category_id:  document.getElementById('f-category').value || undefined,
-      image:        document.getElementById('f-image').value || undefined,
+      image:        mainImage || (allImages[0] || undefined),
+      images:       allImages,
       options:      buildOptions(),
     };
     if (!payload.product_code || !payload.name || isNaN(payload.price) || isNaN(payload.stock)) {

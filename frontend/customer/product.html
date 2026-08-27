@@ -101,6 +101,39 @@
       pointer-events: none;
     }
 
+    /* Gallery thumbnails strip */
+    .gallery-strip {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px 0;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .gallery-strip::-webkit-scrollbar { display: none; }
+    .gallery-thumb {
+      flex-shrink: 0;
+      width: 62px;
+      height: 62px;
+      border-radius: var(--radius-xs);
+      overflow: hidden;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      scroll-snap-align: start;
+      transition: all .2s;
+      background: var(--card2);
+    }
+    .gallery-thumb.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    .gallery-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
     /* LIVE ribbon */
     .live-ribbon {
       position: absolute;
@@ -916,12 +949,34 @@
       window.location.href = customerUrl;
     }
 
+    function selectGalleryImg(src, el) {
+      const hero = document.getElementById('hero-img-el');
+      if (hero) hero.src = src;
+      document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
     /* ─── Render ─── */
     function render(p, isLive) {
       const sb    = stockBadge(p.stock);
-      const imgEl = p.image
-        ? `<img src="${fmt.imgUrl(p.image)}" alt="${p.name}" loading="lazy" />`
+      const allImgs = Array.isArray(p.images) && p.images.length > 0
+        ? p.images.filter(Boolean)
+        : (p.image ? [p.image] : []);
+      const mainImgSrc = allImgs[0] || p.image || '';
+
+      const imgEl = mainImgSrc
+        ? `<img id="hero-img-el" src="${fmt.imgUrl(mainImgSrc)}" alt="${p.name}" loading="lazy" />`
         : `<div class="hero-empty">📦</div>`;
+
+      const galleryHtml = allImgs.length > 1
+        ? `<div class="gallery-strip">
+            ${allImgs.map((img, idx) => `
+              <div class="gallery-thumb ${idx === 0 ? 'active' : ''}" onclick="selectGalleryImg('${fmt.imgUrl(img)}', this)">
+                <img src="${fmt.imgUrl(img)}" alt="thumb ${idx+1}" />
+              </div>
+            `).join('')}
+           </div>`
+        : '';
 
       const optsHtml   = renderOptions(p.options);
       const optSection = optsHtml
@@ -949,6 +1004,8 @@
             </div>
             <span class="stock-badge ${sb.cls}">${sb.text}</span>
           </div>
+
+          ${galleryHtml}
 
           <!-- Content body -->
           <div class="content-body">

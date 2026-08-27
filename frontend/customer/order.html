@@ -1122,14 +1122,18 @@
       if (psSub)  psSub.textContent  = fmtPriceSub(product.price);
       // Order summary
       const unitEl  = document.getElementById('summary-unit');
+      const qtyEl   = document.getElementById('summary-qty-disp');
       const totalEl = document.getElementById('summary-total');
+      const subEl   = document.getElementById('summary-total-sub');
       if (unitEl)  unitEl.textContent  = fmtPrice(product.price);
+      if (qtyEl)   qtyEl.textContent   = '× ' + quantity;
       if (totalEl) totalEl.textContent = fmtPrice(product.price * quantity);
+      if (subEl)   subEl.textContent   = fmtPriceSub(product.price * quantity);
       // Cash tendered placeholder
       const tendered = document.getElementById('f-tendered');
       if (tendered) tendered.placeholder = isKHR
-        ? 'Amount in KHR (e.g. ' + Math.round(product.price * KHR_RATE * 1.1).toLocaleString('en-US') + ')'
-        : 'Amount in USD (e.g. ' + (product.price * 1.1).toFixed(2) + ')';
+        ? 'Amount in KHR (e.g. ' + Math.round(product.price * quantity * KHR_RATE * 1.1).toLocaleString('en-US') + ')'
+        : 'Amount in USD (e.g. ' + ((product.price * quantity) * 1.1).toFixed(2) + ')';
       calcChange();
     }
 
@@ -1137,10 +1141,9 @@
     function changeQty(delta) {
       const max = product?.stock || 99;
       quantity = Math.max(1, Math.min(max, quantity + delta));
-      document.getElementById('qty-display').textContent = quantity;
-      const totalEl = document.getElementById('summary-total');
-      if (totalEl) totalEl.textContent = fmtPrice(product.price * quantity);
-      calcChange();
+      const qtyDisp = document.getElementById('qty-display');
+      if (qtyDisp) qtyDisp.textContent = quantity;
+      updateCurrencyDisplay();
     }
 
     /* ─── Payment method ─── */

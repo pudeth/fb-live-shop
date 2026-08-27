@@ -314,7 +314,10 @@ async function autoMigrate() {
                 }
             }
         }
-        // Ensure products table has images JSON column
+        // Ensure products table has MEDIUMTEXT image and JSON images columns
+        try {
+            await pool.execute(`ALTER TABLE products MODIFY COLUMN image MEDIUMTEXT NULL`);
+        } catch(e) { /* ignored */ }
         try {
             await pool.execute(`ALTER TABLE products ADD COLUMN images JSON DEFAULT NULL`);
         } catch(e) { /* column exists */ }

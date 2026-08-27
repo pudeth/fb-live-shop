@@ -627,7 +627,7 @@
     }
     document.getElementById('on-air-sub').textContent = p.product_code || '';
     const imgHtml = p.image
-      ? `<img src="${p.image.startsWith('http') ? p.image : window.location.origin + p.image}"
+      ? `<img src="${(p.image.startsWith('http') || p.image.startsWith('data:')) ? p.image : window.location.origin + (p.image.startsWith('/') ? p.image : '/' + p.image)}"
               alt="" style="display:block"
               onerror="this.style.display='none';this.nextSibling.style.display='flex'" />
          <span style="display:none">📦</span>`

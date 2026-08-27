@@ -44,8 +44,14 @@ router.post('/upload-image', authenticate, authorize('admin'), (req, res) => {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No image file provided' });
         }
-        const imageUrl = '/uploads/' + req.file.filename;
-        res.json({ success: true, imageUrl });
+        try {
+            const fileData = fs.readFileSync(req.file.path);
+            const mimeType = req.file.mimetype || 'image/jpeg';
+            const base64 = `data:${mimeType};base64,${fileData.toString('base64')}`;
+            res.json({ success: true, imageUrl: base64 });
+        } catch(e) {
+            res.json({ success: true, imageUrl: '/uploads/' + req.file.filename });
+        }
     });
 });
 
@@ -58,7 +64,15 @@ router.post('/upload-images', authenticate, authorize('admin'), (req, res) => {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ success: false, message: 'No image files provided' });
         }
-        const imageUrls = req.files.map(f => '/uploads/' + f.filename);
+        const imageUrls = req.files.map(f => {
+            try {
+                const fileData = fs.readFileSync(f.path);
+                const mimeType = f.mimetype || 'image/jpeg';
+                return `data:${mimeType};base64,${fileData.toString('base64')}`;
+            } catch(e) {
+                return '/uploads/' + f.filename;
+            }
+        });
         res.json({ success: true, imageUrls });
     });
 });

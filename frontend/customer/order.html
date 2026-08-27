@@ -1347,14 +1347,15 @@
       const username = data.customer_account?.username || custPhone;
       const password = data.customer_account?.password || '';
 
-      const accountHtml = password ? `
+      const isNew = data.customer_account?.is_new === true;
+      const accountHtml = (isNew && password) ? `
         <div class="account-card">
           <div class="ac-header">
             <div class="ac-header-title">
               <span style="font-size:16px">🔐</span>
-              <span>Your Login to View Order Status</span>
+              <span>Your New Login to View Order Status</span>
             </div>
-            <span class="ac-badge">Active Account</span>
+            <span class="ac-badge">New Account</span>
           </div>
           <div class="ac-grid">
             <div class="ac-box">
@@ -1362,15 +1363,28 @@
               <div class="ac-val">${escHtml(username)}</div>
             </div>
             <div class="ac-box">
-              <div class="ac-label">🔑 Password / PIN</div>
+              <div class="ac-label">🔑 6-Digit PIN</div>
               <div class="ac-val highlight">${escHtml(password)}</div>
             </div>
           </div>
           <button class="ac-copy-btn" onclick="copyCreds('${escHtml(username)}', '${escHtml(password)}')">
-            📋 Copy Username & Password
+            📋 Copy Username & 6-Digit PIN
           </button>
-          <div class="ac-hint">💡 Save this PIN! You can log in anytime with your phone & PIN to track your order.</div>
-        </div>` : '';
+          <div class="ac-hint">💡 Save this PIN! You can log in anytime with your phone & PIN to track your orders.</div>
+        </div>` : (username ? `
+        <div class="account-card" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.06)">
+          <div class="ac-header">
+            <div class="ac-header-title">
+              <span style="font-size:16px">👤</span>
+              <span style="color:#34d399">Linked to Existing Customer Account</span>
+            </div>
+            <span class="ac-badge" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:rgba(16,185,129,0.4)">Verified</span>
+          </div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-top:6px">
+            ✨ This order is automatically linked to your customer account: <strong>${escHtml(username)}</strong>.<br/>
+            You can use your existing PIN to log into your portal anytime.
+          </div>
+        </div>` : '');
 
       document.getElementById('main-content').innerHTML = `
         <div class="success-wrap">

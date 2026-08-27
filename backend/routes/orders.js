@@ -83,19 +83,33 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
 
         order.customer_pin = order.customer_pin || order.raw_pin || null;
 
-        // If order doesn't have a customer_pin yet, auto-create a 6-digit PIN now
+        // If order doesn't have a customer_pin yet, check for existing customer PIN first
         if (!order.customer_pin) {
-            const pin = Math.floor(100000 + Math.random() * 900000).toString();
-            order.customer_pin = pin;
             try {
-                const hashed = await bcrypt.hash(pin, 10);
-                await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [pin, id]);
                 const cleanPhone = (order.customer_phone || '').trim().replace(/[^0-9+]/g, '');
-                if (cleanPhone) {
-                    const [u] = await pool.query('SELECT id FROM users WHERE username = ? OR phone = ? LIMIT 1', [cleanPhone, order.customer_phone]);
-                    if (u.length > 0) {
-                        await pool.query('UPDATE users SET password = ?, raw_pin = ? WHERE id = ?', [hashed, pin, u[0].id]);
-                    } else {
+                const cleanDigits = (order.customer_phone || '').replace(/[^0-9]/g, '');
+                const coreDigits = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
+
+                let existing = null;
+                if (coreDigits) {
+                    const [u] = await pool.query(
+                        `SELECT id, username, raw_pin, password FROM users 
+                         WHERE username = ? OR phone = ? OR username = ? OR phone = ? OR username LIKE ? OR phone LIKE ?
+                         ORDER BY id ASC LIMIT 1`,
+                        [order.customer_phone, order.customer_phone, cleanPhone, cleanDigits, `%${coreDigits}%`, `%${coreDigits}%`]
+                    );
+                    if (u.length > 0) existing = u[0];
+                }
+
+                if (existing && existing.raw_pin) {
+                    order.customer_pin = existing.raw_pin;
+                    await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [existing.raw_pin, id]);
+                } else if (!existing) {
+                    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+                    order.customer_pin = pin;
+                    const hashed = await bcrypt.hash(pin, 10);
+                    await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [pin, id]);
+                    if (cleanPhone) {
                         await pool.query(
                             `INSERT INTO users (username, password, raw_pin, full_name, email, phone, address, role, status)
                              VALUES (?, ?, ?, ?, ?, ?, ?, 'customer', 'active')`,
@@ -104,7 +118,7 @@ router.get('/:id', authenticate, authorize('admin', 'cashier'), async (req, res)
                     }
                 }
             } catch(e) {
-                console.warn('Auto-generating PIN error:', e.message);
+                console.warn('Auto-checking PIN error:', e.message);
             }
         }
 
@@ -306,23 +320,36 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
 
         await connection.commit();
 
-        // ── Auto Customer Account Generation ──
+        // ── Auto Customer Account Generation (Single Account Policy) ──
         let customerAccount = null;
         let customerToken = null;
         let plainPassword = '';
 
         try {
-            const cleanPhone = (customer_phone || '').trim().replace(/[^0-9+]/g, '');
-            const customerUsername = cleanPhone || ('cust_' + Date.now());
+            const rawPhone = (customer_phone || '').trim();
+            const cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
+            const cleanDigits = rawPhone.replace(/[^0-9]/g, '');
+            const coreDigits = cleanDigits.length >= 8 ? cleanDigits.slice(-8) : cleanDigits;
 
-            const [existingUsers] = await pool.query(
-                'SELECT id, username, role, full_name FROM users WHERE username = ? OR phone = ? LIMIT 1',
-                [customerUsername, customer_phone]
-            );
+            let existing = null;
+            if (coreDigits) {
+                const [existingUsers] = await pool.query(
+                    `SELECT id, username, role, full_name, phone, raw_pin, password, address 
+                     FROM users 
+                     WHERE (username = ? OR phone = ? OR username = ? OR phone = ? OR username LIKE ? OR phone LIKE ?)
+                     ORDER BY id ASC LIMIT 1`,
+                    [rawPhone, rawPhone, cleanPhone, cleanDigits, `%${coreDigits}%`, `%${coreDigits}%`]
+                );
+                if (existingUsers.length > 0) {
+                    existing = existingUsers[0];
+                }
+            }
 
-            if (existingUsers.length === 0) {
+            if (!existing) {
+                // Brand new customer: generate 6-digit PIN once
                 plainPassword = Math.floor(100000 + Math.random() * 900000).toString();
                 const hashedPassword = await bcrypt.hash(plainPassword, 10);
+                const customerUsername = cleanDigits || cleanPhone || ('cust_' + Date.now());
 
                 const [userRes] = await pool.query(
                     `INSERT INTO users (username, password, raw_pin, full_name, email, phone, address, role, status)
@@ -333,7 +360,7 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
                         plainPassword,
                         customer_name,
                         customer_email || null,
-                        customer_phone,
+                        cleanDigits || rawPhone,
                         customer_address || null
                     ]
                 );
@@ -349,34 +376,25 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
                     is_new: true
                 };
             } else {
-                const existing = existingUsers[0];
-                if (existing.role === 'customer') {
-                    plainPassword = Math.floor(100000 + Math.random() * 900000).toString();
-                    const hashedPassword = await bcrypt.hash(plainPassword, 10);
-                    await pool.query(
-                        'UPDATE users SET password = ?, raw_pin = ?, full_name = ?, address = ? WHERE id = ?',
-                        [hashedPassword, plainPassword, customer_name, customer_address || null, existing.id]
-                    );
+                // EXISTING CUSTOMER: DO NOT GENERATE A NEW PIN! REUSE EXISTING ACCOUNT & PIN!
+                const activePin = existing.raw_pin || null;
 
-                    // Also update order record with customer_pin
-                    await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [plainPassword, orderId]);
-
-                    customerAccount = {
-                        id: existing.id,
-                        username: existing.username,
-                        password: plainPassword,
-                        full_name: customer_name,
-                        is_new: false
-                    };
-                } else {
-                    customerAccount = {
-                        id: existing.id,
-                        username: existing.username,
-                        password: '(Use your staff login)',
-                        full_name: existing.full_name,
-                        is_new: false
-                    };
+                if (activePin) {
+                    await pool.query('UPDATE orders SET customer_pin = ? WHERE id = ?', [activePin, orderId]);
                 }
+
+                // If customer provided address and user didn't have one, update address without touching credentials
+                if (customer_address && !existing.address) {
+                    await pool.query('UPDATE users SET address = ? WHERE id = ?', [customer_address, existing.id]);
+                }
+
+                customerAccount = {
+                    id: existing.id,
+                    username: existing.username,
+                    password: activePin,
+                    full_name: existing.full_name || customer_name,
+                    is_new: false // Existing customer!
+                };
             }
 
             if (customerAccount && process.env.JWT_SECRET) {

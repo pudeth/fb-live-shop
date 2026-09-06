@@ -485,40 +485,33 @@ ipcMain.handle('start-fb-live-monitor', async (event, targetUrl) => {
                     window.__fbSeenText = new Set();
 
                     function isOldTimestamp(raw) {
-                        const m = raw.match(/[-•·\\s]*\\b(\\d+)\\s*([smhd])\\b/i);
-                        if (m) {
+                        const m = raw.match(/[-•·\\s]*\\b(\\d+)\\s*([smhdwy])\\b/i);
+                        if (m && !/just now|now|\\b\\d+\\s*s\\b/i.test(raw)) {
                             const val = parseInt(m[1], 10);
                             const unit = m[2].toLowerCase();
-                            if (unit === 'h' || unit === 'd') return true;
-                            if (unit === 'm' && val >= 1) return true; // Any comment with 1m, 2m, etc. is old!
+                            if (unit === 'd' || unit === 'w' || unit === 'y') return true;
+                            if (unit === 'h' && val >= 4) return true;
                         }
                         return false;
                     }
 
                     function scanAndQueue(root) {
                         const target = root || document;
-                        const nodes = target.querySelectorAll ? target.querySelectorAll('[role="article"], div[data-visualcompletion="ignore-dynamic"], div.x1n2onr6, div.xdj266r') : [];
+                        const nodes = target.querySelectorAll ? target.querySelectorAll('[role="article"], [role="row"], [role="listitem"], div[data-visualcompletion="ignore-dynamic"]') : [];
                         nodes.forEach(node => {
                             const text = (node.innerText || '').trim();
-                            if (text && text.length > 2 && text.length < 400 && !window.__fbSeenText.has(text)) {
+                            if (text && text.length > 2 && text.length < 500 && !window.__fbSeenText.has(text)) {
                                 window.__fbSeenText.add(text);
                                 if (window.__fbSeenText.size > 2000) {
                                     window.__fbSeenText.clear();
                                 }
-                                // Only queue fresh new comments!
+                                // Only skip ancient (>4h or days old) comments!
                                 if (!isOldTimestamp(text)) {
                                     window.__fbCommentsQueue.push(text);
                                 }
                             }
                         });
                     }
-
-                    // Baseline: Mark all pre-existing comments already sitting on the page as SEEN without queuing!
-                    const initialNodes = document.querySelectorAll('[role="article"], div[data-visualcompletion="ignore-dynamic"], div.x1n2onr6, div.xdj266r');
-                    initialNodes.forEach(node => {
-                        const text = (node.innerText || '').trim();
-                        if (text) window.__fbSeenText.add(text);
-                    });
 
                     // Real-time MutationObserver: ONLY captures brand new incoming comments added to the page
                     const observer = new MutationObserver((mutations) => {

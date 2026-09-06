@@ -251,54 +251,100 @@ async function sendCommentToPos(author, text) {
 }
 
 // ── 4. DOM Scanner for Live Stream Comments ──────────────────────────────────
-function scanFacebookComments() {
-    const commentNodes = document.querySelectorAll(
-        '[role="article"], div[data-visualcompletion="ignore-dynamic"], div.x1n2onr6'
-    );
+function extractCommentFromNode(rawText) {
+    if (!rawText || rawText.length < 3 || rawText.length > 500) return null;
+    let lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return null;
 
-    commentNodes.forEach(node => {
-        const rawText = (node.innerText || '').trim();
-        if (!rawText || rawText.length < 2 || rawText.length > 400) return;
+    // Remove Facebook action buttons (Reply, Pin, etc.)
+    lines = lines.filter(line => !/^(Reply|Pin|Hide|Like|Share|Report|Translate|Send message|Send Message|View more|ឆ្លើយតប)$/i.test(line));
+    if (lines.length === 0) return null;
 
-        const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-        if (lines.length === 0) return;
+    let author = 'Live Viewer';
+    let message = '';
 
-        let author = 'Live Viewer';
-        let message = '';
-
-        if (lines.length >= 2) {
-            author = lines[0];
-            const rest = lines.slice(1);
-            if (/^[-•·\s]*\d+\s*[smhd]|just now/i.test(rest[0])) {
-                message = rest.slice(1).join(' ');
-            } else {
-                message = rest.join(' ');
-            }
+    // Format 1: "Pu Deth · 1m" on first line
+    if (lines[0].includes('·') || /[-•·\s]*\b\d+\s*[smhdwy]\b/i.test(lines[0])) {
+        author = lines[0].replace(/[-•·\s]*\b\d+\s*[smhdwy]\b.*/i, '').trim() || 'Live Viewer';
+        message = lines.slice(1).join(' ').trim();
+    } else if (lines.length >= 2 && (/^[-•·\s]*\d+\s*[smhdwy]/i.test(lines[1]) || /just now/i.test(lines[1]))) {
+        // Format 2: Line 0 is author, Line 1 is timestamp, Line 2 is message
+        author = lines[0];
+        message = lines.slice(2).join(' ').trim();
+    } else if (lines.length >= 2) {
+        author = lines[0];
+        message = lines.slice(1).join(' ').trim();
+    } else {
+        const colonIdx = lines[0].indexOf(':');
+        if (colonIdx > 0 && colonIdx < 30) {
+            author = lines[0].slice(0, colonIdx).trim();
+            message = lines[0].slice(colonIdx + 1).trim();
         } else {
             message = lines[0];
         }
+    }
 
-        message = message
-            .replace(/^[-•·\s]*\d+\s*[smhd]\b/i, '')
-            .replace(/^[-•·\s]*just now\b/i, '')
-            .replace(/\b(Hide|Reply|Pin|Like|Share|Report|Translate|Send message|Send Message)\b/gi, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+    message = message
+        .replace(/\b(Reply|Pin|Hide|Like|Share|Report|Translate|Send message)\b/gi, '')
+        .replace(/^[-•·\s]*\d+\s*[smhdwy]\b/i, '')
+        .replace(/^[-•·\s]*just now\b/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-        const isOld = /[-•·\s]*\b(\d+)\s*([smhd])\b/i.test(rawText) && !/just now/i.test(rawText);
-        if (isOld) {
-            const timeMatch = rawText.match(/[-•·\s]*\b(\d+)\s*([smhd])\b/i);
-            if (timeMatch) {
-                const val = parseInt(timeMatch[1], 10);
-                const unit = timeMatch[2].toLowerCase();
-                if (unit === 'h' || unit === 'd' || (unit === 'm' && val >= 1)) {
-                    return;
-                }
-            }
+    if (!message || message.length < 2) return null;
+    return { author, message };
+}
+
+function findCommentElements() {
+    const candidates = new Set();
+    // 1. Standard Facebook Watch comments
+    document.querySelectorAll('[role="article"], div[data-visualcompletion="ignore-dynamic"]').forEach(el => candidates.add(el));
+
+    // 2. Facebook Live Producer rows
+    document.querySelectorAll('div[role="row"], div[role="listitem"]').forEach(el => candidates.add(el));
+
+    // 3. Comments with Reply or Pin buttons in Live Producer
+    document.querySelectorAll('div, span, button').forEach(el => {
+        const txt = (el.innerText || '').trim();
+        if (txt === 'Reply' || txt === 'Pin' || txt === 'ឆ្លើយតប') {
+            const parent = el.closest('[role="row"], [role="listitem"], [role="article"]') || el.parentElement?.parentElement;
+            if (parent) candidates.add(parent);
         }
+    });
 
-        if (!message) return;
+    return Array.from(candidates);
+}
 
+function isOldTimestamp(rawText) {
+    if (!rawText) return false;
+    if (/just now|now|\b\d+\s*s\b/i.test(rawText)) return false;
+    // Only filter comments that are >4 hours or from previous days/weeks/years
+    const m = rawText.match(/[-•·\s]*\b(\d+)\s*([smhdwy])\b/i);
+    if (m) {
+        const val = parseInt(m[1], 10);
+        const unit = m[2].toLowerCase();
+        if (unit === 'd' || unit === 'w' || unit === 'y') return true;
+        if (unit === 'h' && val >= 4) return true;
+    }
+    return false;
+}
+
+function scanFacebookComments() {
+    const commentNodes = findCommentElements();
+
+    commentNodes.forEach(node => {
+        const rawText = (node.innerText || '').trim();
+        if (!rawText || rawText.length < 3 || rawText.length > 500) return;
+
+        // Skip ancient comments (>4 hours or days old)
+        if (isOldTimestamp(rawText)) return;
+
+        const extracted = extractCommentFromNode(rawText);
+        if (!extracted || !extracted.message) return;
+
+        const { author, message } = extracted;
+
+        // Signature based on author + message text
         const signature = `${author}:::${message}`;
         if (processedComments.has(signature)) return;
 
@@ -310,27 +356,13 @@ function scanFacebookComments() {
             arr.slice(-1000).forEach(s => processedComments.add(s));
         }
 
-        console.log(`💬 [FB Live POS] Detected NEW comment from "${author}": "${message}"`);
+        console.log(`💬 [FB Live POS] Detected comment from "${author}": "${message}"`);
         sendCommentToPos(author, message);
     });
 }
 
-function markBaselineComments() {
-    const existingNodes = document.querySelectorAll(
-        '[role="article"], div[data-visualcompletion="ignore-dynamic"], div.x1n2onr6, div.xdj266r'
-    );
-    existingNodes.forEach(node => {
-        const rawText = (node.innerText || '').trim();
-        if (rawText) {
-            processedComments.add(rawText.slice(0, 80));
-        }
-    });
-    console.log(`🛡️ [FB Live POS] Baseline initialized: ${existingNodes.length} existing comments filtered out.`);
-}
-
 // ── 5. Initialize Extension ───────────────────────────────────────────────────
 createFloatingBadge();
-markBaselineComments();
 
 const domObserver = new MutationObserver(() => {
     scanFacebookComments();
@@ -344,5 +376,5 @@ if (document.body) {
     });
 }
 
-setInterval(scanFacebookComments, 200);
+setInterval(scanFacebookComments, 300);
 

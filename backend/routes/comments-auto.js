@@ -351,7 +351,7 @@ async function processIncomingComment(commentObj, catalog = null, onAirProduct =
         if (lines.length >= 2) {
             commenterName = lines[0];
             const rest = lines.slice(1);
-            if (/^[-•·\s]*\d+\s*[smhd]|just now/i.test(rest[0])) {
+            if (/^[-•·\s]*\d+\s*[smhdwy]|just now/i.test(rest[0])) {
                 commentText = rest.slice(1).join(' ');
             } else {
                 commentText = rest.join(' ');
@@ -366,13 +366,16 @@ async function processIncomingComment(commentObj, catalog = null, onAirProduct =
         }
     }
 
-    // Filter out old past comments (e.g. 1m, 5m, 1h, 2d old) - Show ONLY fresh new live comments!
-    const timeMatch = (commentObj.message || commentObj.text || commentObj.comment || '').match(/[-•·\s]*\b(\d+)\s*([smhd])\b/i);
-    if (timeMatch && !/just now/i.test(commentObj.message || commentObj.text || commentObj.comment || '')) {
+    // Clean any attached timestamp artifact from commenter name (e.g. "Pu Deth · 1m" -> "Pu Deth")
+    commenterName = commenterName.replace(/[-•·\s]*\b\d+\s*[smhdwy]\b.*/i, '').trim() || 'Live Viewer';
+
+    // Filter out ancient past comments (e.g. from yesterday's post or >4h ago) — Keep all live stream comments!
+    const timeMatch = (commentObj.message || commentObj.text || commentObj.comment || '').match(/[-•·\s]*\b(\d+)\s*([smhdwy])\b/i);
+    if (timeMatch && !/just now|now|\b\d+\s*s\b/i.test(commentObj.message || commentObj.text || commentObj.comment || '')) {
         const val = parseInt(timeMatch[1], 10);
         const unit = timeMatch[2].toLowerCase();
-        if (unit === 'h' || unit === 'd' || (unit === 'm' && val >= 1)) {
-            // Drop old comment completely
+        if (unit === 'd' || unit === 'w' || unit === 'y' || (unit === 'h' && val >= 4)) {
+            // Drop ancient comment from previous day/stream
             return {
                 commentId,
                 commenterName,

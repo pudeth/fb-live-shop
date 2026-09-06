@@ -1,0 +1,12 @@
+{
+  "name": "facebook-live-product-system",
+  "version": "1.0.0",
+  "description": "Facebook Live Product Management & Cashier POS System Desktop App",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "FB Live Team",
+  "license": "ISC"
+}

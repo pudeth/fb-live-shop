@@ -45,6 +45,7 @@ const api = {
   createCategory:   (data)        => api.post('/categories', data),
   updateCategory:   (id, data)    => api.put(`/categories/${id}`, data),
   deleteCategory:   (id)          => api.delete(`/categories/${id}`),
+  uploadCategoryImage: (formData) => api.upload('/categories/upload-image', formData),
 
   /* --- Products --- */
   getProducts:      (params = '') => api.get(`/products${params}`),

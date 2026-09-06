@@ -7,24 +7,99 @@
   <!-- QR code styling library (MIT licensed, runs 100% locally) -->
   <script src="/public/qr-code-styling.js"></script>
   <style>
-    /* ── Base: transparent 1920×1080 canvas ── */
+    /* ── Base: transparent canvas for OBS Studio & desktop streaming ── */
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    html, body {
-      width: 1920px;
-      height: 1080px;
-      background: transparent;
-      overflow: hidden;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+    :root {
+      color-scheme: dark;
     }
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-width: 100vw;
+      min-height: 100vh;
+      background: transparent !important;
+      background-color: transparent !important;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+
+    /* ════════════════════════════════════════
+       DESKTOP FLOATING CONTROLS TOOLBAR
+       (Visible only on hover or in desktop mode)
+       ════════════════════════════════════════ */
+    #desktop-toolbar {
+      position: fixed;
+      top: 14px;
+      right: 20px;
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(16px);
+      padding: 6px 12px;
+      border-radius: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      opacity: 0.85;
+    }
+    #desktop-toolbar:hover {
+      opacity: 1;
+      transform: translateY(0);
+      background: rgba(15, 23, 42, 0.96);
+    }
+    .drag-handle {
+      -webkit-app-region: drag;
+      cursor: grab;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-right: 6px;
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .toolbar-btn {
+      -webkit-app-region: no-drag;
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      padding: 5px 10px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .toolbar-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+    .toolbar-btn.active {
+      background: #6366f1;
+      color: #fff;
+    }
+    .toolbar-btn.btn-close:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
 
     /* ════════════════════════════════════════
        PRODUCT CARD  (bottom-left)
        ════════════════════════════════════════ */
     #product-card {
       position: absolute;
-      bottom: 60px;
-      left: 60px;
+      bottom: 40px;
+      left: 40px;
       width: 420px;
+      max-width: calc(100vw - 280px);
       background: rgba(8, 10, 20, 0.93);
       border: 1.5px solid rgba(255,255,255,.13);
       border-radius: 22px;
@@ -39,7 +114,7 @@
       transition: opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1);
       pointer-events: none;
     }
-    #product-card.visible { opacity: 1; transform: translateY(0); }
+    #product-card.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
     /* product image */
     .card-img {
@@ -95,8 +170,8 @@
        ════════════════════════════════════════ */
     #qr-widget {
       position: absolute;
-      bottom: 60px;
-      left: 508px;          /* 60 + 420 + 28 gap */
+      bottom: 40px;
+      left: 480px;          /* 40 + 420 + 20 gap */
       width: 200px;
       background: rgba(8, 10, 20, 0.93);
       border: 1.5px solid rgba(255,255,255,.13);
@@ -113,7 +188,7 @@
       transition: opacity .45s cubic-bezier(.22,1,.36,1) .08s, transform .45s cubic-bezier(.22,1,.36,1) .08s;
       pointer-events: none;
     }
-    #qr-widget.visible { opacity:1; transform:translateY(0); }
+    #qr-widget.visible { opacity:1; transform:translateY(0); pointer-events: auto; }
 
     .qr-label-top {
       font-size: 10px;
@@ -207,13 +282,119 @@
     .notif-label { font-size:10px; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:.08em; margin-bottom:3px; }
     .notif-customer { font-size:16px; font-weight:800; color:#fff; }
     .notif-product  { font-size:13px; color:rgba(255,255,255,.55); margin-top:2px; }
+    .notif-total { font-size:18px; font-weight:900; color:#4ade80; margin-top:6px; letter-spacing:-.5px; }
+
+    /* ════════════════════════════════════════
+       ORDER TRACKING SLIDE  (centered, appears on new order)
+       ════════════════════════════════════════ */
+    #order-tracking-slide {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 500px;
+      max-width: 90vw;
+      background: linear-gradient(135deg, rgba(16, 20, 36, 0.97), rgba(8, 10, 20, 0.97));
+      border: 2px solid rgba(74,222,128,.4);
+      border-radius: 24px;
+      padding: 32px 36px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(74,222,128,.2);
+      opacity: 0;
+      transition: opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1);
+      pointer-events: none;
+      z-index: 10000;
+    }
+    #order-tracking-slide.visible { 
+      opacity: 1; 
+      transform: translate(-50%, -50%) scale(1); 
+      pointer-events: auto; 
+    }
+
+    .slide-header {
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding-bottom: 16px;
+    }
+    .slide-icon {
+      font-size: 52px;
+      margin-bottom: 8px;
+      animation: bounce 0.6s ease;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .slide-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: #4ade80;
+      margin-bottom: 4px;
+      letter-spacing: -.5px;
+    }
+    .slide-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,.5);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }
+
+    .slide-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .slide-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,.05);
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .slide-row-icon {
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .slide-row-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .slide-row-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,.5);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 4px;
+    }
+    .slide-row-value {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .slide-row.total-row {
+      background: rgba(74,222,128,.12);
+      border: 1.5px solid rgba(74,222,128,.3);
+    }
+    .slide-row.total-row .slide-row-value {
+      font-size: 26px;
+      color: #4ade80;
+      letter-spacing: -.5px;
+    }
 
     /* ════════════════════════════════════════
        LIVE BADGE  (top-left)
        ════════════════════════════════════════ */
     #live-badge {
       position: absolute;
-      top: 40px; left: 60px;
+      top: 40px; left: 40px;
       background: #e53935;
       color: #fff;
       font-size: 13px; font-weight: 800;
@@ -232,24 +413,35 @@
       animation: blink 1s ease infinite;
     }
 
-    /* subtle watermark */
-    #preview-label {
-      position:absolute; top:40px; right:60px;
-      font-size:11px; color:rgba(255,255,255,.15);
-      font-weight:600; letter-spacing:.06em;
-      pointer-events:none;
-    }
+
   </style>
 </head>
 <body>
+
+  <!-- Floating Desktop Toolbar (Visible on Desktop / Electron) -->
+  <div id="desktop-toolbar" style="display:none">
+    <div class="drag-handle" title="Drag to move overlay">
+      <span>⠿</span> FB Live Overlay
+    </div>
+    <button class="toolbar-btn" id="btn-test-product" onclick="toggleTestProduct()" title="Preview sample product & QR code">
+      👁️ Test Product
+    </button>
+    <button class="toolbar-btn active" id="btn-pin" onclick="toggleAlwaysOnTop()" title="Pin Always on Top">
+      📌 Pinned
+    </button>
+    <button class="toolbar-btn" onclick="location.reload()" title="Reload overlay">
+      🔄
+    </button>
+    <button class="toolbar-btn btn-close" onclick="closeOverlayWindow()" title="Close Transparent Overlay Window">
+      ✕
+    </button>
+  </div>
 
   <!-- Live badge -->
   <div id="live-badge">
     <span class="badge-dot"></span>
     <span id="live-badge-text">LIVE</span>
   </div>
-
-  <div id="preview-label">FB LIVE OVERLAY</div>
 
   <!-- ── Product card (bottom-left) ── -->
   <div id="product-card">
@@ -290,6 +482,39 @@
       <div class="notif-label">New Order!</div>
       <div class="notif-customer" id="notif-customer"></div>
       <div class="notif-product"  id="notif-product"></div>
+      <div class="notif-total" id="notif-total"></div>
+    </div>
+  </div>
+
+  <!-- ── Order Tracking Slide (centered, full details) ── -->
+  <div id="order-tracking-slide">
+    <div class="slide-header">
+      <div class="slide-icon">🎉</div>
+      <div class="slide-title">New Order Received!</div>
+      <div class="slide-subtitle">Live Order Confirmed</div>
+    </div>
+    <div class="slide-content">
+      <div class="slide-row">
+        <div class="slide-row-icon">👤</div>
+        <div class="slide-row-content">
+          <div class="slide-row-label">Customer Name</div>
+          <div class="slide-row-value" id="slide-customer-name">-</div>
+        </div>
+      </div>
+      <div class="slide-row">
+        <div class="slide-row-icon">📦</div>
+        <div class="slide-row-content">
+          <div class="slide-row-label">Product</div>
+          <div class="slide-row-value" id="slide-product-name">-</div>
+        </div>
+      </div>
+      <div class="slide-row total-row">
+        <div class="slide-row-icon">💰</div>
+        <div class="slide-row-content">
+          <div class="slide-row-label">Total Price</div>
+          <div class="slide-row-value" id="slide-total-price">$0.00</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -301,15 +526,81 @@
     const captionBar  = document.getElementById('caption-bar');
     const liveBadge   = document.getElementById('live-badge');
     const orderNotif  = document.getElementById('order-notif');
+    const orderTrackingSlide = document.getElementById('order-tracking-slide');
     let orderNotifTimer = null;
+    let orderSlideTimer = null;
+    let isTestMode = false;
+    let isAlwaysOnTop = true;
+
+    // Detect if running in Electron desktop window
+    const isElectron = !!(window.electronAPI || window.location.search.includes('mode=desktop'));
+    if (isElectron) {
+      document.getElementById('desktop-toolbar').style.display = 'flex';
+    }
 
     // ── Helpers ──
     function showEl(el) { el.classList.add('visible'); }
     function hideEl(el) { el.classList.remove('visible'); }
-    function fmtPrice(v) { return '$' + Number(v||0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' / ៛' + Math.round(Number(v||0) * 4100).toLocaleString('en-US'); }
+    function fmtPrice(v) { 
+      const num = typeof v === 'number' ? v : (parseFloat(String(v || '0').replace(/[^0-9.-]/g, '')) || 0);
+      return '$' + num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' / ៛' + Math.round(num * 4100).toLocaleString('en-US'); 
+    }
+
+    // ── Window Controls ──
+    function closeOverlayWindow() {
+      if (window.electronAPI && window.electronAPI.closeOverlayWindow) {
+        window.electronAPI.closeOverlayWindow();
+      } else {
+        window.close();
+      }
+    }
+
+    async function toggleAlwaysOnTop() {
+      isAlwaysOnTop = !isAlwaysOnTop;
+      const btn = document.getElementById('btn-pin');
+      if (window.electronAPI && window.electronAPI.setOverlayAlwaysOnTop) {
+        await window.electronAPI.setOverlayAlwaysOnTop(isAlwaysOnTop);
+      }
+      if (isAlwaysOnTop) {
+        btn.classList.add('active');
+        btn.innerHTML = '📌 Pinned';
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '📌 Unpinned';
+      }
+    }
+
+    function toggleTestProduct() {
+      isTestMode = !isTestMode;
+      const btn = document.getElementById('btn-test-product');
+      if (isTestMode) {
+        if (btn) {
+          btn.classList.add('active');
+          btn.innerHTML = '✕ Hide Sample';
+        }
+        renderProduct({
+          product_code: 'P01',
+          name: 'Classic White T-Shirt',
+          category_name: 'Clothing',
+          price: 12.00,
+          stock: 50,
+          options: { colors: ['White', 'Black'], sizes: ['M', 'L', 'XL'] }
+        });
+        showEl(productCard);
+        showEl(qrWidget);
+        showEl(liveBadge);
+      } else {
+        if (btn) {
+          btn.classList.remove('active');
+          btn.innerHTML = '👁️ Test Product';
+        }
+        hideEl(productCard);
+        hideEl(qrWidget);
+        hideEl(liveBadge);
+      }
+    }
 
     // ── QR generation ──
-    // Uses qr-code-styling (MIT license, runs locally, no external calls)
     function generateQR(url, productCode) {
       const wrap = document.getElementById('qr-canvas-wrap');
       wrap.innerHTML = '';
@@ -344,12 +635,7 @@
 
     // ── Socket ──
     const socket = io(window.location.origin, { transports: ['websocket','polling'] });
-
-    // ── Active QR base URL ──
-    // Fetched from /api/server-info so the QR encodes the correct URL
-    // (LAN IP for same-WiFi customers, or a public URL like ngrok for everyone else).
-    // Re-fetched before every product render so cashier changes take effect instantly.
-    let qrBaseUrl = window.location.origin; // safe fallback
+    let qrBaseUrl = window.location.origin;
 
     async function refreshQrBaseUrl() {
       try {
@@ -358,7 +644,6 @@
       } catch { /* keep last known value */ }
     }
 
-    // Initial fetch
     refreshQrBaseUrl();
 
     socket.on('connect', () => {
@@ -367,7 +652,11 @@
     });
 
     socket.on('product-shown', async ({ product }) => {
-      await refreshQrBaseUrl();   // pick up any LAN→Public switch the cashier made
+      isTestMode = false;
+      const btn = document.getElementById('btn-test-product');
+      if (btn) { btn.classList.remove('active'); btn.innerHTML = '👁️ Test Product'; }
+
+      await refreshQrBaseUrl();
       renderProduct(product);
       showEl(productCard);
       showEl(qrWidget);
@@ -379,10 +668,8 @@
       hideEl(qrWidget);
     });
 
-    // Cashier changed QR mode (LAN ↔ Public) — re-render current product with new URL
     socket.on('qr-config-updated', async ({ baseUrl }) => {
       if (baseUrl) qrBaseUrl = baseUrl;
-      // re-render QR if a product is currently on air
       if (productCard.dataset.hasProduct === 'true') {
         const code = document.getElementById('prod-code').textContent;
         if (code) {
@@ -433,11 +720,25 @@
     });
 
     socket.on('order-notification', (data) => {
-      document.getElementById('notif-customer').textContent = data.customer_name || 'A customer';
-      document.getElementById('notif-product').textContent  = data.product_name ? `ordered: ${data.product_name}` : 'placed an order';
+      const customerName = data.customer_name || 'A customer';
+      const productName = data.product_name || 'an item';
+      const totalAmount = data.total_amount || 0;
+      
+      // Update small notification (top-right)
+      document.getElementById('notif-customer').textContent = customerName;
+      document.getElementById('notif-product').textContent = `ordered: ${productName}`;
+      document.getElementById('notif-total').textContent = fmtPrice(totalAmount);
       showEl(orderNotif);
       clearTimeout(orderNotifTimer);
       orderNotifTimer = setTimeout(() => hideEl(orderNotif), 6000);
+
+      // Update and show large tracking slide (centered)
+      document.getElementById('slide-customer-name').textContent = customerName;
+      document.getElementById('slide-product-name').textContent = productName;
+      document.getElementById('slide-total-price').textContent = fmtPrice(totalAmount);
+      showEl(orderTrackingSlide);
+      clearTimeout(orderSlideTimer);
+      orderSlideTimer = setTimeout(() => hideEl(orderTrackingSlide), 8000);
     });
 
     // ── Render product + QR ──
@@ -478,18 +779,14 @@
         });
       }
 
-      // Use the real LAN IP fetched from /api/server-info so phone cameras can open the URL
       const customerUrl = `${qrBaseUrl}/customer/product.html?code=${encodeURIComponent(p.product_code)}`;
       generateQR(customerUrl, p.product_code);
     }
 
-    // ── Load state on connect (session already running) ──
+    // ── Load state on connect ──
     async function loadInitialState() {
       try {
-        // Always refresh the QR base URL first so renderProduct uses the correct
-        // LAN/public address, not the stale window.location.origin fallback.
         await refreshQrBaseUrl();
-
         const liveRes  = await fetch('/api/live/active');
         const liveData = await liveRes.json();
         if (!liveData?.data) return;
@@ -501,7 +798,7 @@
           showEl(productCard);
           showEl(qrWidget);
         }
-      } catch { /* silent — still works via socket events */ }
+      } catch { /* silent */ }
     }
   </script>
 </body>

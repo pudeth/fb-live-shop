@@ -1,0 +1,2 @@
+1- Cashier can add OBS Overlay 
+2- Create Display of Category Overlay

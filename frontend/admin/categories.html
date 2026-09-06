@@ -8,9 +8,132 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/assets/css/variables.css" />
   <link rel="stylesheet" href="/assets/css/components.css" />
+  <style>
+    .cat-logo-wrapper {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      flex-shrink: 0;
+    }
+    .cat-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .cat-tag-icon {
+      font-size: 20px;
+    }
+    .cat-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .cat-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cat-brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary, #6366f1);
+      background: rgba(99, 102, 241, 0.1);
+      padding: 1px 7px;
+      border-radius: 12px;
+      width: fit-content;
+    }
+    .product-count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--gray-100, #f1f5f9);
+      color: var(--gray-700, #334155);
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .product-count-badge:hover {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary, #6366f1);
+    }
+    .status-toggle-btn {
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+    .status-toggle-btn .badge {
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .status-toggle-btn:hover .badge {
+      transform: scale(1.05);
+    }
+
+    /* Logo Upload Dropzone UI */
+    .image-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    .image-dropzone:hover, .image-dropzone.dragover {
+      border-color: var(--primary, #6366f1);
+      background: rgba(99, 102, 241, 0.04);
+    }
+    .image-preview-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+    }
+    .image-preview-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    .btn-remove-img {
+      margin-left: auto;
+      font-size: 12px;
+      color: #ef4444;
+      background: none;
+      border: 1px solid #fca5a5;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-remove-img:hover {
+      background: #fee2e2;
+    }
+  </style>
 </head>
 <body>
 <div class="app-shell">
+  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">📺</div>
@@ -33,16 +156,24 @@
         <div class="user-avatar" id="user-avatar">A</div>
         <div class="user-info">
           <div class="user-name" id="user-name">Admin</div>
-          <div class="user-role">admin</div>
+          <div class="user-role" id="user-role">admin</div>
         </div>
-        <button class="user-logout-btn" onclick="logout()">🚪</button>
+        <button class="user-logout-btn" onclick="logout()" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign out</span>
+        </button>
       </div>
     </div>
   </aside>
 
+  <!-- Main Content -->
   <div class="main-content">
     <header class="topbar">
-      <div class="topbar-title">Categories</div>
+      <div class="topbar-title">Category & Brand Management</div>
       <div class="topbar-actions">
         <button class="btn btn-primary" onclick="openAddModal()">＋ Add Category</button>
       </div>
@@ -54,23 +185,34 @@
           <div class="filter-bar" style="flex:1;margin-bottom:0">
             <div class="search-input-wrapper">
               <span class="search-icon">🔍</span>
-              <input class="form-control" type="text" id="search-input" placeholder="Search categories…" oninput="filterCategories()" />
+              <input class="form-control" type="text" id="search-input" placeholder="Search by name, brand, or description…" oninput="filterCategories()" />
             </div>
             <select class="form-control" id="filter-status" onchange="filterCategories()" style="width:140px">
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            <button class="btn btn-outline btn-sm" onclick="loadCategories()" title="Refresh categories">🔄 Refresh</button>
           </div>
           <span id="cat-count" style="font-size:13px;color:var(--gray-500);white-space:nowrap;margin-left:12px"></span>
         </div>
-        <div class="table-wrapper">
+
+        <div class="table-wrapper" style="position:relative">
+          <div id="loading-overlay" class="loading-overlay" style="display:none"><div class="spinner"></div></div>
           <table class="table">
-            <thead><tr>
-              <th>#</th><th>Name</th><th>Description</th><th>Status</th><th>Created</th><th style="width:110px">Actions</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th style="width:50px">#</th>
+                <th>Category / Brand</th>
+                <th>Description</th>
+                <th>Products</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th style="width:120px;text-align:right">Actions</th>
+              </tr>
+            </thead>
             <tbody id="categories-body">
-              <tr><td colspan="6" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -81,51 +223,95 @@
 
 <!-- Add / Edit Modal -->
 <div class="modal-backdrop" id="cat-modal">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Add Category</div>
       <button class="modal-close" onclick="closeModal('cat-modal')">✕</button>
     </div>
-    <div class="modal-body">
-      <div id="cat-error" style="display:none;padding:10px 14px;border-radius:8px;background:var(--danger-bg);color:#991b1b;margin-bottom:14px;font-size:13px"></div>
-      <div class="form-group">
-        <label class="form-label">Category Name <span class="req">*</span></label>
-        <input class="form-control" type="text" id="f-name" placeholder="e.g. Clothing" />
+    <form id="cat-form" onsubmit="handleFormSubmit(event)">
+      <div class="modal-body">
+        <div id="cat-error" style="display:none;padding:10px 14px;border-radius:8px;background:var(--danger-bg,#fee2e2);color:#991b1b;margin-bottom:14px;font-size:13px;font-weight:500"></div>
+        
+        <!-- Category Name -->
+        <div class="form-group">
+          <label class="form-label">Category Name <span class="req">*</span></label>
+          <input class="form-control" type="text" id="f-name" placeholder="e.g. Beauty & Health, Electronics, Shoes" required autocomplete="off" />
+        </div>
+
+        <!-- Optional Brand -->
+        <div class="form-group">
+          <label class="form-label">Brand / Manufacturer <span style="font-size:11px;color:var(--gray-500);font-weight:normal">(Optional)</span></label>
+          <input class="form-control" type="text" id="f-brand" placeholder="e.g. Nike, Apple, Loreal, Samsung" autocomplete="off" />
+        </div>
+
+        <!-- Optional Logo / Image Upload -->
+        <div class="form-group">
+          <label class="form-label">Logo / Image <span style="font-size:11px;color:var(--gray-500);font-weight:normal">(Optional)</span></label>
+          
+          <input type="file" id="f-image-file" accept="image/*" style="display:none" onchange="handleImageFileSelect(this)" />
+          
+          <div class="image-dropzone" id="image-dropzone" onclick="document.getElementById('f-image-file').click()">
+            <div style="font-size:26px;margin-bottom:4px">🖼️</div>
+            <div style="font-size:13px;font-weight:600;color:var(--gray-700)">Click or Drag & Drop to Upload Logo</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:2px">PNG, JPG, WEBP, or SVG (Max 5MB)</div>
+          </div>
+
+          <!-- Preview & URL options -->
+          <div id="image-preview-wrap" style="display:none" class="image-preview-container">
+            <img id="image-preview" class="image-preview-box" src="" alt="Logo Preview" />
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--gray-800)" id="preview-filename">Category Logo</div>
+              <div style="font-size:11px;color:var(--gray-500)">Ready to save</div>
+            </div>
+            <button type="button" class="btn-remove-img" onclick="removeImage()">✕ Remove</button>
+          </div>
+
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--gray-500);white-space:nowrap">Or Image URL:</span>
+            <input class="form-control form-control-sm" type="text" id="f-image-url" placeholder="https://example.com/logo.png" oninput="handleImageUrlInput(this.value)" style="font-size:12px;padding:4px 8px" />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label">Description <span style="font-size:11px;color:var(--gray-500);font-weight:normal">(Optional)</span></label>
+          <textarea class="form-control" id="f-desc" rows="3" placeholder="Optional category description or summary"></textarea>
+        </div>
+
+        <!-- Status -->
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="f-status">
+            <option value="active">Active (Visible in Store & POS)</option>
+            <option value="inactive">Inactive (Hidden)</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea class="form-control" id="f-desc" rows="3" placeholder="Optional description"></textarea>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('cat-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="save-btn">Add Category</button>
       </div>
-      <div class="form-group">
-        <label class="form-label">Status</label>
-        <select class="form-control" id="f-status">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('cat-modal')">Cancel</button>
-      <button class="btn btn-primary" id="save-btn" onclick="saveCategory()">Add Category</button>
-    </div>
+    </form>
   </div>
 </div>
 
-<!-- Delete Modal -->
+<!-- Delete Confirmation Modal -->
 <div class="modal-backdrop" id="delete-modal">
-  <div class="modal" style="max-width:400px">
+  <div class="modal" style="max-width:420px">
     <div class="modal-header">
       <div class="modal-title">Delete Category</div>
       <button class="modal-close" onclick="closeModal('delete-modal')">✕</button>
     </div>
-    <div class="modal-body" style="text-align:center;padding:30px">
-      <div style="font-size:48px;margin-bottom:12px">🗑️</div>
-      <p>Delete <strong id="delete-name"></strong>?</p>
-      <p style="font-size:13px;color:var(--gray-500);margin-top:6px">Products in this category will not be deleted, only the association is removed.</p>
+    <div class="modal-body" style="text-align:center;padding:24px">
+      <div style="font-size:44px;margin-bottom:10px">🗑️</div>
+      <p style="font-size:15px;color:var(--gray-900)">Are you sure you want to delete <strong id="delete-name" style="color:var(--danger,#ef4444)"></strong>?</p>
+      <div id="delete-warning" style="margin-top:12px;padding:10px;border-radius:8px;background:rgba(239, 68, 68, 0.08);color:#b91c1c;font-size:13px">
+        ⚠️ Products in this category will not be deleted, but will become unassigned.
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('delete-modal')">Cancel</button>
-      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      <button class="btn btn-danger" id="delete-confirm-btn" onclick="confirmDelete()">Delete Category</button>
     </div>
   </div>
 </div>
@@ -138,106 +324,297 @@
   if (user) {
     document.getElementById('user-name').textContent = user.full_name || user.username;
     document.getElementById('user-avatar').textContent = (user.full_name || user.username)[0].toUpperCase();
+    const roleElem = document.getElementById('user-role');
+    if (roleElem) roleElem.textContent = user.role || 'admin';
   }
   function logout() { auth.clear(); window.location.href = '/login.html'; }
 
   let allCategories = [];
   let editingId = null;
   let deleteId  = null;
+  let currentImageValue = null;
 
   async function loadCategories() {
-    const res = await api.getCategories('');
-    allCategories = res?.data || [];
-    filterCategories();
+    const loading = document.getElementById('loading-overlay');
+    if (loading) loading.style.display = 'flex';
+    try {
+      const res = await api.getCategories('?status=all');
+      allCategories = res?.data || [];
+      filterCategories();
+    } catch (err) {
+      showToast('Failed to load categories: ' + (err.message || err), 'error');
+    } finally {
+      if (loading) loading.style.display = 'none';
+    }
   }
 
   function filterCategories() {
-    const search = document.getElementById('search-input').value.toLowerCase();
+    const search = (document.getElementById('search-input').value || '').trim().toLowerCase();
     const status = document.getElementById('filter-status').value;
     const filtered = allCategories.filter(c =>
-      (!search || c.name.toLowerCase().includes(search) || (c.description || '').toLowerCase().includes(search)) &&
+      (!search ||
+       (c.name || '').toLowerCase().includes(search) ||
+       (c.brand || '').toLowerCase().includes(search) ||
+       (c.description || '').toLowerCase().includes(search)) &&
       (!status || c.status === status)
     );
+
     document.getElementById('cat-count').textContent = `${filtered.length} categor${filtered.length !== 1 ? 'ies' : 'y'}`;
     const body = document.getElementById('categories-body');
+
     if (filtered.length === 0) {
-      body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🏷️</div><h3>No categories found</h3></div></td></tr>`;
+      body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🏷️</div><h3>No categories found</h3><p style="font-size:13px;color:var(--gray-500)">Click "+ Add Category" to create one.</p></div></td></tr>`;
       return;
     }
-    body.innerHTML = filtered.map((c, i) => `<tr>
-      <td style="color:var(--gray-400);font-size:13px">${i + 1}</td>
-      <td><strong>${c.name}</strong></td>
-      <td style="color:var(--gray-500);font-size:13px">${c.description || '—'}</td>
-      <td>${fmt.statusBadge(c.status)}</td>
-      <td style="font-size:13px;color:var(--gray-500)">${fmt.date(c.created_at)}</td>
-      <td><div class="table-actions">
-        <button class="btn btn-ghost btn-icon-sm" onclick="openEditModal(${c.id})">✏️</button>
-        <button class="btn btn-ghost btn-icon-sm" onclick="openDeleteModal(${c.id}, '${c.name.replace(/'/g,"\\'")}')">🗑️</button>
-      </div></td>
-    </tr>`).join('');
+
+    body.innerHTML = filtered.map((c, i) => {
+      const prodCount = Number(c.product_count || 0);
+      const prodBadge = prodCount > 0
+        ? `<a href="/admin/products.html" class="product-count-badge" title="View products">📦 ${prodCount} product${prodCount !== 1 ? 's' : ''}</a>`
+        : `<span class="product-count-badge" style="opacity:0.6">0 products</span>`;
+
+      const logoHtml = c.image
+        ? `<img src="${escapeHtml(c.image)}" class="cat-logo-img" alt="${escapeHtml(c.name)}" onerror="this.outerHTML='<span class=\\'cat-tag-icon\\'>🏷️</span>'" />`
+        : `<span class="cat-tag-icon">🏷️</span>`;
+
+      const brandHtml = c.brand
+        ? `<span class="cat-brand-pill">🏷️ ${escapeHtml(c.brand)}</span>`
+        : '';
+
+      return `<tr>
+        <td style="color:var(--gray-400);font-size:13px">${i + 1}</td>
+        <td>
+          <div class="cat-name-cell">
+            <div class="cat-logo-wrapper">${logoHtml}</div>
+            <div class="cat-title-wrap">
+              <strong style="font-size:14px;color:var(--gray-900)">${escapeHtml(c.name)}</strong>
+              ${brandHtml}
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--gray-500);font-size:13px;max-width:260px;white-space:normal">${escapeHtml(c.description || '—')}</td>
+        <td>${prodBadge}</td>
+        <td>
+          <button class="status-toggle-btn" onclick="toggleStatus(${c.id}, '${c.status}')" title="Click to toggle Active / Inactive">
+            ${fmt.statusBadge(c.status)}
+          </button>
+        </td>
+        <td style="font-size:13px;color:var(--gray-500)">${fmt.date(c.created_at)}</td>
+        <td style="text-align:right">
+          <div class="table-actions" style="justify-content:flex-end">
+            <button class="btn btn-ghost btn-icon-sm" onclick="openEditModal(${c.id})" title="Edit category">✏️</button>
+            <button class="btn btn-ghost btn-icon-sm" onclick="openDeleteModal(${c.id}, '${escapeQuote(c.name)}', ${prodCount})" title="Delete category">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[m]);
+  }
+
+  function escapeQuote(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+
+  /* Image Upload & Handling */
+  function setImagePreview(url, label = 'Category Logo') {
+    currentImageValue = url;
+    const previewWrap = document.getElementById('image-preview-wrap');
+    const previewImg  = document.getElementById('image-preview');
+    const filenameEl  = document.getElementById('preview-filename');
+    if (url) {
+      previewImg.src = url;
+      filenameEl.textContent = label;
+      previewWrap.style.display = 'flex';
+      document.getElementById('f-image-url').value = url.startsWith('data:') ? '' : url;
+    } else {
+      previewImg.src = '';
+      previewWrap.style.display = 'none';
+      document.getElementById('f-image-url').value = '';
+    }
+  }
+
+  function removeImage() {
+    setImagePreview(null);
+    document.getElementById('f-image-file').value = '';
+  }
+
+  function handleImageUrlInput(val) {
+    const trimmed = (val || '').trim();
+    if (trimmed) {
+      setImagePreview(trimmed, 'External Image URL');
+    } else {
+      removeImage();
+    }
+  }
+
+  function handleImageFileSelect(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image file must be under 5MB', 'error');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      setImagePreview(e.target.result, file.name);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Setup drag and drop for image dropzone
+  const dropzone = document.getElementById('image-dropzone');
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files[0]) {
+        const input = document.getElementById('f-image-file');
+        input.files = files;
+        handleImageFileSelect(input);
+      }
+    });
   }
 
   function openAddModal() {
     editingId = null;
     document.getElementById('f-name').value = '';
+    document.getElementById('f-brand').value = '';
     document.getElementById('f-desc').value = '';
     document.getElementById('f-status').value = 'active';
+    removeImage();
     document.getElementById('cat-error').style.display = 'none';
-    document.getElementById('modal-title').textContent = 'Add Category';
+    document.getElementById('modal-title').textContent = 'Add New Category';
     document.getElementById('save-btn').textContent = 'Add Category';
     openModal('cat-modal');
+    setTimeout(() => document.getElementById('f-name').focus(), 150);
   }
 
   function openEditModal(id) {
     editingId = id;
     const c = allCategories.find(c => c.id === id);
     if (!c) return;
-    document.getElementById('f-name').value   = c.name;
+    document.getElementById('f-name').value   = c.name || '';
+    document.getElementById('f-brand').value  = c.brand || '';
     document.getElementById('f-desc').value   = c.description || '';
-    document.getElementById('f-status').value = c.status;
+    document.getElementById('f-status').value = c.status || 'active';
+    setImagePreview(c.image || null, c.image ? 'Current Logo' : '');
     document.getElementById('cat-error').style.display = 'none';
     document.getElementById('modal-title').textContent = 'Edit Category';
     document.getElementById('save-btn').textContent = 'Save Changes';
     openModal('cat-modal');
+    setTimeout(() => document.getElementById('f-name').focus(), 150);
   }
 
-  function openDeleteModal(id, name) {
+  function openDeleteModal(id, name, productCount = 0) {
     deleteId = id;
     document.getElementById('delete-name').textContent = name;
+    const warn = document.getElementById('delete-warning');
+    if (productCount > 0) {
+      warn.innerHTML = `⚠️ This category currently has <strong>${productCount} product${productCount !== 1 ? 's' : ''}</strong> assigned. Deleting it will detach the category from those products.`;
+    } else {
+      warn.innerHTML = `This category has no products assigned and can be safely deleted.`;
+    }
     openModal('delete-modal');
+  }
+
+  async function toggleStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const res = await api.updateCategory(id, { status: newStatus });
+    if (res?.success) {
+      showToast(`Category marked as ${newStatus}`, 'success');
+      loadCategories();
+    } else {
+      showToast(res?.message || 'Failed to update status', 'error');
+    }
+  }
+
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    await saveCategory();
   }
 
   async function saveCategory() {
     const errDiv = document.getElementById('cat-error');
     errDiv.style.display = 'none';
     const name   = document.getElementById('f-name').value.trim();
+    const brand  = document.getElementById('f-brand').value.trim();
     const desc   = document.getElementById('f-desc').value.trim();
     const status = document.getElementById('f-status').value;
-    if (!name) { errDiv.textContent = 'Category name is required.'; errDiv.style.display = 'block'; return; }
-    const btn = document.getElementById('save-btn');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    const res = editingId
-      ? await api.updateCategory(editingId, { name, description: desc, status })
-      : await api.createCategory({ name, description: desc, status });
-    btn.disabled = false; btn.textContent = editingId ? 'Save Changes' : 'Add Category';
-    if (res?.success) {
-      showToast(editingId ? 'Category updated' : 'Category added', 'success');
-      closeModal('cat-modal');
-      loadCategories();
-    } else {
-      errDiv.textContent = res?.message || 'Failed to save category';
+    const image  = currentImageValue;
+
+    if (!name) {
+      errDiv.textContent = 'Category name is required.';
       errDiv.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const payload = {
+        name,
+        brand: brand || null,
+        description: desc || null,
+        status,
+        image: image || null
+      };
+
+      const res = editingId
+        ? await api.updateCategory(editingId, payload)
+        : await api.createCategory(payload);
+
+      if (res?.success) {
+        showToast(editingId ? 'Category updated successfully' : 'Category created successfully', 'success');
+        closeModal('cat-modal');
+        loadCategories();
+      } else {
+        errDiv.textContent = res?.message || 'Failed to save category';
+        errDiv.style.display = 'block';
+      }
+    } catch (err) {
+      errDiv.textContent = err.message || 'Server error occurred';
+      errDiv.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingId ? 'Save Changes' : 'Add Category';
     }
   }
 
   async function confirmDelete() {
-    const res = await api.deleteCategory(deleteId);
-    if (res?.success) {
-      showToast('Category deleted', 'success');
-      closeModal('delete-modal');
-      loadCategories();
-    } else {
-      showToast(res?.message || 'Delete failed', 'error');
+    const btn = document.getElementById('delete-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      const res = await api.deleteCategory(deleteId);
+      if (res?.success) {
+        showToast('Category deleted successfully', 'success');
+        closeModal('delete-modal');
+        loadCategories();
+      } else {
+        showToast(res?.message || 'Delete failed', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Delete failed', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Delete Category';
     }
   }
 

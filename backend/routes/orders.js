@@ -337,6 +337,18 @@ router.post('/', validationRules.createOrder, validate, async (req, res) => {
 
         await connection.commit();
 
+        // ── Emit Socket.IO notification for live overlay ──
+        const io = req.app.get('io');
+        if (io) {
+            io.to('live-room').emit('order-notification', {
+                customer_name: customer_name,
+                product_name: orderItems[0]?.product_name || 'Product',
+                total_amount: totalAmount,
+                order_number: orderNumber,
+                timestamp: new Date().toISOString()
+            });
+        }
+
         // ── Auto Customer Account Generation (Single Account Policy) ──
         let customerAccount = null;
         let customerToken = null;

@@ -9,7 +9,9 @@ USE facebook_live_products;
 -- Categories Table
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    brand VARCHAR(100) NULL,
+    image MEDIUMTEXT NULL,
     description TEXT,
     status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

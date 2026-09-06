@@ -20,11 +20,9 @@ const poolConfig = {
     connectTimeout: 30000,
 };
 
-// Enable SSL for cloud databases (PlanetScale, Render MySQL, etc.)
-if (isProduction && isCloud) {
-    // Aiven uses a self-signed CA — disable strict verification
-    // (connection is still encrypted, just not CA-verified)
-    poolConfig.ssl = { rejectUnauthorized: false };
+// Enable SSL for cloud databases (TiDB Cloud, PlanetScale, Render MySQL, Aiven, etc.)
+if (isCloud) {
+    poolConfig.ssl = { minVersion: 'TLSv1.2', rejectUnauthorized: true };
 }
 
 // PlanetScale uses a DATABASE_URL connection string — support that too

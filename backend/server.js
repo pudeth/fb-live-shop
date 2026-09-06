@@ -6,7 +6,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // ── Helpers to persist QR config back into .env ──────────────────────────────
 const ENV_PATH = path.join(__dirname, '.env');
@@ -39,6 +39,7 @@ const liveRoutes = require('./routes/live');
 const categoriesRoutes = require('./routes/categories');
 const translateRoutes = require('./routes/translate');
 const { setupLiveSocket } = require('./routes/socket-live');
+const commentsRoutes = require('./routes/comments-auto');
 
 const app = express();
 const server = http.createServer(app);
@@ -54,7 +55,8 @@ const io = socketIo(server, {
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: false,
-    crossOriginResourcePolicy: false
+    crossOriginResourcePolicy: false,
+    frameguard: false
 }));
 
 // CORS — allow all origins so phones on the same WiFi can connect
@@ -79,6 +81,8 @@ app.use('/api/orders', ordersRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/translate', translateRoutes);
+app.use('/api/comments', commentsRoutes.router);
+commentsRoutes.setSocketIO(io);
 
 // Serve uploaded product images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -355,6 +359,17 @@ async function autoMigrate() {
         try {
             await pool.execute(`ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT NULL`);
         } catch(e) { /* non-fatal */ }
+
+        // Ensure categories table has unique name index, image and brand columns
+        try {
+            await pool.execute(`ALTER TABLE categories ADD UNIQUE INDEX idx_category_name_unique (name)`);
+        } catch(e) { /* non-fatal / index exists */ }
+        try {
+            await pool.execute(`ALTER TABLE categories ADD COLUMN image MEDIUMTEXT NULL`);
+        } catch(e) { /* non-fatal / column exists */ }
+        try {
+            await pool.execute(`ALTER TABLE categories ADD COLUMN brand VARCHAR(100) NULL`);
+        } catch(e) { /* non-fatal / column exists */ }
 
         // Fix default user passwords (correct bcrypt hashes for admin123 / cashier123)
         try {

@@ -16,7 +16,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 async function getConnection(withDb = true) {
     const isProduction = process.env.NODE_ENV === 'production';
     const isCloud = !!(process.env.DATABASE_URL || (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1'));
-    const ssl = (isProduction && isCloud) ? { rejectUnauthorized: false } : undefined;
+    const ssl = isCloud ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined;
 
     // Support DATABASE_URL (PlanetScale / Render MySQL format)
     if (process.env.DATABASE_URL) {

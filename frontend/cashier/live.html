@@ -838,7 +838,14 @@
           <div class="user-name" id="user-name">Cashier</div>
           <div class="user-role">Cashier</div>
         </div>
-        <button class="user-logout-btn" onclick="logout()">🚪</button>
+        <button class="user-logout-btn" onclick="logout()" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign out</span>
+        </button>
       </div>
     </div>
   </aside>
@@ -986,6 +993,7 @@
           <div class="r-tab" onclick="switchTab('caption')">💬 Caption</div>
           <div class="r-tab" onclick="switchTab('notif')">🔔 Notify</div>
           <div class="r-tab" onclick="switchTab('obs')">📡 OBS</div>
+          <div class="r-tab" onclick="switchTab('pokup')" id="tab-btn-pokup" style="position:relative;color:#0284c7;font-weight:800;">⚡ Auto Pok Up <span id="pokup-badge-dot" style="display:inline-block;width:6px;height:6px;background:#22c55e;border-radius:50%;margin-left:3px;box-shadow:0 0 5px #22c55e;"></span></div>
         </div>
 
         <div class="r-pane-wrap">
@@ -1107,6 +1115,74 @@
               <div style="margin-top:8px;border-top:1px solid var(--gray-700);padding-top:8px">
                 <div style="font-size:9px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Active QR Base</div>
                 <div style="font-family:monospace;font-size:10px;background:var(--gray-800);padding:5px 8px;border-radius:6px;color:#fbbf24;word-break:break-all" id="active-qr-url">—</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ── Tab: Auto Pok Up ── -->
+          <div class="r-pane" id="tab-pokup">
+
+            <!-- Auto-Processing Status Banner -->
+            <div class="r-box" style="background:linear-gradient(135deg, #0f172a, #1e293b);border:1.5px solid #334155;color:#fff;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <h5 style="margin:0;color:#38bdf8;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:15px;">⚡</span> Auto Comment Processing
+                </h5>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0;">
+                  <span style="font-size:10px;font-weight:700;color:#4ade80;" id="auto-pokup-status-text">ON</span>
+                  <input type="checkbox" id="chk-auto-pokup" checked onchange="toggleAutoPokup(this.checked)" style="accent-color:#22c55e;width:16px;height:16px;cursor:pointer;" />
+                </label>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#94a3b8;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;">
+                <span>Total Live Booked:</span>
+                <span id="stat-pokup-count" style="font-weight:900;color:#4ade80;font-size:13px;">0</span>
+              </div>
+            </div>
+
+            <!-- Facebook Live Auto Poller -->
+            <div class="r-box">
+              <h5 style="display:flex;align-items:center;justify-content:space-between;">
+                <span>🎥 Facebook Live Connector</span>
+                <span id="fb-poller-status-badge" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:12px;background:#1e3a5f;color:#7dd3fc;">READY</span>
+              </h5>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:7px;">
+                <input class="r-input" id="fb-live-url" placeholder="Paste Live Video Link: e.g. https://www.facebook.com/..." style="font-size:11px;font-family:monospace;" />
+                <div style="font-size:10px;color:#38bdf8;font-weight:600;display:flex;align-items:center;gap:4px;">
+                  <span>✨</span> No Facebook developer token needed in Desktop App!
+                </div>
+              </div>
+              <div class="r-btn-row">
+                <button class="r-btn primary" id="btn-start-fb" onclick="startFbLivePoller()">▶ Start Auto Tracking</button>
+                <button class="r-btn danger" id="btn-stop-fb" onclick="stopFbLivePoller()" style="display:none;">⏹ Stop</button>
+              </div>
+            </div>
+
+            <!-- Live Comment Feed & Instant Simulator -->
+            <div class="r-box" style="flex:1;display:flex;flex-direction:column;min-height:260px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <h5 style="margin:0;display:flex;align-items:center;gap:6px;">
+                  <span>💬 Live Comments</span>
+                  <span style="font-size:9px;color:#22c55e;font-weight:700;background:rgba(34,197,94,0.15);padding:1px 6px;border-radius:10px;">⚡ NEW ONLY</span>
+                </h5>
+                <div style="display:flex;gap:4px;">
+                  <button class="r-btn" onclick="clearLiveCommentsFeed()" style="padding:2px 7px;font-size:10px;background:#334155;color:#94a3b8;" title="Clear old comments">🗑️ Clear</button>
+                  <button class="r-btn accent" onclick="simulateTestComment()" style="padding:2px 8px;font-size:10px;" title="Simulate 1 incoming live comment">⚡ Test Wave</button>
+                </div>
+              </div>
+
+              <!-- Quick Comment Ingestion Field -->
+              <div style="display:flex;gap:4px;margin-bottom:8px;">
+                <input class="r-input" id="quick-comment-input" placeholder="e.g. Dara: P01 2 012345678" style="font-size:11px;flex:1;" onkeydown="if(event.key==='Enter') submitQuickComment()" />
+                <button class="r-btn primary" onclick="submitQuickComment()" style="padding:0 10px;font-size:11px;">Send</button>
+              </div>
+
+              <!-- Realtime Scrollable Feed List -->
+              <div id="live-comments-feed" style="flex:1;overflow-y:auto;max-height:250px;display:flex;flex-direction:column;gap:5px;padding-right:2px;">
+                <div id="live-comments-empty" style="text-align:center;padding:25px 10px;color:var(--gray-400);font-size:11px;">
+                  Waiting for live stream comments...<br/>
+                  <span style="font-size:10px;color:var(--gray-400);">Comments with product codes (e.g. P01) will automatically book!</span>
+                </div>
               </div>
             </div>
 
@@ -1296,6 +1372,32 @@
     });
     socket.on('product-shown', ({ product }) => { currentOnAirId = product.id; renderOnAir(product); refreshProductGrid(); });
     socket.on('product-hidden', () => { currentOnAirId = null; renderOnAirEmpty(); refreshProductGrid(); });
+    socket.on('live-comment-received', (data) => { renderLiveComment(data); });
+    socket.on('pokup-confirmed', (orderData) => {
+      totalPokupCount++;
+      const statEl = document.getElementById('stat-pokup-count');
+      if (statEl) statEl.textContent = totalPokupCount;
+      playCashierChime();
+      showToast(`⚡ Auto-Booked: #${orderData.order_number} for ${orderData.customer_name} (${orderData.product_name})`, 'success', 4000);
+      loadProducts();
+    });
+    socket.on('pokup-out-of-stock', (data) => {
+      showToast(`⚠️ Out of Stock: ${data.product?.name} requested by ${data.customerName}`, 'warning', 4000);
+    });
+    socket.on('fb-poller-status', (status) => {
+      updateFbPollerUi(status);
+    });
+    socket.on('live-comments-cleared', () => {
+      const feed = document.getElementById('live-comments-feed');
+      if (feed) {
+        feed.innerHTML = `
+          <div id="live-comments-empty" style="text-align:center;padding:25px 10px;color:var(--gray-400);font-size:11px;">
+            Waiting for fresh live stream comments...<br/>
+            <span style="font-size:10px;color:#4ade80;">⚡ Showing only new live comments!</span>
+          </div>
+        `;
+      }
+    });
   }
 
   // ── Session ──
@@ -1618,6 +1720,261 @@
     if (r) showProduct(r.id);
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // AUTO COMMENT TRACKING & POK UP SYSTEM
+  // ═══════════════════════════════════════════════════════════
+  let autoPokupActive = true;
+  let totalPokupCount = 0;
+
+  function playCashierChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(880, now);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1760, now + 0.08);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc1.stop(now + 0.1);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.45);
+    } catch(e) {}
+  }
+
+  function toggleAutoPokup(checked) {
+    autoPokupActive = checked;
+    const txt = document.getElementById('auto-pokup-status-text');
+    const dot = document.getElementById('pokup-badge-dot');
+    if (txt) {
+      txt.textContent = checked ? 'ON' : 'OFF';
+      txt.style.color = checked ? '#4ade80' : '#ef4444';
+    }
+    if (dot) {
+      dot.style.background = checked ? '#22c55e' : '#ef4444';
+      dot.style.boxShadow = checked ? '0 0 5px #22c55e' : 'none';
+    }
+    showToast(checked ? '⚡ Auto Pok Up Enabled' : '⏸️ Auto Pok Up Paused', checked ? 'success' : 'info');
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderLiveComment(data) {
+    const feed = document.getElementById('live-comments-feed');
+    const empty = document.getElementById('live-comments-empty');
+    if (empty) empty.style.display = 'none';
+    if (!feed) return;
+
+    const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    let badgeHtml = '';
+    let borderStyle = 'border-left: 3px solid #64748b;';
+    let bgStyle = 'background:#1e293b;';
+
+    if (data.isPokUp && data.status === 'CONFIRMED') {
+      borderStyle = 'border-left: 3px solid #22c55e;';
+      bgStyle = 'background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), #1e293b);';
+      const ord = data.orderResult?.order || {};
+      badgeHtml = `<span style="font-size:9px;font-weight:800;background:#14532d;color:#86efac;padding:2px 6px;border-radius:4px;">
+        ✅ POK UP #${ord.order_number || ''} (${data.details?.productCode} x${data.details?.quantity}) - $${ord.total_amount || ''}
+      </span>`;
+    } else if (data.status === 'OUT_OF_STOCK') {
+      borderStyle = 'border-left: 3px solid #ef4444;';
+      bgStyle = 'background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), #1e293b);';
+      badgeHtml = `<span style="font-size:9px;font-weight:800;background:#7f1d1d;color:#fca5a5;padding:2px 6px;border-radius:4px;">
+        ⚠️ OUT OF STOCK (${data.details?.productCode || ''})
+      </span>`;
+    } else {
+      badgeHtml = `<span style="font-size:9px;font-weight:700;background:#334155;color:#94a3b8;padding:2px 6px;border-radius:4px;">CHAT</span>`;
+    }
+
+    const card = document.createElement('div');
+    card.style.cssText = `${borderStyle} ${bgStyle} padding:7px 9px;border-radius:6px;font-size:11px;color:#e2e8f0;display:flex;flex-direction:column;gap:3px;`;
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-weight:700;color:#38bdf8;">${escapeHtml(data.commenterName || 'Viewer')}</span>
+        <span style="font-size:9px;color:#64748b;">${timeStr}</span>
+      </div>
+      <div style="color:#cbd5e1;font-size:11px;word-break:break-word;">"${escapeHtml(data.commentText || '')}"</div>
+      <div style="margin-top:2px;">${badgeHtml}</div>
+    `;
+
+    feed.insertBefore(card, feed.firstChild);
+
+  function clearLiveCommentsFeed() {
+    const feed = document.getElementById('live-comments-feed');
+    if (feed) {
+      feed.innerHTML = `
+        <div id="live-comments-empty" style="text-align:center;padding:25px 10px;color:var(--gray-400);font-size:11px;">
+          Waiting for fresh live stream comments...<br/>
+          <span style="font-size:10px;color:#4ade80;">⚡ Only new comments will appear here!</span>
+        </div>
+      `;
+    }
+    fetch('/api/comments/clear-comments', { method: 'POST' }).catch(() => {});
+    showToast('Feed cleared — showing new comments only', 'info', 2000);
+  }
+
+  async function submitQuickComment() {
+    const input = document.getElementById('quick-comment-input');
+    const text = input ? input.value.trim() : '';
+    if (!text) return;
+    input.value = '';
+
+    try {
+      const res = await fetch('/api/comments/process-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: text, autoPokup: autoPokupActive })
+      }).then(r => r.json());
+
+      if (res.success && res.results?.[0]) {
+        const item = res.results[0];
+        if (item.isPokUp && item.status === 'CONFIRMED') {
+          showToast(`🎉 Pok Up Confirmed for ${item.commenterName}!`, 'success', 3000);
+        }
+      }
+    } catch(err) {
+      showToast('Error processing comment: ' + err.message, 'error');
+    }
+  }
+
+  async function simulateTestComment() {
+    try {
+      const res = await fetch('/api/comments/simulate', { method: 'POST' }).then(r => r.json());
+      if (res.success) {
+        showToast(`⚡ Injected comment: "${res.simulatedComment.text}"`, 'info', 2500);
+      }
+    } catch(e) {
+      showToast('Simulate failed: ' + e.message, 'error');
+    }
+  }
+
+  async function invokeDesktopMonitor(action, payload) {
+    // 1. Direct electronAPI in this window
+    if (window.electronAPI && window.electronAPI[action]) {
+      return await window.electronAPI[action](payload ? payload.url : '');
+    }
+    // 2. Parent window postMessage (when loaded inside Electron shell.html iframe)
+    if (window.parent && window.parent !== window) {
+      return new Promise((resolve) => {
+        const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const timer = setTimeout(() => {
+          window.removeEventListener('message', onMsg);
+          resolve({ success: false, timeout: true });
+        }, 3000);
+        const onMsg = (e) => {
+          if (e.data && e.data.requestId === requestId) {
+            clearTimeout(timer);
+            window.removeEventListener('message', onMsg);
+            resolve(e.data.result || { success: true });
+          }
+        };
+        window.addEventListener('message', onMsg);
+        window.parent.postMessage({ action, payload, requestId }, '*');
+      });
+    }
+    return { success: false, browserOnly: true };
+  }
+
+  async function startFbLivePoller() {
+    const videoId = document.getElementById('fb-live-url').value.trim();
+    if (!videoId) {
+      showToast('Please paste your Facebook Live Video URL or ID', 'warning');
+      return;
+    }
+
+    localStorage.setItem('fb_live_video_id', videoId);
+    showToast('🚀 Launching Facebook Live Monitor (0 tokens needed)...', 'info', 3000);
+
+    const deskRes = await invokeDesktopMonitor('start-fb-live-monitor', { url: videoId });
+    if (deskRes && deskRes.success) {
+      // Sync tracking state with backend
+      fetch('/api/comments/start-desktop-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId })
+      }).catch(() => {});
+
+      updateFbPollerUi({ isRunning: true, inApp: true });
+      showToast('✅ Facebook Live In-App Monitor Active & Scraping Comments!', 'success', 4000);
+      return;
+    }
+
+    // In external browser (Chrome / Edge)
+    fetch('/api/comments/start-desktop-tracking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId })
+    }).catch(() => {});
+
+    updateFbPollerUi({ isRunning: true, inApp: false });
+    showToast('✨ Live stream set! Ensure Edge/Chrome Extension is active to stream comments.', 'success', 5000);
+  }
+
+  async function stopFbLivePoller() {
+    await invokeDesktopMonitor('stop-fb-live-monitor');
+    fetch('/api/comments/stop-desktop-tracking', { method: 'POST' }).catch(() => {});
+    updateFbPollerUi({ isRunning: false, inApp: false });
+    showToast('Live Monitor Stopped', 'info');
+  }
+
+  function updateFbPollerUi(status) {
+    const badge = document.getElementById('fb-poller-status-badge');
+    const startBtn = document.getElementById('btn-start-fb');
+    const stopBtn = document.getElementById('btn-stop-fb');
+    if (!badge) return;
+
+    if (status.isRunning) {
+      badge.textContent = status.inApp ? 'IN-APP LIVE ACTIVE' : 'STREAM TRACKING (Active)';
+      badge.style.background = '#14532d';
+      badge.style.color = '#86efac';
+      if (startBtn) startBtn.style.display = 'none';
+      if (stopBtn) stopBtn.style.display = 'inline-flex';
+    } else {
+      badge.textContent = 'READY';
+      badge.style.background = '#1e3a5f';
+      badge.style.color = '#7dd3fc';
+      if (startBtn) startBtn.style.display = 'inline-flex';
+      if (stopBtn) stopBtn.style.display = 'none';
+    }
+  }
+
+  async function loadCommentsStatus() {
+    try {
+      const savedVideoId = localStorage.getItem('fb_live_video_id');
+      const savedToken = localStorage.getItem('fb_live_token');
+      if (savedVideoId && document.getElementById('fb-live-url')) document.getElementById('fb-live-url').value = savedVideoId;
+      if (savedToken && document.getElementById('fb-access-token')) document.getElementById('fb-access-token').value = savedToken;
+
+      const res = await fetch('/api/comments/status').then(r => r.json());
+      if (res.success) {
+        if (res.fbPoller) {
+          updateFbPollerUi(res.fbPoller);
+          totalPokupCount = res.fbPoller.pokupCount || 0;
+          const statEl = document.getElementById('stat-pokup-count');
+          if (statEl) statEl.textContent = totalPokupCount;
+        }
+        if (Array.isArray(res.recentComments)) {
+          [...res.recentComments].reverse().forEach(c => renderLiveComment(c));
+        }
+      }
+    } catch(e) {}
+  }
+
   // Auto-focus scanner on any click outside inputs
   document.addEventListener('click', e => {
     if (!e.target.closest('.modal-backdrop') && !e.target.closest('input') && !e.target.closest('textarea') && !e.target.closest('select')) {
@@ -1636,6 +1993,7 @@
   loadActiveSession();
   loadProducts();
   loadServerInfo();
+  loadCommentsStatus();
 </script>
 </body>
 </html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Live Product System</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link rel="stylesheet" href="shell.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Navigation Header -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <img src="assets/icon.png" width="28" height="28" style="border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" alt="Logo">
+                    <span class="live-dot"></span>
+                    <span class="brand-text">FB Live POS</span>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-url="http://localhost:3000/login.html">
+                    <span class="tab-icon" style="display:inline-flex;align-items:center;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                            <polyline points="10 17 15 12 10 7"></polyline>
+                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                        </svg>
+                    </span>
+                    <span class="tab-label">Login</span>
+                </button>
+                <button class="nav-tab" data-url="http://localhost:3000/admin/dashboard.html">
+                    <span class="tab-icon">📊</span>
+                    <span class="tab-label">Dashboard</span>
+                </button>
+                <button class="nav-tab" data-url="http://localhost:3000/admin/products.html">
+                    <span class="tab-icon">🏷️</span>
+                    <span class="tab-label">Products</span>
+                </button>
+                <button class="nav-tab highlight-tab" data-url="http://localhost:3000/cashier/live.html">
+                    <span class="tab-icon">🛒</span>
+                    <span class="tab-label">Cashier Live</span>
+                </button>
+                <button class="nav-tab" data-url="http://localhost:3000/admin/orders.html">
+                    <span class="tab-icon">📦</span>
+                    <span class="tab-label">Orders</span>
+                </button>
+                <button class="nav-tab" data-url="http://localhost:3000/overlay/index.html">
+                    <span class="tab-icon">📺</span>
+                    <span class="tab-label">OBS Overlay</span>
+                </button>
+                <button class="nav-tab" data-url="https://hongtindonate.com/#overlays">
+                    <span class="tab-icon">⚡</span>
+                    <span class="tab-label">HongTin Overlays</span>
+                </button>
+                <button class="nav-tab" data-tab="network-hub">
+                    <span class="tab-icon">📱</span>
+                    <span class="tab-label">QR & Network Hub</span>
+                </button>
+            </nav>
+
+            <!-- Quick Action Controls -->
+            <div class="header-actions">
+                <div class="status-indicator online" id="statusIndicator" title="Cloud Database & Backend Server">
+                    <span class="indicator-dot"></span>
+                    <span class="status-text" id="statusText">Connecting...</span>
+                </div>
+                
+                <button class="btn-action btn-popout-overlay" id="btnPopoutOverlay" title="Open 100% Transparent Floating Overlay Window (No Background)">
+                    ✨ Transparent Overlay Window
+                </button>
+
+                <button class="btn-action" id="btnReload" title="Reload current view">
+                    🔄
+                </button>
+                
+                <button class="btn-action btn-open-browser" id="btnOpenBrowser" title="Open current page in default browser (Chrome/Edge)">
+                    🌐 Open in Browser
+                </button>
+            </div>
+        </header>
+
+        <!-- Main View Area -->
+        <main class="view-container">
+            <!-- Loading Splash Screen -->
+            <div id="loadingSplash" class="loading-splash">
+                <div class="splash-box">
+                    <img src="assets/icon.png" width="80" height="80" class="splash-logo" alt="App Logo">
+                    <h2>Facebook Live Product System</h2>
+                    <p id="splashMessage">Connecting to Cloud Database & starting server...</p>
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <!-- Embedded Web View -->
+            <iframe id="mainFrame" class="web-frame" frameborder="0"></iframe>
+
+            <!-- Network & Mobile QR Code Hub Overlay -->
+            <div id="networkHub" class="network-hub-panel hidden">
+                <div class="hub-card">
+                    <div class="hub-header">
+                        <h2>📱 Network & Mobile Connection Hub</h2>
+                        <p>Connect phones, tablets, or external screens to your laptop's Facebook Live system</p>
+                    </div>
+
+                    <div class="hub-grid">
+                        <!-- Public / Render URL Box -->
+                        <div class="connection-box">
+                            <div class="box-title">
+                                <span class="badge badge-public">Public Cloud</span>
+                                <h3>Online URL (Internet)</h3>
+                            </div>
+                            <p class="box-desc">Accessible from anywhere on any device over the internet.</p>
+                            <div class="url-badge-group">
+                                <input type="text" id="publicUrlInput" readonly value="https://fb-live-shop.onrender.com">
+                                <button class="btn-copy" id="btnCopyPublic">Copy</button>
+                            </div>
+                            <div class="qr-wrapper">
+                                <canvas id="publicQrCanvas"></canvas>
+                                <span class="qr-caption">Scan for Customer / Mobile Access</span>
+                            </div>
+                        </div>
+
+                        <!-- Localhost Box -->
+                        <div class="connection-box">
+                            <div class="box-title">
+                                <span class="badge badge-local">Localhost</span>
+                                <h3>This Laptop</h3>
+                            </div>
+                            <p class="box-desc">Direct local access on this computer (Port 3000).</p>
+                            <div class="url-badge-group">
+                                <input type="text" id="localUrlInput" readonly value="http://localhost:3000">
+                                <button class="btn-copy" id="btnCopyLocal">Copy</button>
+                            </div>
+                            
+                            <div class="quick-links-section">
+                                <h4>Quick Direct Links:</h4>
+                                <div class="quick-links-buttons">
+                                    <button class="btn-link" onclick="openExternal('http://localhost:3000/login.html')">🔑 Login Page</button>
+                                    <button class="btn-link" onclick="openExternal('http://localhost:3000/admin/dashboard.html')">📊 Admin Dashboard</button>
+                                    <button class="btn-link" onclick="openExternal('http://localhost:3000/cashier/live.html')">🛒 Cashier Live Screen</button>
+                                    <button class="btn-link" onclick="openExternal('http://localhost:3000/overlay/index.html')">📺 OBS Browser Source</button>
+                                    <button class="btn-link" onclick="openExternal('https://hongtindonate.com/#overlays')">⚡ HongTin Donate Overlays</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Close Hub Button -->
+                    <div class="hub-footer">
+                        <button class="btn-primary" id="btnCloseHub">← Back to App</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="shell.js"></script>
+</body>
+</html>

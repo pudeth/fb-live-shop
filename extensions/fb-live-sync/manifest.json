@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "FB Live POS - Auto Comment Tracker",
+  "version": "1.0.0",
+  "description": "Automatically captures Facebook Live comments and sends them to your local POS system for instant Auto Pok Up.",
+  "host_permissions": [
+    "https://*.facebook.com/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.facebook.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FB Live POS Auto-Sync"
+  }
+}

@@ -95,6 +95,16 @@ app.use('/customer', express.static(path.join(__dirname, '../frontend/customer')
 app.use('/overlay',  express.static(path.join(__dirname, '../frontend/overlay')));
 app.use('/public',   express.static(path.join(__dirname, '../frontend/public')));
 
+// ── Direct Extension Download Routes (Handles typos like .zipsvg automatically) ──
+const extensionZipPath = path.join(__dirname, '../frontend/public/fb-live-sync.zip');
+app.get(['/download-extension', '/fb-live-sync.zip', '/extension.zip', '/public/fb-live-sync.zip*'], (req, res) => {
+    res.download(extensionZipPath, 'fb-live-sync.zip', (err) => {
+        if (err && !res.headersSent) {
+            res.status(404).send('Extension archive not found');
+        }
+    });
+});
+
 // ── QR config — loaded from environment variables ────────────────────────────
 // In production (Render), PUBLIC_URL and QR_MODE are set as env vars in the
 // Render dashboard — they survive restarts without needing .env file writes.

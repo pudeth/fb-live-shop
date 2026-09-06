@@ -369,6 +369,23 @@ async function processIncomingComment(commentObj, catalog = null, onAirProduct =
     // Clean any attached timestamp artifact from commenter name (e.g. "Pu Deth · 1m" -> "Pu Deth")
     commenterName = commenterName.replace(/[-•·\s]*\b\d+\s*[smhdwy]\b.*/i, '').trim() || 'Live Viewer';
 
+    // Filter out Facebook Producer UI artifacts & timer counters
+    if (
+        /^\s*\d{1,2}:\d{2}(:\d{2})?\s*$/.test(commentText) ||
+        /Now that you're live|End live video|Dashboard Insights|Interactivity Distribution/i.test(commentText) ||
+        /^(Lives in|Studied at|Works at|Followed by|Media & Robotic Team)\b/i.test(commentText) ||
+        /^Live dashboard$/i.test(commenterName)
+    ) {
+        return {
+            commentId,
+            commenterName,
+            commentText,
+            isPokUp: false,
+            status: 'IGNORED_UI',
+            reason: 'Filtered Facebook UI noise'
+        };
+    }
+
     // Filter out ancient past comments (e.g. from yesterday's post or >4h ago) — Keep all live stream comments!
     const timeMatch = (commentObj.message || commentObj.text || commentObj.comment || '').match(/[-•·\s]*\b(\d+)\s*([smhdwy])\b/i);
     if (timeMatch && !/just now|now|\b\d+\s*s\b/i.test(commentObj.message || commentObj.text || commentObj.comment || '')) {
@@ -532,6 +549,18 @@ router.post('/process-stream', async (req, res) => {
             const item = typeof c === 'string' ? { text: c } : c;
             const processed = await processIncomingComment(item, catalog, onAirProduct, autoPokup);
             results.push(processed);
+        }
+
+        // If received on local server, relay to Render cloud so cashier live.html gets it
+        if (!process.env.RENDER && req.headers['x-forwarded-by'] !== 'fb-local-relay') {
+            fetch('https://fb-live-shop.onrender.com/api/comments/process-stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-forwarded-by': 'fb-local-relay'
+                },
+                body: JSON.stringify(req.body)
+            }).catch(err => console.warn('Relay to Render failed:', err.message));
         }
 
         res.json({

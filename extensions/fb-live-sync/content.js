@@ -243,6 +243,15 @@ async function sendCommentToPos(author, text) {
             isPosReachable = false;
             updateBadge(false, syncedCount, getHostLabel(posServerUrl));
         }
+
+        // Always ensure Render receives the comment if user is currently looking at https://fb-live-shop.onrender.com
+        if (!endpoint.includes('onrender.com')) {
+            fetch('https://fb-live-shop.onrender.com/api/comments/process-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment: payload })
+            }).catch(e => console.warn('Render mirror sync error:', e.message));
+        }
     } catch (err) {
         console.warn(`[FB Live POS Sync Error] Could not reach ${endpoint}:`, err.message);
         isPosReachable = false;
@@ -253,12 +262,18 @@ async function sendCommentToPos(author, text) {
 // ── 4. DOM Scanner for Live Stream Comments ──────────────────────────────────
 function extractCommentFromNode(rawText) {
     if (!rawText || rawText.length < 3 || rawText.length > 500) return null;
+    // Filter Facebook Producer UI artifacts & timers
+    if (/Now that you're live|End live video|Dashboard Insights|Interactivity Distribution/i.test(rawText)) return null;
+    if (/^\s*\d{1,2}:\d{2}(:\d{2})?\s*$/.test(rawText.trim())) return null;
+
     let lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length === 0) return null;
 
     // Remove Facebook action buttons (Reply, Pin, etc.)
     lines = lines.filter(line => !/^(Reply|Pin|Hide|Like|Share|Report|Translate|Send message|Send Message|View more|ឆ្លើយតប)$/i.test(line));
     if (lines.length === 0) return null;
+
+    if (/^Live dashboard$/i.test(lines[0]) || /^(Lives in|Studied at|Works at|Followed by)\b/i.test(lines[0])) return null;
 
     let author = 'Live Viewer';
     let message = '';

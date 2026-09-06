@@ -76,32 +76,47 @@ async function getActiveLiveSession(force = false) {
     }
 }
 
+// Khmer Digits & Words Normalization Maps
+const KHMER_DIGITS_MAP = { '០': '0', '១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9' };
+const KHMER_NUM_WORDS_MAP = { 'មួយ': 1, 'ពីរ': 2, 'បី': 3, 'បួន': 4, 'ប្រាំ': 5, 'ប្រាំមួយ': 6, 'ប្រាំពីរ': 7, 'ប្រាំបី': 8, 'ប្រាំបួន': 9, 'ដប់': 10 };
+
+function normalizeKhmerDigits(str) {
+    if (!str) return '';
+    let res = str;
+    for (const [k, v] of Object.entries(KHMER_DIGITS_MAP)) {
+        res = res.replaceAll(k, v);
+    }
+    return res;
+}
+
 /**
  * Intelligent Comment Parser for Pok Up (booking products)
- * Includes Smart Code Normalization (P01 <-> p001 <-> p1) & UI Artifact Cleaning
+ * Accurately detects:
+ * - Short comments: "P02", "po1", "p1", "PO2 2", "po1 10", "យកP02", "p 02"
+ * - Letter 'o' / 'O' for zero: "po1" -> "P01", "po2" -> "P02", "po5" -> "P005"
+ * - Khmer scripts: "យក P02 10 អាវ 068656263", "យកpo1 ២ 012345678", "យក po1 មួយ"
+ * - Long comments with addresses, polite words, phone numbers, and units
  */
 function parseCommentText(commentText, catalog, onAirProduct = null) {
     if (!commentText || typeof commentText !== 'string') {
         return { isPokUp: false, reason: 'Empty text' };
     }
 
-    let text = commentText.trim();
+    let text = normalizeKhmerDigits(commentText.trim());
 
     // 0. Clean Facebook Live Producer & Watch UI artifacts:
-    // e.g. "- 1m Hi p001 2 Hide" -> "Hi p001 2"
     text = text
-        .replace(/^[-•·\s]*\d+\s*[smhd]\b/i, '')
+        .replace(/^[-•·\s]*\d+\s*[smhdwy]\b/i, '')
         .replace(/^[-•·\s]*just now\b/i, '')
-        .replace(/\b(Hide|Reply|Like|Share|Report|Translate|Send message|Send Message)\b/gi, '')
+        .replace(/\b(Hide|Reply|Pin|Like|Share|Report|Translate|Send message|Send Message)\b/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
 
-    // 1. Extract Phone Number (Cambodian formats: 012345678, 098 765 432, +855 12 345 678)
+    // 1. Extract Phone Number (safe boundary so it never consumes "01" / "02" from "P01" / "P02")
     let phoneNumber = null;
-    const phoneRegex = /(?:\+?855[\s.-]?|0)[1-9][0-9\s.-]{7,10}\b/;
-    const phoneMatch = text.match(phoneRegex);
+    const phoneMatch = text.match(/(?:^|[^0-9a-zA-Z])((?:\+?855[\s.-]?|0)[1-9][0-9\s.-]{7,9})(?![0-9a-zA-Z])/);
     if (phoneMatch) {
-        phoneNumber = phoneMatch[0].replace(/[\s.-]/g, '');
+        phoneNumber = phoneMatch[1].replace(/[\s.-]/g, '');
         if (phoneNumber.startsWith('+855')) {
             phoneNumber = '0' + phoneNumber.slice(4);
         } else if (phoneNumber.startsWith('855')) {
@@ -109,34 +124,46 @@ function parseCommentText(commentText, catalog, onAirProduct = null) {
         }
     }
 
-    // 2. Identify Product Code with Smart Normalization (P01 <-> p001 <-> p1 <-> p 01)
+    // Isolate text without phone number for accurate code & quantity detection
+    const textWithoutPhone = (phoneNumber && phoneMatch) ? text.replace(phoneMatch[1], ' ') : text;
+
+    // 2. Identify Product Code with Smart Normalization (supports 'po1', 'P02', 'p1', 'p 01', 'យកP02')
     let matchedProduct = null;
     let matchedCode = null;
     let matchedSubstr = null;
 
-    for (const prod of catalog) {
+    // Sort catalog by product_code length descending so longer codes (e.g. P005) match before shorter (P5)
+    const sortedCatalog = [...(catalog || [])].sort((a, b) => (b.product_code || '').length - (a.product_code || '').length);
+
+    for (const prod of sortedCatalog) {
         if (!prod.product_code) continue;
 
         const codeClean = prod.product_code.trim();
-        // Check if code has letters followed by digits: e.g. "P01", "P005"
-        const codeParts = codeClean.match(/^([a-zA-Z]+)[-_]?0*(\d+)$/);
+        // Match code with letters + numbers: e.g. "P01", "P02", "P005"
+        const codeParts = codeClean.match(/^([a-zA-Z]+)[-_.]*0*(\d+)$/);
 
         let codeRegex = null;
         if (codeParts) {
             const prefix = codeParts[1];
             const num = codeParts[2];
-            // Matches: prefix (optional space/dash) (optional zeros) num
-            codeRegex = new RegExp(`(?:^|[#\\s,.:;!?-])(${prefix}[-_\\s]*0*${num})(?:$|[#\\s,.:;!?-])`, 'i');
+            // Matches:
+            // - Starts at string start or non-alphanumeric (including Khmer characters like យក)
+            // - prefix (e.g. 'P' or 'p')
+            // - optional space, dash, dot: [\s\-_.]*
+            // - optional zeros or letter 'o'/'O' or spaces: [0oO\s]*
+            // - number: num (e.g. 1 or 2)
+            // - Not followed by letters or digits: (?![0-9a-zA-Z])
+            codeRegex = new RegExp('(^|[^a-zA-Z0-9])(' + prefix + '[\\s\\-_.]*[0oO\\s]*' + num + ')(?![0-9a-zA-Z])', 'i');
         } else {
             const codeEscaped = codeClean.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            codeRegex = new RegExp(`(?:^|[#\\s,.:;!?-])(${codeEscaped})(?:$|[#\\s,.:;!?-])`, 'i');
+            codeRegex = new RegExp('(^|[^a-zA-Z0-9])(' + codeEscaped + ')(?![0-9a-zA-Z])', 'i');
         }
 
-        const match = text.match(codeRegex);
+        const match = textWithoutPhone.match(codeRegex);
         if (match) {
             matchedProduct = prod;
             matchedCode = prod.product_code;
-            matchedSubstr = match[1]; // Actual matched substring, e.g. "p001"
+            matchedSubstr = match[2]; // e.g. "po1", "P02", "p1"
             break;
         }
     }
@@ -145,7 +172,7 @@ function parseCommentText(commentText, catalog, onAirProduct = null) {
     // and an ON-AIR product is currently active
     if (!matchedProduct && onAirProduct) {
         const cfRegex = /\b(cf|pok|buy|order|want|yok)\b|យក|បិទ|ពុក|កក់/i;
-        if (cfRegex.test(text)) {
+        if (cfRegex.test(textWithoutPhone)) {
             matchedProduct = onAirProduct;
             matchedCode = onAirProduct.product_code;
             matchedSubstr = onAirProduct.product_code;
@@ -156,26 +183,42 @@ function parseCommentText(commentText, catalog, onAirProduct = null) {
         return {
             isPokUp: false,
             phoneNumber,
-            rawText: text,
+            rawText: commentText,
             reason: 'No matching product code found'
         };
     }
 
-    // 4. Extract Quantity
+    // 4. Extract Quantity (Smart detection across short & long comments)
     let quantity = 1;
-    // Look for: x2, x 3, *2, 2pcs, 2 pcs, 2កំប៉ុង, 2ដប, 2ឈុត, or number right after code
-    const qtyExplicitRegex = /(?:[xX*]\s*(\d+))|(\d+)\s*(?:pcs|pc|items|unit|units|កំប៉ុង|ដប|ឈុត|គូ|កញ្ចប់)/i;
-    const qtyExplicitMatch = text.match(qtyExplicitRegex);
 
-    if (qtyExplicitMatch) {
-        quantity = parseInt(qtyExplicitMatch[1] || qtyExplicitMatch[2], 10);
-    } else if (matchedSubstr) {
-        // Look for number immediately following the matched code: e.g. "p001 2", "P01 3"
-        const subEscaped = matchedSubstr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const codeWithNumRegex = new RegExp(`${subEscaped}\\s*([1-9][0-9]?)`, 'i');
-        const codeNumMatch = text.match(codeWithNumRegex);
-        if (codeNumMatch && codeNumMatch[1]) {
-            quantity = parseInt(codeNumMatch[1], 10);
+    // A. Explicit multiplier: x2, *3, =4, qty 2, ចំនួន 2, etc.
+    const explicitMult = textWithoutPhone.match(/(?:[xX*=:–-]|qty|កំរិត|ចំនួន)\s*([1-9][0-9]?)/i);
+    if (explicitMult) {
+        quantity = parseInt(explicitMult[1], 10);
+    } else {
+        // B. Khmer number words: មួយ, ពីរ, បី, បួន, etc.
+        let wordFound = false;
+        for (const [w, val] of Object.entries(KHMER_NUM_WORDS_MAP)) {
+            if (textWithoutPhone.includes(w)) {
+                quantity = val;
+                wordFound = true;
+                break;
+            }
+        }
+
+        if (!wordFound) {
+            // C. Quantity with unit: 2អាវ, 2កំប៉ុង, 2pcs, 2 pcs, 2ដប, 2ឈុត, 2គូ, 2កញ្ចប់, 2ប្រអប់
+            const unitMatch = textWithoutPhone.match(/([1-9][0-9]?)\s*(?:pcs|pc|items|unit|units|អាវ|កំប៉ុង|ដប|ឈុត|គូ|កញ្ចប់|ប្រអប់|កែវ|ថង់|គីឡូ|kg)/i);
+            if (unitMatch) {
+                quantity = parseInt(unitMatch[1], 10);
+            } else if (matchedSubstr) {
+                // D. Number immediately following the matched code: e.g. "po1 2", "P02 10"
+                const subEscaped = matchedSubstr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const afterCodeMatch = textWithoutPhone.match(new RegExp(subEscaped + '\\s*([1-9][0-9]?)', 'i'));
+                if (afterCodeMatch && afterCodeMatch[1]) {
+                    quantity = parseInt(afterCodeMatch[1], 10);
+                }
+            }
         }
     }
 
@@ -188,7 +231,7 @@ function parseCommentText(commentText, catalog, onAirProduct = null) {
         productCode: matchedCode,
         quantity,
         phoneNumber,
-        rawText: text
+        rawText: commentText
     };
 }
 
@@ -260,19 +303,19 @@ async function executeAutoPokUp(parsedData, customerName = 'FB Live Viewer', com
 
         const orderId = orderResult.insertId;
 
-        // 2. Insert into order_items table
-        await pool.query(
-            `INSERT INTO order_items 
-             (order_id, product_id, product_code, product_name, price, quantity, subtotal)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [orderId, freshProduct.id, freshProduct.product_code, freshProduct.name, price, quantity, totalAmount]
-        );
-
-        // 3. Deduct product stock
-        await pool.query(
-            'UPDATE products SET stock = stock - ? WHERE id = ?',
-            [quantity, freshProduct.id]
-        );
+        // 2 & 3. Insert into order_items table and deduct stock in parallel for ultra-low latency
+        await Promise.all([
+            pool.query(
+                `INSERT INTO order_items 
+                 (order_id, product_id, product_code, product_name, price, quantity, subtotal)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [orderId, freshProduct.id, freshProduct.product_code, freshProduct.name, price, quantity, totalAmount]
+            ),
+            pool.query(
+                'UPDATE products SET stock = stock - ? WHERE id = ?',
+                [quantity, freshProduct.id]
+            )
+        ]);
         cachedCatalog = null; // Invalidate cache immediately
 
         const orderPayload = {

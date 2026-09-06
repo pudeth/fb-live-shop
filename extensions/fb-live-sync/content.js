@@ -310,21 +310,21 @@ function extractCommentFromNode(rawText) {
     return { author, message };
 }
 
-function findCommentElements() {
+function findCommentElements(root = document) {
     const candidates = new Set();
-    // 1. Standard Facebook Watch comments
-    document.querySelectorAll('[role="article"], div[data-visualcompletion="ignore-dynamic"]').forEach(el => candidates.add(el));
-
-    // 2. Facebook Live Producer rows
-    document.querySelectorAll('div[role="row"], div[role="listitem"]').forEach(el => candidates.add(el));
-
-    // 3. Comments with Reply or Pin buttons in Live Producer
-    document.querySelectorAll('div, span, button').forEach(el => {
-        const txt = (el.innerText || '').trim();
-        if (txt === 'Reply' || txt === 'Pin' || txt === 'ឆ្លើយតប') {
-            const parent = el.closest('[role="row"], [role="listitem"], [role="article"]') || el.parentElement?.parentElement;
-            if (parent) candidates.add(parent);
-        }
+    const selectors = [
+        '[role="row"]',
+        '[role="listitem"]',
+        '[role="article"]',
+        'div[data-visualcompletion="ignore-dynamic"]',
+        'div[data-testid*="comment"]',
+        'div[aria-label*="Comment by"]'
+    ];
+    
+    selectors.forEach(sel => {
+        try {
+            root.querySelectorAll(sel).forEach(el => candidates.add(el));
+        } catch (e) {}
     });
 
     return Array.from(candidates);
@@ -344,52 +344,85 @@ function isOldTimestamp(rawText) {
     return false;
 }
 
+function processSingleCommentNode(node) {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
+
+    // Check node text
+    const rawText = (node.innerText || '').trim();
+    if (!rawText || rawText.length < 2 || rawText.length > 500) return;
+    if (isOldTimestamp(rawText)) return;
+
+    const extracted = extractCommentFromNode(rawText);
+    if (!extracted || !extracted.message) return;
+
+    const { author, message } = extracted;
+    const signature = `${author}:::${message}`;
+    if (processedComments.has(signature)) return;
+
+    processedComments.add(signature);
+    if (processedComments.size > 2000) {
+        const arr = Array.from(processedComments);
+        processedComments.clear();
+        arr.slice(-1000).forEach(s => processedComments.add(s));
+    }
+
+    console.log(`💬 [FB Live POS] ⚡ 0ms Detected: "${author}": "${message}"`);
+    flashBadgeActivity(author, message);
+    sendCommentToPos(author, message);
+}
+
+function flashBadgeActivity(author, message) {
+    const txt = document.getElementById('fb-pos-badge-text');
+    const dot = document.getElementById('fb-pos-badge-dot');
+    if (!txt) return;
+
+    const shortMsg = message.length > 18 ? message.slice(0, 16) + '…' : message;
+    txt.textContent = `⚡ "${author}": ${shortMsg}`;
+    if (dot) {
+        dot.style.background = '#38bdf8';
+        dot.style.boxShadow = '0 0 10px #38bdf8';
+    }
+
+    clearTimeout(window._fbBadgeTimer);
+    window._fbBadgeTimer = setTimeout(() => {
+        updateBadge(isPosReachable, syncedCount, getHostLabel(posServerUrl));
+    }, 2200);
+}
+
 function scanFacebookComments() {
     const commentNodes = findCommentElements();
-
-    commentNodes.forEach(node => {
-        const rawText = (node.innerText || '').trim();
-        if (!rawText || rawText.length < 3 || rawText.length > 500) return;
-
-        // Skip ancient comments (>4 hours or days old)
-        if (isOldTimestamp(rawText)) return;
-
-        const extracted = extractCommentFromNode(rawText);
-        if (!extracted || !extracted.message) return;
-
-        const { author, message } = extracted;
-
-        // Signature based on author + message text
-        const signature = `${author}:::${message}`;
-        if (processedComments.has(signature)) return;
-
-        processedComments.add(signature);
-
-        if (processedComments.size > 2000) {
-            const arr = Array.from(processedComments);
-            processedComments.clear();
-            arr.slice(-1000).forEach(s => processedComments.add(s));
-        }
-
-        console.log(`💬 [FB Live POS] Detected comment from "${author}": "${message}"`);
-        sendCommentToPos(author, message);
-    });
+    commentNodes.forEach(node => processSingleCommentNode(node));
 }
 
-// ── 5. Initialize Extension ───────────────────────────────────────────────────
+// ── 5. Ultra-Fast High-Speed Initialization ───────────────────────────────────
 createFloatingBadge();
 
-const domObserver = new MutationObserver(() => {
-    scanFacebookComments();
+// 0ms Real-Time MutationObserver directly analyzing added nodes
+const domObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        if (m.addedNodes && m.addedNodes.length > 0) {
+            for (let i = 0; i < m.addedNodes.length; i++) {
+                const node = m.addedNodes[i];
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    processSingleCommentNode(node);
+                    // Also check immediate children
+                    const children = findCommentElements(node);
+                    children.forEach(c => processSingleCommentNode(c));
+                }
+            }
+        }
+    }
 });
 
-if (document.body) {
-    domObserver.observe(document.body, { childList: true, subtree: true });
+const observeTarget = document.body || document.documentElement;
+if (observeTarget) {
+    domObserver.observe(observeTarget, { childList: true, subtree: true });
 } else {
     document.addEventListener('DOMContentLoaded', () => {
-        domObserver.observe(document.body, { childList: true, subtree: true });
+        domObserver.observe(document.body || document.documentElement, { childList: true, subtree: true });
     });
 }
 
-setInterval(scanFacebookComments, 300);
+// 150ms high-speed backup scanner so no comment is ever missed
+setInterval(scanFacebookComments, 150);
 

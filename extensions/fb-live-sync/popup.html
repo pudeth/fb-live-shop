@@ -4,38 +4,44 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 250px;
+      width: 290px;
       padding: 14px;
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #0f172a;
       color: #f8fafc;
+      box-sizing: border-box;
     }
     h3 {
-      margin: 0 0 6px;
+      margin: 0 0 4px;
       font-size: 14px;
       color: #38bdf8;
       display: flex;
       align-items: center;
       gap: 6px;
     }
-    p {
-      font-size: 12px;
+    p.sub {
+      font-size: 11px;
       color: #94a3b8;
       margin: 0 0 12px;
       line-height: 1.4;
     }
-    .status-badge {
-      display: inline-flex;
+    .status-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .status-left {
+      display: flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
       font-size: 11px;
       font-weight: 700;
-      background: #1e3a5f;
-      color: #7dd3fc;
-      margin-bottom: 12px;
     }
     .dot {
       width: 8px;
@@ -44,29 +50,135 @@
       background: #22c55e;
       box-shadow: 0 0 6px #22c55e;
     }
-    button {
+    .dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
+    }
+    .dot.checking {
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+    }
+    .section-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+    .preset-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .preset-btn {
+      padding: 6px 4px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      text-align: center;
+      transition: all .15s;
+    }
+    .preset-btn:hover {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .preset-btn.active {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .input-wrap {
+      margin-bottom: 10px;
+    }
+    input {
       width: 100%;
-      background: #2563eb;
+      box-sizing: border-box;
+      padding: 7px 9px;
+      border-radius: 6px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      font-size: 11px;
+      font-family: monospace;
+      outline: none;
+    }
+    input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    button.primary {
+      width: 100%;
+      background: linear-gradient(135deg, #1877f2, #0284c7);
       color: #fff;
       border: none;
       padding: 8px;
-      border-radius: 8px;
+      border-radius: 7px;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
+      transition: opacity .15s;
     }
-    button:hover {
-      background: #1d4ed8;
+    button.primary:hover { opacity: 0.9; }
+    button.secondary {
+      width: 100%;
+      background: #334155;
+      color: #e2e8f0;
+      border: none;
+      padding: 7px;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    button.secondary:hover { background: #475569; }
+    #status-msg {
+      font-size: 10px;
+      margin-top: 4px;
+      text-align: center;
+      min-height: 14px;
     }
   </style>
 </head>
 <body>
-  <h3>⚡ FB Live POS</h3>
-  <p>Automatic Live Comment Tracker</p>
-  <div class="status-badge">
-    <span class="dot"></span>
-    <span>Auto-Sync Active</span>
+  <h3>⚡ FB Live POS Sync</h3>
+  <p class="sub">Stream Facebook Live comments to POS</p>
+
+  <div class="status-card">
+    <div class="status-left">
+      <span class="dot checking" id="status-dot"></span>
+      <span id="status-text">Checking server...</span>
+    </div>
+    <span id="ping-text" style="font-size:9px;color:#94a3b8;font-family:monospace;">--</span>
   </div>
-  <button onclick="window.open('http://localhost:3000/cashier/live.html')">🛒 Open Cashier POS</button>
+
+  <div class="section-title">Select POS Server Host</div>
+  <div class="preset-row">
+    <button class="preset-btn" id="btn-preset-render">☁️ Cloud Render</button>
+    <button class="preset-btn" id="btn-preset-local">💻 Localhost</button>
+  </div>
+
+  <div class="input-wrap">
+    <input type="text" id="server-url-input" placeholder="https://fb-live-shop.onrender.com" />
+  </div>
+
+  <div class="btn-row">
+    <button class="primary" id="btn-save">💾 Save & Test Connection</button>
+    <button class="secondary" id="btn-open-pos">🛒 Open Cashier Live Screen</button>
+  </div>
+  <div id="status-msg"></div>
+
+  <script src="popup.js"></script>
 </body>
 </html>

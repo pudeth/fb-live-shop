@@ -3,10 +3,15 @@
   "name": "FB Live POS - Auto Comment Tracker",
   "version": "1.0.0",
   "description": "Automatically captures Facebook Live comments and sends them to your local POS system for instant Auto Pok Up.",
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "https://*.facebook.com/*",
+    "https://*.onrender.com/*",
     "http://localhost:3000/*",
-    "http://127.0.0.1:3000/*"
+    "http://127.0.0.1:3000/*",
+    "*://*/*"
   ],
   "content_scripts": [
     {
